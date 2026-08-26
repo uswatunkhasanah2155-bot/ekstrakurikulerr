@@ -1,0 +1,40 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id_user  Int     @id @default(autoincrement())
+  username String  @unique
+  password String
+  role     String  // 'admin' atau 'siswa'
+  siswa    Siswa?  
+}
+
+model Siswa {
+  id_siswa       Int            @id @default(autoincrement())
+  id_user        Int            @unique 
+  nama_siswa     String
+  kelas          String
+  jenis_kelamin  String
+  user           User           @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  pendaftaran    Pendaftaran[]  
+}
+
+model Ekstrakurikuler {
+  id_eskul     Int           @id @default(autoincrement())
+  nama_eskul   String
+  deskripsi    String?
+  pendaftaran  Pendaftaran[] 
+}
+
+model Pendaftaran {
+  id_pendaftaran Int              @id @default(autoincrement())
+  id_siswa       Int              
+  id_eskul       Int              
+  siswa          Siswa            @relation(fields: [id_siswa], references: [id_siswa], onDelete: Cascade)
+  ekstrakurikuler Ekstrakurikuler @relation(fields: [id_eskul], references: [id_eskul], onDelete: Cascade)
+}
