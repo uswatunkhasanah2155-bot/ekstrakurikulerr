@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
     // Simpan ke database
     const newUser = await prisma.user.create({
       data: {
-        username,
+        username, 
         password: hashedPassword,
         role: role || 'SISWA',
       },

@@ -59,7 +59,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     const { nama_eskul, deskripsi } = req.body;
 
     const eskulUpdate = await prisma.ekstrakurikuler.update({
-      where: { id_eskul: Number(id) }, // Menyesuaikan primary key di skema prisma kamu
+      where: { id_eskul: Number(id) },
       data: {
         nama_eskul,
         deskripsi,
@@ -86,7 +86,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
 
     await prisma.ekstrakurikuler.delete({
-      where: { id_eskul: Number(id) }, // Menyesuaikan primary key di skema prisma kamu
+      where: { id_eskul: Number(id) },
     });
 
     res.json({
