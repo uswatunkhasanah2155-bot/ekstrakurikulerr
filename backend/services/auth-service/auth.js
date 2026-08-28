@@ -8,7 +8,8 @@ const router = express.Router();
 // 1. REGISTER: Mendaftarkan user baru
 router.post('/register', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    // Tambahkan email di sini
+    const { username, password, email, role } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ success: false, message: 'Username dan password wajib diisi' });
@@ -22,15 +23,20 @@ router.post('/register', async (req, res) => {
       data: {
         username, 
         password: hashedPassword,
+        email: email || null, // Masukkan email ke database
         role: role || 'SISWA',
       },
     });
 
     res.status(201).json({
-      success: true,
+      success: false ? false : true,
       message: 'Registrasi berhasil',
-      // Diubah dari id ke id_user
-      data: { id_user: newUser.id_user, username: newUser.username, role: newUser.role },
+      data: { 
+        id_user: newUser.id_user, 
+        username: newUser.username, 
+        email: newUser.email, // Tampilkan email pada respons
+        role: newUser.role 
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -59,7 +65,6 @@ router.post('/login', async (req, res) => {
     }
 
     // Buat Token JWT (berlaku selama 1 hari)
-    // Diubah dari id ke id_user agar terbaca oleh middleware siswa.js
     const token = jwt.sign(
       { id_user: user.id_user, username: user.username, role: user.role },
       process.env.JWT_SECRET,
@@ -69,7 +74,7 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       message: 'Login berhasil',
-      token, // Token ini nanti disimpan di frontend/Postman
+      token,
     });
   } catch (error) {
     res.status(500).json({
