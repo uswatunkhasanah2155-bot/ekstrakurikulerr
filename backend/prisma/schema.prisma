@@ -10,6 +10,7 @@ model User {
   id_user  Int     @id @default(autoincrement())
   username String  @unique
   password String
+  email    String?  
   role     String  // 'admin' atau 'siswa'
   siswa    Siswa?  
 }
