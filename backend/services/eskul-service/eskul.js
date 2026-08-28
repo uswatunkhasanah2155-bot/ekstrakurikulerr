@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
 // POST: Menambahkan data ekstrakurikuler baru (Dilindungi token)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { nama_eskul, deskripsi } = req.body;
+    const { nama_eskul, deskripsi, pembina, jadwal } = req.body;
 
     if (!nama_eskul) {
       return res.status(400).json({ success: false, message: 'Nama ekstrakurikuler wajib diisi' });
@@ -35,6 +35,8 @@ router.post('/', verifyToken, async (req, res) => {
       data: {
         nama_eskul,
         deskripsi,
+        pembina,
+        jadwal,
       },
     });
 
@@ -56,13 +58,15 @@ router.post('/', verifyToken, async (req, res) => {
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nama_eskul, deskripsi } = req.body;
+    const { nama_eskul, deskripsi, pembina, jadwal } = req.body;
 
     const eskulUpdate = await prisma.ekstrakurikuler.update({
       where: { id_eskul: Number(id) },
       data: {
         nama_eskul,
         deskripsi,
+        pembina,
+        jadwal,
       },
     });
 
