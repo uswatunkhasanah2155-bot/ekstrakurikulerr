@@ -35,15 +35,20 @@ router.post('/', verifyToken, async (req, res) => {
     } else {
       const userId = req.user.id_user; // Didapatkan dari token JWT login
 
-      // Cari data siswa berdasarkan id_user yang sedang login
-      const siswa = await prisma.siswa.findUnique({
+      // Cari data siswa berdasarkan id_user yang sedang login di tabel Siswa
+      let siswa = await prisma.siswa.findUnique({
         where: { id_user: userId },
       });
 
+      // Jika profil belum ada di tabel Siswa, buat secara otomatis (auto-create) agar kolom wajib di tabel Siswa terpenuhi
       if (!siswa) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Profil siswa tidak ditemukan untuk akun ini. Harap lengkapi data siswa terlebih dahulu.' 
+        siswa = await prisma.siswa.create({
+          data: {
+            id_user: userId,
+            nama_siswa: req.user.username || 'Siswa Baru',
+            kelas: 'Belum diisi',
+            jenis_kelamin: 'L',
+          },
         });
       }
       targetIdSiswa = siswa.id_siswa;
