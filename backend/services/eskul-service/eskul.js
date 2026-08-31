@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
+import { handleDownloadExcel } from './DownloadExcel.js';
 
 const router = express.Router();
 
@@ -21,6 +22,9 @@ router.get('/', async (req, res) => {
     });
   }
 });
+
+// ROUTE: Download Excel Rekap Peserta Ekstrakurikuler (Harus diletakkan SEBELUM route /:id)
+router.get('/:id/download', handleDownloadExcel);
 
 // POST: Menambahkan data ekstrakurikuler baru (Dilindungi token)
 router.post('/', verifyToken, async (req, res) => {

@@ -23,28 +23,36 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-// POST: Siswa mendaftar ke ekstrakurikuler
+// POST: Mendaftarkan siswa ke ekstrakurikuler (Mendukung Siswa atau Admin)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { id_eskul } = req.body;
-    const userId = req.user.id_user; // Didapatkan dari token JWT login
+    const { id_eskul, id_siswa_input } = req.body;
+    let targetIdSiswa;
 
-    // Cari data siswa berdasarkan id_user yang sedang login
-    const siswa = await prisma.siswa.findUnique({
-      where: { id_user: userId },
-    });
+    // Jika id_siswa_input dikirim (biasanya dari admin), gunakan itu. Jika tidak, ambil dari user yang login (siswa).
+    if (id_siswa_input) {
+      targetIdSiswa = Number(id_siswa_input);
+    } else {
+      const userId = req.user.id_user; // Didapatkan dari token JWT login
 
-    if (!siswa) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Profil siswa tidak ditemukan untuk akun ini. Harap lengkapi data siswa terlebih dahulu.' 
+      // Cari data siswa berdasarkan id_user yang sedang login
+      const siswa = await prisma.siswa.findUnique({
+        where: { id_user: userId },
       });
+
+      if (!siswa) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Profil siswa tidak ditemukan untuk akun ini. Harap lengkapi data siswa terlebih dahulu.' 
+        });
+      }
+      targetIdSiswa = siswa.id_siswa;
     }
 
     // Daftarkan siswa ke eskul
     const pendaftaranBaru = await prisma.pendaftaran.create({
       data: {
-        id_siswa: siswa.id_siswa,
+        id_siswa: targetIdSiswa,
         id_eskul: Number(id_eskul),
       },
       include: {
