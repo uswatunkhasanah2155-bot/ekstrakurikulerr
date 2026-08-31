@@ -54,6 +54,21 @@ router.post('/', verifyToken, async (req, res) => {
       targetIdSiswa = siswa.id_siswa;
     }
 
+    // Cek apakah siswa sudah terdaftar pada ekstrakurikuler yang sama
+    const existingRegistration = await prisma.pendaftaran.findFirst({
+      where: {
+        id_siswa: targetIdSiswa,
+        id_eskul: Number(id_eskul),
+      },
+    });
+
+    if (existingRegistration) {
+      return res.status(400).json({
+        success: false,
+        message: 'Siswa sudah terdaftar di ekstrakurikuler ini!',
+      });
+    }
+
     // Daftarkan siswa ke eskul
     const pendaftaranBaru = await prisma.pendaftaran.create({
       data: {

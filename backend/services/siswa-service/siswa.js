@@ -91,13 +91,13 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Update data di database
+    // Update data di database (menggunakan !== undefined agar aman jika dikirim string kosong)
     const siswaUpdated = await prisma.siswa.update({
       where: { id_siswa: Number(id) },
       data: {
-        nama_siswa: nama_siswa || siswaCek.nama_siswa,
-        kelas: kelas || siswaCek.kelas,
-        jenis_kelamin: jenis_kelamin || siswaCek.jenis_kelamin,
+        nama_siswa: nama_siswa !== undefined ? nama_siswa : siswaCek.nama_siswa,
+        kelas: kelas !== undefined ? kelas : siswaCek.kelas,
+        jenis_kelamin: jenis_kelamin !== undefined ? jenis_kelamin : siswaCek.jenis_kelamin,
       },
     });
 
