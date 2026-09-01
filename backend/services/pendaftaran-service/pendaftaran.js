@@ -26,32 +26,27 @@ router.get('/', verifyToken, async (req, res) => {
 // POST: Mendaftarkan siswa ke ekstrakurikuler (Mendukung Siswa atau Admin)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { id_eskul, id_siswa_input } = req.body;
+    // 1. Tangkap juga nama_siswa, kelas, dan jenis_kelamin yang dikirim dari frontend kamu
+    const { id_eskul, id_siswa_input, nama_siswa, kelas, jenis_kelamin } = req.body;
     let targetIdSiswa;
 
-    // Jika id_siswa_input dikirim (biasanya dari admin), gunakan itu. Jika tidak, ambil dari user yang login (siswa).
     if (id_siswa_input) {
       targetIdSiswa = Number(id_siswa_input);
     } else {
-      const userId = req.user.id_user; // Didapatkan dari token JWT login
+      const userId = req.user.id_user || req.user.id;  
 
-      // Cari data siswa berdasarkan id_user yang sedang login di tabel Siswa
-      let siswa = await prisma.siswa.findUnique({
-        where: { id_user: userId },
+      // 2. Jika admin yang menginput (tanpa id_user yang terikat ke tabel siswa, atau input langsung nama baru)
+      // Kita buatkan data siswa baru di tabel Siswa menggunakan data yang dikirim dari form frontendmu
+      const siswaBaru = await prisma.siswa.create({
+        data: {
+          nama_siswa: nama_siswa || 'Tanpa Nama',
+          kelas: kelas || 'Belum diisi',
+          jenis_kelamin: jenis_kelamin || 'L',
+          // Jika admin yang input (role admin), id_user dikosongkan (null) agar tidak error unique constraint
+          id_user: req.user.role === 'admin' ? null : userId 
+        },
       });
-
-      // Jika profil belum ada di tabel Siswa, buat secara otomatis (auto-create) agar kolom wajib di tabel Siswa terpenuhi
-      if (!siswa) {
-        siswa = await prisma.siswa.create({
-          data: {
-            id_user: userId,
-            nama_siswa: req.user.username || 'Siswa Baru',
-            kelas: 'Belum diisi',
-            jenis_kelamin: 'L',
-          },
-        });
-      }
-      targetIdSiswa = siswa.id_siswa;
+      targetIdSiswa = siswaBaru.id_siswa;
     }
 
     // Cek apakah siswa sudah terdaftar pada ekstrakurikuler yang sama
