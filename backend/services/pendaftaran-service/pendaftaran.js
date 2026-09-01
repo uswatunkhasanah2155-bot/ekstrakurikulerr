@@ -33,24 +33,34 @@ router.post('/', verifyToken, async (req, res) => {
       targetIdSiswa = Number(id_siswa_input);
     } else {
       const userId = req.user.id_user || req.user.id;  
+      const isAdmin = req.user.role === 'admin';
 
-      // Cek apakah profil siswa untuk user ini sudah pernah dibuat sebelumnya
-      let siswaEksis = await prisma.siswa.findUnique({
-        where: { id_user: userId },
-      });
+      if (!isAdmin) {
+        // Jika yang login adalah Siswa, cek apakah profil siswa sudah ada berdasarkan id_user
+        let siswaEksis = await prisma.siswa.findUnique({
+          where: { id_user: userId },
+        });
 
-      if (siswaEksis) {
-        // Jika sudah ada, gunakan id_siswa yang lama (tidak membuat baru)
-        targetIdSiswa = siswaEksis.id_siswa;
-      } else {
-        // Jika belum ada sama sekali, baru buat baru
+        if (siswaEksis) {
+          targetIdSiswa = siswaEksis.id_siswa;
+        }
+      }
+
+      // Jika belum ada (atau jika Admin yang menginput data baru), buat baris siswa baru
+      if (!targetIdSiswa) {
+        const dataSiswaBaru = {
+          nama_siswa: nama_siswa || 'Tanpa Nama',
+          kelas: kelas || 'Belum diisi',
+          jenis_kelamin: jenis_kelamin || 'L',
+        };
+
+        // Hanya masukkan id_user jika yang login bukan admin (atau jika kolom mengizinkannya)
+        if (!isAdmin) {
+          dataSiswaBaru.id_user = userId;
+        }
+
         const siswaBaru = await prisma.siswa.create({
-          data: {
-            nama_siswa: nama_siswa || 'Tanpa Nama',
-            kelas: kelas || 'Belum diisi',
-            jenis_kelamin: jenis_kelamin || 'L',
-            id_user: userId 
-          },
+          data: dataSiswaBaru,
         });
         targetIdSiswa = siswaBaru.id_siswa;
       }
@@ -71,7 +81,7 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Daftarkan siswa ke eskul (Bisa banyak eskul karena tabel pendaftaran independen)
+    // Daftarkan siswa ke eskul
     const pendaftaranBaru = await prisma.pendaftaran.create({
       data: {
         id_siswa: targetIdSiswa,
