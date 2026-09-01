@@ -34,15 +34,26 @@ router.post('/', verifyToken, async (req, res) => {
     } else {
       const userId = req.user.id_user || req.user.id;  
 
-      const siswaBaru = await prisma.siswa.create({
-        data: {
-          nama_siswa: nama_siswa || 'Tanpa Nama',
-          kelas: kelas || 'Belum diisi',
-          jenis_kelamin: jenis_kelamin || 'L',
-          id_user: req.user.role === 'admin' ? null : userId 
-        },
+      // Cek apakah profil siswa untuk user ini sudah pernah dibuat sebelumnya
+      let siswaEksis = await prisma.siswa.findUnique({
+        where: { id_user: userId },
       });
-      targetIdSiswa = siswaBaru.id_siswa;
+
+      if (siswaEksis) {
+        // Jika sudah ada, gunakan id_siswa yang lama (tidak membuat baru)
+        targetIdSiswa = siswaEksis.id_siswa;
+      } else {
+        // Jika belum ada sama sekali, baru buat baru
+        const siswaBaru = await prisma.siswa.create({
+          data: {
+            nama_siswa: nama_siswa || 'Tanpa Nama',
+            kelas: kelas || 'Belum diisi',
+            jenis_kelamin: jenis_kelamin || 'L',
+            id_user: userId 
+          },
+        });
+        targetIdSiswa = siswaBaru.id_siswa;
+      }
     }
 
     // Cek apakah siswa sudah terdaftar pada ekstrakurikuler yang sama
@@ -60,7 +71,7 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Daftarkan siswa ke eskul
+    // Daftarkan siswa ke eskul (Bisa banyak eskul karena tabel pendaftaran independen)
     const pendaftaranBaru = await prisma.pendaftaran.create({
       data: {
         id_siswa: targetIdSiswa,
@@ -78,6 +89,7 @@ router.post('/', verifyToken, async (req, res) => {
       data: pendaftaranBaru,
     });
   } catch (error) {
+    console.error("ERROR DETAIL POST PENDAFTARAN:", error);
     res.status(500).json({ success: false, message: 'Gagal melakukan pendaftaran', error: error.message });
   }
 });
@@ -88,7 +100,6 @@ router.put('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
     const { id_eskul, nama_siswa, kelas, jenis_kelamin } = req.body;
 
-    // Cek apakah data pendaftaran ada
     const pendaftaranCek = await prisma.pendaftaran.findUnique({
       where: { id_pendaftaran: Number(id) },
       include: { siswa: true }
@@ -101,7 +112,6 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // 1. Update pilihan eskul pada tabel pendaftaran jika id_eskul dikirim
     let updatedPendaftaran = pendaftaranCek;
     if (id_eskul) {
       updatedPendaftaran = await prisma.pendaftaran.update({
@@ -112,7 +122,6 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // 2. Jika ada data siswa yang ikut dikirim untuk diupdate, update juga tabel siswa terkait
     if (pendaftaranCek.id_siswa && (nama_siswa || kelas || jenis_kelamin)) {
       await prisma.siswa.update({
         where: { id_siswa: pendaftaranCek.id_siswa },
@@ -124,7 +133,6 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Ambil data terbaru lengkap dengan relasinya untuk dikembalikan ke frontend
     const finalResult = await prisma.pendaftaran.findUnique({
       where: { id_pendaftaran: Number(id) },
       include: {
@@ -139,6 +147,7 @@ router.put('/:id', verifyToken, async (req, res) => {
       data: finalResult,
     });
   } catch (error) {
+    console.error("ERROR DETAIL PUT PENDAFTARAN:", error);
     res.status(500).json({
       success: false,
       message: 'Gagal memperbarui pendaftaran',
@@ -172,6 +181,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
       message: 'Berhasil membatalkan pendaftaran ekstrakurikuler',
     });
   } catch (error) {
+    console.error("ERROR DETAIL DELETE PENDAFTARAN:", error);
     res.status(500).json({
       success: false,
       message: 'Gagal membatalkan pendaftaran',
