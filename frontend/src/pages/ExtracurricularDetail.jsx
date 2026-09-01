@@ -118,7 +118,7 @@ export default function ExtracurricularDetail() {
         id_eskul_sekarang, 
         siswaDipilih?.id_siswa, 
         { 
-          nama: formData.nama,
+          nama_siswa: formData.nama,
           kelas: formData.kelas,
           jenis_kelamin: formData.jenisKelamin === 'Perempuan' ? 'P' : 'L'
         }
@@ -134,8 +134,10 @@ export default function ExtracurricularDetail() {
       }
     } else {
       const dataKirim = {
-        ...formData,
-        id_eskul: id_eskul_sekarang
+        id_eskul: id_eskul_sekarang,
+        nama_siswa: formData.nama,
+        kelas: formData.kelas,
+        jenis_kelamin: formData.jenisKelamin === 'Perempuan' ? 'P' : 'L'
       };
 
       const result = await tambahPendaftar(dataKirim);
@@ -191,7 +193,7 @@ export default function ExtracurricularDetail() {
               {isAdmin ? (
                 <div className="flex gap-2">
                   <span className="bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-200 flex items-center">
-                     Mode Admin: Hak Akses CRUD Aktif
+                      Mode Admin: Hak Akses CRUD Aktif
                   </span>
                 </div>
               ) : (
