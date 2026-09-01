@@ -26,7 +26,6 @@ router.get('/', verifyToken, async (req, res) => {
 // POST: Mendaftarkan siswa ke ekstrakurikuler (Mendukung Siswa atau Admin)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    // 1. Tangkap juga nama_siswa, kelas, dan jenis_kelamin yang dikirim dari frontend kamu
     const { id_eskul, id_siswa_input, nama_siswa, kelas, jenis_kelamin } = req.body;
     let targetIdSiswa;
 
@@ -35,14 +34,11 @@ router.post('/', verifyToken, async (req, res) => {
     } else {
       const userId = req.user.id_user || req.user.id;  
 
-      // 2. Jika admin yang menginput (tanpa id_user yang terikat ke tabel siswa, atau input langsung nama baru)
-      // Kita buatkan data siswa baru di tabel Siswa menggunakan data yang dikirim dari form frontendmu
       const siswaBaru = await prisma.siswa.create({
         data: {
           nama_siswa: nama_siswa || 'Tanpa Nama',
           kelas: kelas || 'Belum diisi',
           jenis_kelamin: jenis_kelamin || 'L',
-          // Jika admin yang input (role admin), id_user dikosongkan (null) agar tidak error unique constraint
           id_user: req.user.role === 'admin' ? null : userId 
         },
       });
@@ -86,15 +82,16 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-// PUT: Mengubah/memperbarui pilihan eskul pada pendaftaran
+// PUT: Mengubah/memperbarui pilihan eskul (dan opsional data siswa) pada pendaftaran
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { id_eskul } = req.body;
+    const { id_eskul, nama_siswa, kelas, jenis_kelamin } = req.body;
 
     // Cek apakah data pendaftaran ada
     const pendaftaranCek = await prisma.pendaftaran.findUnique({
       where: { id_pendaftaran: Number(id) },
+      include: { siswa: true }
     });
 
     if (!pendaftaranCek) {
@@ -104,12 +101,32 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Update pilihan eskul
-    const pendaftaranUpdated = await prisma.pendaftaran.update({
+    // 1. Update pilihan eskul pada tabel pendaftaran jika id_eskul dikirim
+    let updatedPendaftaran = pendaftaranCek;
+    if (id_eskul) {
+      updatedPendaftaran = await prisma.pendaftaran.update({
+        where: { id_pendaftaran: Number(id) },
+        data: {
+          id_eskul: Number(id_eskul),
+        },
+      });
+    }
+
+    // 2. Jika ada data siswa yang ikut dikirim untuk diupdate, update juga tabel siswa terkait
+    if (pendaftaranCek.id_siswa && (nama_siswa || kelas || jenis_kelamin)) {
+      await prisma.siswa.update({
+        where: { id_siswa: pendaftaranCek.id_siswa },
+        data: {
+          ...(nama_siswa && { nama_siswa }),
+          ...(kelas && { kelas }),
+          ...(jenis_kelamin && { jenis_kelamin }),
+        },
+      });
+    }
+
+    // Ambil data terbaru lengkap dengan relasinya untuk dikembalikan ke frontend
+    const finalResult = await prisma.pendaftaran.findUnique({
       where: { id_pendaftaran: Number(id) },
-      data: {
-        id_eskul: id_eskul ? Number(id_eskul) : pendaftaranCek.id_eskul,
-      },
       include: {
         siswa: true,
         ekstrakurikuler: true,
@@ -118,8 +135,8 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Berhasil memperbarui pilihan ekstrakurikuler',
-      data: pendaftaranUpdated,
+      message: 'Berhasil memperbarui pendaftaran',
+      data: finalResult,
     });
   } catch (error) {
     res.status(500).json({
@@ -135,7 +152,6 @@ router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Cek apakah data pendaftaran ada
     const pendaftaranCek = await prisma.pendaftaran.findUnique({
       where: { id_pendaftaran: Number(id) },
     });
@@ -147,7 +163,6 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Hapus data pendaftaran berdasarkan id_pendaftaran
     await prisma.pendaftaran.delete({
       where: { id_pendaftaran: Number(id) },
     });
