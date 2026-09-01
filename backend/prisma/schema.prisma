@@ -17,11 +17,11 @@ model User {
 
 model Siswa {
   id_siswa      Int           @id @default(autoincrement())
-  id_user       Int           @unique 
+  id_user       Int?          @unique
   nama_siswa    String
   kelas         String
   jenis_kelamin String
-  user          User          @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+  user          User?         @relation(fields: [id_user], references: [id_user], onDelete: Cascade)  // <-- Relasi user juga dibuat opsional
   pendaftaran   Pendaftaran[]  
 }
 
