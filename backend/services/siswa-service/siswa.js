@@ -4,7 +4,6 @@ import { verifyToken } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// GET: Mengambil semua data siswa
 router.get('/', verifyToken, async (req, res) => {
   try {
     const listSiswa = await prisma.siswa.findMany({
@@ -26,12 +25,9 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-// POST: Menambahkan profil siswa (disesuaikan dengan kolom pgAdmin)
 router.post('/', verifyToken, async (req, res) => {
   try {
     const { nama_siswa, kelas, jenis_kelamin } = req.body;
-    
-    // Mengambil ID user dari token secara fleksibel (mencegah undefined)
     const userId = req.user.id_user || req.user.id; 
 
     if (!userId) {
@@ -41,7 +37,6 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Validasi sederhana sesuai kolom yang ada
     if (!nama_siswa || !kelas) {
       return res.status(400).json({
         success: false,
@@ -49,13 +44,12 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Simpan ke database
     const siswaBaru = await prisma.siswa.create({
       data: {
         nama_siswa,
         kelas,
         jenis_kelamin,
-        id_user: userId, // Menghubungkan ke user yang sedang login
+        id_user: userId,
       },
     });
 
@@ -73,13 +67,11 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-// PUT: Mengupdate data siswa berdasarkan id_siswa
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { nama_siswa, kelas, jenis_kelamin } = req.body;
 
-    // Cek apakah data siswa ada di database
     const siswaCek = await prisma.siswa.findUnique({
       where: { id_siswa: Number(id) },
     });
@@ -91,7 +83,6 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Update data di database (menggunakan !== undefined agar aman jika dikirim string kosong)
     const siswaUpdated = await prisma.siswa.update({
       where: { id_siswa: Number(id) },
       data: {
@@ -115,12 +106,9 @@ router.put('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// DELETE: Menghapus data siswa berdasarkan id_siswa
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Cek apakah data siswa ada di database
     const siswaCek = await prisma.siswa.findUnique({
       where: { id_siswa: Number(id) },
     });
@@ -132,7 +120,6 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Hapus data dari database
     await prisma.siswa.delete({
       where: { id_siswa: Number(id) },
     });
