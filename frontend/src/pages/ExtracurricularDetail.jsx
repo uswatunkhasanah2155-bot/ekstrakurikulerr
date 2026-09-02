@@ -60,6 +60,10 @@ export default function ExtracurricularDetail() {
     fetchData();
   }, [namaEskul, cleanNamaEskul]);
 
+<<<<<<< HEAD
+=======
+  // Berpindah halaman ke form pendaftaran sesuai App.jsx
+>>>>>>> c45860a733f97f25d1085e40d9f3b326925d4f4d
   const handleDaftarSiswa = () => {
     navigate(`/eskul/${namaEskul}/daftar`);
   };
