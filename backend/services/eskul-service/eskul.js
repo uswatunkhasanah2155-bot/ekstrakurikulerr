@@ -5,7 +5,7 @@ import { handleDownloadExcel } from './DownloadExcel.js';
 
 const router = express.Router();
 
-// GET: Mengambil semua data ekstrakurikuler
+// GET: Mengambil semua data ekstrakurikuler (Bebas diakses publik oleh siswa/admin)
 router.get('/', async (req, res) => {
   try {
     const eskul = await prisma.ekstrakurikuler.findMany();
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 // ROUTE: Download Excel Rekap Peserta Ekstrakurikuler (Harus diletakkan SEBELUM route /:id)
 router.get('/:id/download', handleDownloadExcel);
 
-// POST: Menambahkan data ekstrakurikuler baru (Dilindungi token)
+// POST: Menambahkan data ekstrakurikuler baru dengan slug otomatis (Dilindungi token)
 router.post('/', verifyToken, async (req, res) => {
   try {
     const { nama_eskul, deskripsi, pembina, jadwal } = req.body;
@@ -35,9 +35,13 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nama ekstrakurikuler wajib diisi' });
     }
 
+    // Membuat slug otomatis agar cocok dengan frontend (cth: "Marching Band" -> "marching-band")
+    const slug = nama_eskul.trim().toLowerCase().replace(/[\s%20]+/g, '-');
+
     const eskulBaru = await prisma.ekstrakurikuler.create({
       data: {
         nama_eskul,
+        slug,
         deskripsi,
         pembina,
         jadwal,
@@ -58,16 +62,19 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-// PUT: Mengubah/Update data ekstrakurikuler berdasarkan ID (Dilindungi token)
+// PUT: Mengubah/Update data ekstrakurikuler dan slug berdasarkan ID (Dilindungi token)
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { nama_eskul, deskripsi, pembina, jadwal } = req.body;
 
+    const slug = nama_eskul ? nama_eskul.trim().toLowerCase().replace(/[\s%20]+/g, '-') : undefined;
+
     const eskulUpdate = await prisma.ekstrakurikuler.update({
       where: { id_eskul: Number(id) },
       data: {
         nama_eskul,
+        ...(slug && { slug }),
         deskripsi,
         pembina,
         jadwal,

@@ -7,7 +7,7 @@ import { tambahPendaftar, getDaftarEskul } from '../services/api';
 export default function RegistrationForm() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
-  const formatNamaEskul = namaEskul ? namaEskul.charAt(0).toUpperCase() + namaEskul.slice(1) : "Ekstrakurikuler";
+  const formatNamaEskul = namaEskul ? namaEskul.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Ekstrakurikuler";
 
   const [formData, setFormData] = useState({
     namaLengkap: '',
@@ -31,10 +31,13 @@ export default function RegistrationForm() {
     setLoading(true);
 
     try {
-      // 1. Ambil data master eskul untuk mencari id_eskul berdasarkan nama di URL
       const daftarEskul = await getDaftarEskul();
+      
+      // Membersihkan spasi maupun format encoded %20 dari URL parameter secara total
+      const slugFormatted = namaEskul ? namaEskul.trim().toLowerCase().replace(/[\s%20]+/g, '-') : '';
+      
       const eskulDitemukan = daftarEskul.find(
-        item => item.nama_eskul.toLowerCase() === namaEskul.toLowerCase()
+        item => item.slug && item.slug.trim().toLowerCase() === slugFormatted
       );
 
       if (!eskulDitemukan) {
@@ -43,7 +46,6 @@ export default function RegistrationForm() {
         return;
       }
 
-      // 2. Kirim data lengkap ke backend melalui fungsi api
       const result = await tambahPendaftar({
         id_eskul: eskulDitemukan.id_eskul,
         nama: formData.namaLengkap,
@@ -53,7 +55,7 @@ export default function RegistrationForm() {
 
       if (result.success) {
         alert(`Pendaftaran untuk ${formatNamaEskul} berhasil dikirim!`);
-        navigate(`/eskul/${namaEskul}`);
+        navigate(`/eskul/${slugFormatted}`);
       } else {
         alert('Gagal mendaftar: ' + result.error);
       }
