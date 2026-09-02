@@ -1,12 +1,19 @@
+// src/pages/ExtracurricularDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { getSiswaByEskul, tambahPendaftar, getDaftarEskul, hapusPendaftar, updatePendaftar } from '../services/api';
+import { getSiswaByEskul, getDaftarEskul, hapusPendaftar, updatePendaftar, tambahPendaftar } from '../services/api';
 
 export default function ExtracurricularDetail() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
-  const formatNamaEskul = namaEskul ? namaEskul.charAt(0).toUpperCase() + namaEskul.slice(1) : "Ekstrakurikuler";
+
+  // Ubah slug URL (misal: "seni-tari") menjadi teks normal ("seni tari") lalu kapitalisasi tiap kata
+  const cleanNamaEskul = namaEskul ? namaEskul.replace(/-/g, ' ') : '';
+  const formatNamaEskul = cleanNamaEskul
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 
   const [isAdmin, setIsAdmin] = useState(false); 
   const [siswaTerdaftar, setSiswaTerdaftar] = useState([]);
@@ -41,38 +48,20 @@ export default function ExtracurricularDetail() {
 
     async function fetchData() {
       setLoading(true);
-      const siswaData = await getSiswaByEskul(namaEskul);
-      setSiswaTerdaftar(siswaData);
+      // Kirim nama bersih (tanpa strip) ke API pemanggil data siswa
+      const siswaData = await getSiswaByEskul(cleanNamaEskul);
+      setSiswaTerdaftar(siswaData || []);
 
       const eskulData = await getDaftarEskul();
-      setDaftarEskulOptions(eskulData);
+      setDaftarEskulOptions(eskulData || []);
 
       setLoading(false);
     }
     fetchData();
-  }, [namaEskul]);
+  }, [namaEskul, cleanNamaEskul]);
 
-  const handleDaftarSiswa = async () => {
-    // Alur Siswa mendaftar mandiri menggunakan akunnya sendiri
-    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase() === namaEskul.toLowerCase());
-    if (!currentEskul) {
-      alert("Ekstrakurikuler tidak ditemukan.");
-      return;
-    }
-
-    if (window.confirm(`Yakin ingin mendaftar ke ekstrakurikuler ${formatNamaEskul}?`)) {
-      const result = await tambahPendaftar({
-        id_eskul: currentEskul.id_eskul
-      });
-
-      if (result.success) {
-        alert("Berhasil mendaftar ekstrakurikuler!");
-        const updatedData = await getSiswaByEskul(namaEskul);
-        setSiswaTerdaftar(updatedData);
-      } else {
-        alert("Gagal mendaftar: " + result.error);
-      }
-    }
+  const handleDaftarSiswa = () => {
+    navigate(`/eskul/${namaEskul}/daftar`);
   };
 
   const handleDownloadExcel = () => {
@@ -84,8 +73,8 @@ export default function ExtracurricularDetail() {
       const result = await hapusPendaftar(id);
       if (result.success) {
         alert("Berhasil menghapus data siswa dari eskul!");
-        const updatedData = await getSiswaByEskul(namaEskul);
-        setSiswaTerdaftar(updatedData);
+        const updatedData = await getSiswaByEskul(cleanNamaEskul);
+        setSiswaTerdaftar(updatedData || []);
       } else {
         alert("Gagal menghapus data: " + result.error);
       }
@@ -96,7 +85,7 @@ export default function ExtracurricularDetail() {
     setIsEditMode(true);
     setCurrentIdPendaftaran(siswa.id);
     
-    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase() === namaEskul.toLowerCase());
+    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
 
     setFormData({
       nama: siswa.nama,
@@ -111,7 +100,7 @@ export default function ExtracurricularDetail() {
     setIsEditMode(false);
     setCurrentIdPendaftaran(null);
 
-    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase() === namaEskul.toLowerCase());
+    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
 
     setFormData({ 
       nama: '', 
@@ -125,7 +114,7 @@ export default function ExtracurricularDetail() {
   const handleSimpanSiswa = async (e) => {
     e.preventDefault();
 
-    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase() === namaEskul.toLowerCase());
+    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
     const id_eskul_sekarang = currentEskul ? currentEskul.id_eskul : formData.id_eskul;
 
     if (isEditMode) {
@@ -136,7 +125,7 @@ export default function ExtracurricularDetail() {
         id_eskul_sekarang, 
         siswaDipilih?.id_siswa, 
         { 
-          nama_siswa: formData.nama,
+          nama: formData.nama,
           kelas: formData.kelas,
           jenis_kelamin: formData.jenisKelamin === 'Perempuan' ? 'P' : 'L'
         }
@@ -144,25 +133,23 @@ export default function ExtracurricularDetail() {
 
       if (result.success) {
         alert("Berhasil memperbarui data siswa!");
-        const updatedData = await getSiswaByEskul(namaEskul);
-        setSiswaTerdaftar(updatedData);
+        const updatedData = await getSiswaByEskul(cleanNamaEskul);
+        setSiswaTerdaftar(updatedData || []);
         setIsModalOpen(false);
       } else {
         alert("Gagal memperbarui data: " + result.error);
       }
     } else {
       const dataKirim = {
-        id_eskul: id_eskul_sekarang,
-        nama_siswa: formData.nama,
-        kelas: formData.kelas,
-        jenis_kelamin: formData.jenisKelamin === 'Perempuan' ? 'P' : 'L'
+        ...formData,
+        id_eskul: id_eskul_sekarang
       };
 
       const result = await tambahPendaftar(dataKirim);
       if (result.success) {
         alert("Berhasil mendaftarkan siswa ke eskul!");
-        const updatedData = await getSiswaByEskul(namaEskul);
-        setSiswaTerdaftar(updatedData);
+        const updatedData = await getSiswaByEskul(cleanNamaEskul);
+        setSiswaTerdaftar(updatedData || []);
         setIsModalOpen(false);
       } else {
         alert("Gagal menyimpan data ke backend: " + result.error);

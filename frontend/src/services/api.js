@@ -48,15 +48,15 @@ export async function getSiswaByEskul(namaEskul) {
     
     const semuaPendaftar = result.data || [];
     const filtered = semuaPendaftar.filter(
-      (item) => item.ekstrakurikuler?.nama_eskul?.toLowerCase() === namaEskul.toLowerCase()
+      (item) => item.ekstrakurikuler?.nama_eskul.toLowerCase() === namaEskul.toLowerCase()
     );
     
     const mappedData = filtered.map(item => ({
-      id: item.id_pendaftaran || item.id,
-      id_siswa: item.id_siswa || item.siswa?.id_siswa,
-      nama: item.siswa?.nama_siswa || item.nama_siswa || item.nama || 'Tanpa Nama',
-      kelas: item.siswa?.kelas || item.kelas || 'Belum diisi',
-      jenisKelamin: item.siswa?.jenis_kelamin || item.jenis_kelamin || 'L',
+      id: item.id_pendaftaran,
+      id_siswa: item.siswa?.id_siswa,
+      nama: item.siswa?.nama_siswa || 'Tanpa Nama',
+      kelas: item.siswa?.kelas || 'Belum diisi',
+      jenisKelamin: item.siswa?.jenis_kelamin || 'L',
       tanggal: new Date(item.createdAt || Date.now()).toLocaleDateString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric'
       })

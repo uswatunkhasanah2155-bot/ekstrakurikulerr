@@ -42,25 +42,23 @@ router.post('/', verifyToken, async (req, res) => {
     if (id_siswa_input) {
       targetIdSiswa = Number(id_siswa_input);
     } else if (!isAdmin) {
-      // Alur Siswa: Cari profil siswa berdasarkan id_user yang sedang login
-      let siswaEksis = await prisma.siswa.findUnique({
-        where: { id_user: userId },
-      });
-
-      if (siswaEksis) {
-        targetIdSiswa = siswaEksis.id_siswa;
-      } else {
-        // Jika siswa belum memiliki profil, buatkan otomatis
-        const siswaBaru = await prisma.siswa.create({
-          data: {
-            nama_siswa: nama_siswa || req.user.username || 'Siswa',
-            kelas: kelas || 'Belum diisi',
-            jenis_kelamin: jenis_kelamin || 'L',
-            id_user: userId,
-          },
+      // Alur Siswa: Bebas mendaftarkan nama siswa secara independen tanpa menimpa akun login
+      if (!nama_siswa || !kelas) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nama siswa dan kelas wajib diisi!',
         });
-        targetIdSiswa = siswaBaru.id_siswa;
       }
+
+      const siswaBaru = await prisma.siswa.create({
+        data: {
+          nama_siswa: nama_siswa.trim(),
+          kelas: kelas,
+          jenis_kelamin: jenis_kelamin || 'L',
+          id_user: null, // Independen agar tidak menimpa profil akun user lain/dirinya sendiri
+        },
+      });
+      targetIdSiswa = siswaBaru.id_siswa;
     }
 
     // Alur Admin: Menambahkan siswa manual tanpa harus memiliki akun/user khusus
@@ -83,7 +81,7 @@ router.post('/', verifyToken, async (req, res) => {
       if (siswaAdmin) {
         targetIdSiswa = siswaAdmin.id_siswa;
       } else {
-        // Buat record siswa baru yang independen dengan id_user explicit null agar tidak error validasi Prisma
+        // Buat record siswa baru yang independen dengan id_user explicit null
         const siswaBaru = await prisma.siswa.create({
           data: {
             nama_siswa: nama_siswa.trim(),
