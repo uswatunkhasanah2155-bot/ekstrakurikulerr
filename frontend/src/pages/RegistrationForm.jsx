@@ -16,6 +16,12 @@ export default function RegistrationForm() {
   });
   const [loading, setLoading] = useState(false);
 
+  const daftarKelas = [
+    "X RPL1", "X RPL2", "X TSM1", "X TSM2", "X ATPH",
+    "XI RPL1", "XI RPL2", "XI TSM1", "XI TSM2", "XI ATPH",
+    "XII RPL1", "XII RPL2", "XII TSM1", "XII TSM2", "XII ATPH"
+  ];
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -83,15 +89,18 @@ export default function RegistrationForm() {
 
             <div>
               <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Kelas</label>
-              <input 
-                type="text" 
+              <select 
                 name="kelas"
                 value={formData.kelas}
                 onChange={handleChange}
                 required
-                placeholder="Contoh: XI IPA 1"
-                className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
+                className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+              >
+                <option value="" disabled>Pilih Kelas</option>
+                {daftarKelas.map((kls, i) => (
+                  <option key={i} value={kls}>{kls}</option>
+                ))}
+              </select>
             </div>
 
             <div>
