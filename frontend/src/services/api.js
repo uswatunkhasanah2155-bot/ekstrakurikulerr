@@ -1,5 +1,3 @@
-// frontend/src/services/api.js
-
 const API_URL = 'http://localhost:5000';
 
 export async function getDaftarEskul() {
@@ -99,12 +97,12 @@ export async function tambahPendaftar(dataSiswa) {
       }),
     });
 
+    const result = await response.json();
+
     if (!response.ok) {
-      const errorResult = await response.json();
-      throw new Error(errorResult.message || 'Gagal menyimpan data pendaftar baru');
+      throw new Error(result.message || 'Gagal menyimpan data pendaftar baru');
     }
 
-    const result = await response.json();
     return { success: true, data: result };
   } catch (error) {
     console.error("Error adding pendaftar:", error);
@@ -145,13 +143,17 @@ export async function updatePendaftar(idPendaftaran, idPilihanEskul, idSiswa, da
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        id_eskul: Number(idPilihanEskul)
+        id_eskul: Number(idPilihanEskul),
+        ...(dataUpdate?.nama && { nama_siswa: dataUpdate.nama }),
+        ...(dataUpdate?.kelas && { kelas: dataUpdate.kelas }),
+        ...(dataUpdate?.jenis_kelamin && { jenis_kelamin: dataUpdate.jenis_kelamin })
       })
     });
 
+    const result = await response.json();
+
     if (!response.ok) {
-      const errorResult = await response.json();
-      throw new Error(errorResult.message || 'Gagal mengupdate pilihan eskul');
+      throw new Error(result.message || 'Gagal mengupdate pendaftaran');
     }
 
     if (idSiswa && dataUpdate) {
@@ -177,7 +179,6 @@ export async function updatePendaftar(idPendaftaran, idPilihanEskul, idSiswa, da
       }
     }
 
-    const result = await response.json();
     return { success: true, data: result };
   } catch (error) {
     console.error("Error updating pendaftar:", error);

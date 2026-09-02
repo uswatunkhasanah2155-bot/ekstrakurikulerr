@@ -4,7 +4,7 @@ import { verifyToken } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// GET: Melihat semua data pendaftaran (Admin bisa lihat semua)
+// GET: Mengambil semua data pendaftaran
 router.get('/', verifyToken, async (req, res) => {
   try {
     const listPendaftaran = await prisma.pendaftaran.findMany({
@@ -19,6 +19,7 @@ router.get('/', verifyToken, async (req, res) => {
       data: listPendaftaran,
     });
   } catch (error) {
+    console.error("ERROR DETAIL GET PENDAFTARAN:", error);
     res.status(500).json({ success: false, message: 'Gagal mengambil data', error: error.message });
   }
 });
@@ -29,38 +30,67 @@ router.post('/', verifyToken, async (req, res) => {
     const { id_eskul, id_siswa_input, nama_siswa, kelas, jenis_kelamin } = req.body;
     let targetIdSiswa;
 
+    const userId = req.user.id_user || req.user.id;  
+    const userRole = (req.user.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin';
+
+    // Validasi data eskul wajib ada
+    if (!id_eskul) {
+      return res.status(400).json({ success: false, message: 'ID Ekstrakurikuler wajib diisi!' });
+    }
+
     if (id_siswa_input) {
       targetIdSiswa = Number(id_siswa_input);
-    } else {
-      const userId = req.user.id_user || req.user.id;  
-      const isAdmin = req.user.role === 'admin';
+    } else if (!isAdmin) {
+      // Alur Siswa: Cari profil siswa berdasarkan id_user yang sedang login
+      let siswaEksis = await prisma.siswa.findUnique({
+        where: { id_user: userId },
+      });
 
-      if (!isAdmin) {
-        // Jika yang login adalah Siswa, cek apakah profil siswa sudah ada berdasarkan id_user
-        let siswaEksis = await prisma.siswa.findUnique({
-          where: { id_user: userId },
+      if (siswaEksis) {
+        targetIdSiswa = siswaEksis.id_siswa;
+      } else {
+        // Jika siswa belum memiliki profil, buatkan otomatis
+        const siswaBaru = await prisma.siswa.create({
+          data: {
+            nama_siswa: nama_siswa || req.user.username || 'Siswa',
+            kelas: kelas || 'Belum diisi',
+            jenis_kelamin: jenis_kelamin || 'L',
+            id_user: userId,
+          },
         });
+        targetIdSiswa = siswaBaru.id_siswa;
+      }
+    }
 
-        if (siswaEksis) {
-          targetIdSiswa = siswaEksis.id_siswa;
-        }
+    // Alur Admin: Menambahkan siswa manual tanpa harus memiliki akun/user khusus
+    if (isAdmin) {
+      if (!nama_siswa || !kelas) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nama siswa dan kelas wajib diisi oleh admin!',
+        });
       }
 
-      // Jika belum ada (atau jika Admin yang menginput data baru), buat baris siswa baru
-      if (!targetIdSiswa) {
-        const dataSiswaBaru = {
-          nama_siswa: nama_siswa || 'Tanpa Nama',
-          kelas: kelas || 'Belum diisi',
-          jenis_kelamin: jenis_kelamin || 'L',
-        };
+      // Cek apakah data siswa manual dengan nama & kelas ini sudah pernah dibuat sebelumnya
+      let siswaAdmin = await prisma.siswa.findFirst({
+        where: {
+          nama_siswa: nama_siswa.trim(),
+          kelas: kelas,
+        },
+      });
 
-        // Hanya masukkan id_user jika yang login bukan admin (atau jika kolom mengizinkannya)
-        if (!isAdmin) {
-          dataSiswaBaru.id_user = userId;
-        }
-
+      if (siswaAdmin) {
+        targetIdSiswa = siswaAdmin.id_siswa;
+      } else {
+        // Buat record siswa baru yang independen dengan id_user explicit null agar tidak error validasi Prisma
         const siswaBaru = await prisma.siswa.create({
-          data: dataSiswaBaru,
+          data: {
+            nama_siswa: nama_siswa.trim(),
+            kelas: kelas,
+            jenis_kelamin: jenis_kelamin || 'L',
+            id_user: null, 
+          },
         });
         targetIdSiswa = siswaBaru.id_siswa;
       }
@@ -69,7 +99,7 @@ router.post('/', verifyToken, async (req, res) => {
     // Cek apakah siswa sudah terdaftar pada ekstrakurikuler yang sama
     const existingRegistration = await prisma.pendaftaran.findFirst({
       where: {
-        id_siswa: targetIdSiswa,
+        id_siswa: Number(targetIdSiswa),
         id_eskul: Number(id_eskul),
       },
     });
@@ -81,10 +111,10 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Daftarkan siswa ke eskul
+    // Eksekusi simpan ke tabel pendaftaran
     const pendaftaranBaru = await prisma.pendaftaran.create({
       data: {
-        id_siswa: targetIdSiswa,
+        id_siswa: Number(targetIdSiswa),
         id_eskul: Number(id_eskul),
       },
       include: {
@@ -104,7 +134,7 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-// PUT: Mengubah/memperbarui pilihan eskul (dan opsional data siswa) pada pendaftaran
+// PUT: Memperbarui data pendaftaran & profil siswa
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -122,13 +152,10 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    let updatedPendaftaran = pendaftaranCek;
     if (id_eskul) {
-      updatedPendaftaran = await prisma.pendaftaran.update({
+      await prisma.pendaftaran.update({
         where: { id_pendaftaran: Number(id) },
-        data: {
-          id_eskul: Number(id_eskul),
-        },
+        data: { id_eskul: Number(id_eskul) },
       });
     }
 
@@ -136,7 +163,7 @@ router.put('/:id', verifyToken, async (req, res) => {
       await prisma.siswa.update({
         where: { id_siswa: pendaftaranCek.id_siswa },
         data: {
-          ...(nama_siswa && { nama_siswa }),
+          ...(nama_siswa && { nama_siswa: nama_siswa.trim() }),
           ...(kelas && { kelas }),
           ...(jenis_kelamin && { jenis_kelamin }),
         },
@@ -166,7 +193,7 @@ router.put('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// DELETE: Membatalkan/menghapus pendaftaran berdasarkan id_pendaftaran
+// DELETE: Membatalkan/menghapus pendaftaran
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;

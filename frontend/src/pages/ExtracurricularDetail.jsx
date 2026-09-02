@@ -1,4 +1,3 @@
-// src/pages/ExtracurricularDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -53,8 +52,27 @@ export default function ExtracurricularDetail() {
     fetchData();
   }, [namaEskul]);
 
-  const handleDaftarSiswa = () => {
-    navigate(`/eskul/${namaEskul}/daftar`);
+  const handleDaftarSiswa = async () => {
+    // Alur Siswa mendaftar mandiri menggunakan akunnya sendiri
+    const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase() === namaEskul.toLowerCase());
+    if (!currentEskul) {
+      alert("Ekstrakurikuler tidak ditemukan.");
+      return;
+    }
+
+    if (window.confirm(`Yakin ingin mendaftar ke ekstrakurikuler ${formatNamaEskul}?`)) {
+      const result = await tambahPendaftar({
+        id_eskul: currentEskul.id_eskul
+      });
+
+      if (result.success) {
+        alert("Berhasil mendaftar ekstrakurikuler!");
+        const updatedData = await getSiswaByEskul(namaEskul);
+        setSiswaTerdaftar(updatedData);
+      } else {
+        alert("Gagal mendaftar: " + result.error);
+      }
+    }
   };
 
   const handleDownloadExcel = () => {
