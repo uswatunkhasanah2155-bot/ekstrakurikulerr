@@ -1,10 +1,21 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import { handleDownloadExcel } from './DownloadExcel.js';
 import upload from '../../middleware/upload.js'; // Middleware multer untuk upload file
 
 const router = express.Router();
+
+// Helper: hapus file foto dari disk berdasarkan path relatif (misal /uploads/nama.jpeg)
+function hapusFileFoto(fotoPath) {
+  if (!fotoPath) return;
+  const fullPath = path.join(process.cwd(), fotoPath);
+  fs.unlink(fullPath, (err) => {
+    if (err) console.error("Gagal menghapus file foto:", err.message);
+  });
+}
 
 // GET: Mengambil semua data ekstrakurikuler
 router.get('/', async (req, res) => {
@@ -115,8 +126,16 @@ router.put('/:id', verifyToken, upload.single('foto'), async (req, res) => {
       ...(jadwal !== undefined && { jadwal }),
     };
 
-    // Jika user mengupload file foto baru saat update
+    // Jika user mengupload file foto baru saat update, hapus foto lama dari disk agar tidak numpuk
     if (req.file) {
+      const eskulLama = await prisma.ekstrakurikuler.findUnique({
+        where: { id_eskul: idEskul },
+      });
+
+      if (eskulLama?.foto) {
+        hapusFileFoto(eskulLama.foto);
+      }
+
       updateData.foto = `/uploads/${req.file.filename}`;
     }
 
@@ -150,9 +169,19 @@ router.delete('/:id', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'ID ekstrakurikuler tidak valid' });
     }
 
+    // Ambil data dulu untuk tahu path foto sebelum record-nya dihapus
+    const eskulCek = await prisma.ekstrakurikuler.findUnique({
+      where: { id_eskul: idEskul },
+    });
+
     await prisma.ekstrakurikuler.delete({
       where: { id_eskul: idEskul },
     });
+
+    // Hapus juga file foto dari disk kalau ada
+    if (eskulCek?.foto) {
+      hapusFileFoto(eskulCek.foto);
+    }
 
     res.json({
       success: true,
