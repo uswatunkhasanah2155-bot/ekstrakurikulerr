@@ -33,12 +33,13 @@ export default function RegistrationForm() {
     try {
       const daftarEskul = await getDaftarEskul();
       
-      // Membersihkan spasi maupun format encoded %20 dari URL parameter secara total
       const slugFormatted = namaEskul ? namaEskul.trim().toLowerCase().replace(/[\s%20]+/g, '-') : '';
       
-      const eskulDitemukan = daftarEskul.find(
-        item => item.slug && item.slug.trim().toLowerCase() === slugFormatted
-      );
+      const eskulDitemukan = daftarEskul.find(item => {
+        if (!item.nama_eskul) return false;
+        const dbEskulSlug = item.nama_eskul.trim().toLowerCase().replace(/[\s%20]+/g, '-');
+        return dbEskulSlug === slugFormatted;
+      });
 
       if (!eskulDitemukan) {
         alert('Ekstrakurikuler tidak ditemukan di database!');
@@ -46,8 +47,13 @@ export default function RegistrationForm() {
         return;
       }
 
+      // Mengambil id_user dari localStorage dan mengubahnya menjadi Number agar tidak NULL di database
+      const rawIdUser = localStorage.getItem('id_user') || localStorage.getItem('userId');
+      const userIdLogin = rawIdUser ? Number(rawIdUser) : null;
+
       const result = await tambahPendaftar({
         id_eskul: eskulDitemukan.id_eskul,
+        id_user: userIdLogin, 
         nama: formData.namaLengkap,
         kelas: formData.kelas,
         jenisKelamin: formData.jenisKelamin

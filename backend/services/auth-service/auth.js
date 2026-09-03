@@ -69,6 +69,7 @@ router.post('/login', async (req, res) => {
       success: true,
       message: 'Login berhasil',
       role: user.role,
+      id_user: user.id_user, // <--- Ini ditambahkan agar id_user ikut terkirim ke frontend
       token,
     });
   } catch (error) {

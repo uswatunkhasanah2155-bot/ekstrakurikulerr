@@ -42,7 +42,7 @@ router.post('/', verifyToken, async (req, res) => {
     if (id_siswa_input) {
       targetIdSiswa = Number(id_siswa_input);
     } else if (!isAdmin) {
-      // Alur Siswa: Bebas mendaftarkan nama siswa secara independen tanpa menimpa akun login
+      // Alur Siswa: Mendaftarkan diri sendiri, id_user diisi dengan ID akun yang login
       if (!nama_siswa || !kelas) {
         return res.status(400).json({
           success: false,
@@ -55,7 +55,7 @@ router.post('/', verifyToken, async (req, res) => {
           nama_siswa: nama_siswa.trim(),
           kelas: kelas,
           jenis_kelamin: jenis_kelamin || 'L',
-          id_user: null, // Independen agar tidak menimpa profil akun user lain/dirinya sendiri
+          id_user: Number(userId), // <--- Diubah agar id_user terisi otomatis dari akun siswa yang sedang login
         },
       });
       targetIdSiswa = siswaBaru.id_siswa;
@@ -81,13 +81,13 @@ router.post('/', verifyToken, async (req, res) => {
       if (siswaAdmin) {
         targetIdSiswa = siswaAdmin.id_siswa;
       } else {
-        // Buat record siswa baru yang independen dengan id_user explicit null
+        // Buat record siswa baru yang independen dengan id_user explicit null khusus admin
         const siswaBaru = await prisma.siswa.create({
           data: {
             nama_siswa: nama_siswa.trim(),
             kelas: kelas,
             jenis_kelamin: jenis_kelamin || 'L',
-            id_user: null, 
+            id_user: null, // <--- Tetap null karena diinput manual oleh admin
           },
         });
         targetIdSiswa = siswaBaru.id_siswa;

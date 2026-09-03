@@ -8,7 +8,6 @@ export default function ExtracurricularDetail() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
 
-  // Ubah slug URL (misal: "seni-tari") menjadi teks normal ("seni tari") lalu kapitalisasi tiap kata
   const cleanNamaEskul = namaEskul ? namaEskul.replace(/-/g, ' ') : '';
   const formatNamaEskul = cleanNamaEskul
     .split(' ')
@@ -28,7 +27,8 @@ export default function ExtracurricularDetail() {
     nama: '', 
     kelas: '', 
     jenisKelamin: '',
-    id_eskul: '' 
+    id_eskul: '',
+    id_user: null
   });
 
   const daftarKelas = [
@@ -48,7 +48,6 @@ export default function ExtracurricularDetail() {
 
     async function fetchData() {
       setLoading(true);
-      // Kirim nama bersih (tanpa strip) ke API pemanggil data siswa
       const siswaData = await getSiswaByEskul(cleanNamaEskul);
       setSiswaTerdaftar(siswaData || []);
 
@@ -86,12 +85,14 @@ export default function ExtracurricularDetail() {
     setCurrentIdPendaftaran(siswa.id);
     
     const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
+    const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
 
     setFormData({
       nama: siswa.nama,
       kelas: siswa.kelas,
       jenisKelamin: siswa.jenisKelamin === 'P' ? 'Perempuan' : 'Laki-laki',
-      id_eskul: currentEskul ? currentEskul.id_eskul : ''
+      id_eskul: currentEskul ? currentEskul.id_eskul : '',
+      id_user: userIdLogin ? Number(userIdLogin) : null
     });
     setIsModalOpen(true);
   };
@@ -101,12 +102,14 @@ export default function ExtracurricularDetail() {
     setCurrentIdPendaftaran(null);
 
     const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
+    const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
 
     setFormData({ 
       nama: '', 
       kelas: '', 
       jenisKelamin: '', 
-      id_eskul: currentEskul ? currentEskul.id_eskul : '' 
+      id_eskul: currentEskul ? currentEskul.id_eskul : '',
+      id_user: userIdLogin ? Number(userIdLogin) : null
     });
     setIsModalOpen(true);
   };
@@ -140,9 +143,12 @@ export default function ExtracurricularDetail() {
         alert("Gagal memperbarui data: " + result.error);
       }
     } else {
+      const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
+
       const dataKirim = {
         ...formData,
-        id_eskul: id_eskul_sekarang
+        id_eskul: id_eskul_sekarang,
+        id_user: formData.id_user || (userIdLogin ? Number(userIdLogin) : null)
       };
 
       const result = await tambahPendaftar(dataKirim);

@@ -91,6 +91,7 @@ export async function tambahPendaftar(dataSiswa) {
       },
       body: JSON.stringify({
         id_eskul: Number(dataSiswa.id_eskul),
+        id_user: dataSiswa.id_user ? Number(dataSiswa.id_user) : null, // <--- TAMBAHKAN INI AGAR ID_USER TERKIRIM
         nama_siswa: dataSiswa.nama,
         kelas: dataSiswa.kelas,
         jenis_kelamin: jenisKelaminDB

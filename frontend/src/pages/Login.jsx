@@ -38,14 +38,16 @@ export default function Login() {
       });
 
       const data = await response.json();
-
+      
       if (!response.ok) {
         throw new Error(data.message || 'Username atau password salah');
       }
 
-      // Simpan token dan role langsung dari response backend dengan bersih
+      // PERBAIKAN: Simpan token, role, dan id_user/id ke localStorage secara bersih
       localStorage.setItem('token', data.token);
-      localStorage.setItem('role', data.role); // Nilainya otomatis 'ADMIN' atau 'SISWA' dari backend
+      localStorage.setItem('role', data.role); 
+      // Sesuaikan 'data.id_user' atau 'data.id' tergantung penamaan dari backend Anda
+      localStorage.setItem('id_user', data.id_user || data.id || data.user_id || data.id_pengguna || ''); 
 
       setSuccessMessage('Login berhasil! Mengalihkan...');
       
