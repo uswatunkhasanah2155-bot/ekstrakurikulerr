@@ -23,6 +23,8 @@ export default function ExtracurricularDetail() {
   const [currentIdPendaftaran, setCurrentIdPendaftaran] = useState(null);
 
   const [daftarEskulOptions, setDaftarEskulOptions] = useState([]);
+  const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
+
   const [formData, setFormData] = useState({ 
     nama: '', 
     kelas: '', 
@@ -52,7 +54,14 @@ export default function ExtracurricularDetail() {
       setSiswaTerdaftar(siswaData || []);
 
       const eskulData = await getDaftarEskul();
-      setDaftarEskulOptions(eskulData || []);
+      const listEskul = eskulData.data || eskulData || [];
+      setDaftarEskulOptions(listEskul);
+
+      // Cari data eskul spesifik yang sesuai dengan URL saat ini
+      const matchedEskul = listEskul.find(
+        (item) => item.nama_eskul && item.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim()
+      );
+      setCurrentEskulDetail(matchedEskul || null);
 
       setLoading(false);
     }
@@ -64,7 +73,8 @@ export default function ExtracurricularDetail() {
   };
 
   const handleDownloadExcel = () => {
-    alert(`Berhasil mengunduh rekapitulasi data ${formatNamaEskul} dalam format Excel!`);
+    // Menyesuaikan pemanggilan endpoint download Excel sesuai backend eskul.js
+    window.open(`http://localhost:5000/api/eskul/slug/${namaEskul}/download`, '_blank');
   };
 
   const handleHapusSiswa = async (id) => {
@@ -183,20 +193,34 @@ export default function ExtracurricularDetail() {
           )}
         </div>
 
+        {/* Informasi Utama Eskul dengan penanganan path foto dari backend */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-1/3 h-48 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 font-medium shrink-0">
-            <span>Foto / Banner {formatNamaEskul}</span>
+          <div className="w-full md:w-1/3 h-48 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center text-gray-400 font-medium shrink-0 border border-gray-100">
+            {currentEskulDetail?.foto ? (
+              <img 
+                src={currentEskulDetail.foto.startsWith('http') ? currentEskulDetail.foto : `http://localhost:5000${currentEskulDetail.foto}`} 
+                alt={formatNamaEskul} 
+                className="w-full h-full object-contain p-2"
+                onError={(e) => { e.target.style.display = 'none'; }} 
+              />
+            ) : (
+              <span>Foto / Banner {formatNamaEskul}</span>
+            )}
           </div>
 
           <div className="flex-1 flex flex-col justify-between">
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-1">Eskul {formatNamaEskul}</h3>
-              <p className="text-xs text-gray-500 mb-3 font-medium">Pembina: Bp. Budi Santoso, M.Pd.</p>
+              <h3 className="text-lg font-bold text-gray-800 mb-1">
+                {currentEskulDetail?.nama_eskul || `Eskul ${formatNamaEskul}`}
+              </h3>
+              <p className="text-xs text-gray-500 mb-3 font-medium">
+                Pembina: {currentEskulDetail?.pembina || 'Belum ditentukan'}
+              </p>
               <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                Program latihan untuk pengembangan skill {formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.
+                {currentEskulDetail?.deskripsi || `Program latihan untuk pengembangan skill ${formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.`}
               </p>
               <div className="text-xs text-gray-700 font-medium bg-gray-50 p-3 rounded-lg border border-gray-100 mb-4">
-                <span className="font-bold">Jadwal:</span> Selasa & Kamis, 15:30 - 17:30 WIB.
+                <span className="font-bold">Jadwal:</span> {currentEskulDetail?.jadwal || 'Belum diatur'}
               </div>
             </div>
 
@@ -219,6 +243,7 @@ export default function ExtracurricularDetail() {
           </div>
         </div>
 
+        {/* Daftar Siswa Terdaftar */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -293,6 +318,7 @@ export default function ExtracurricularDetail() {
 
       </main>
 
+      {/* Modal Tambah / Edit Siswa */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
