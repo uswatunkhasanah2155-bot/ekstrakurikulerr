@@ -109,8 +109,10 @@ router.put('/:id', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
+    const siswaId = Number(id);
+
     const siswaCek = await prisma.siswa.findUnique({
-      where: { id_siswa: Number(id) },
+      where: { id_siswa: siswaId },
     });
 
     if (!siswaCek) {
@@ -120,15 +122,22 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
+    // 1. Hapus semua data pendaftaran yang berelasi dengan id_siswa ini terlebih dahulu
+    await prisma.pendaftaran.deleteMany({
+      where: { id_siswa: siswaId },
+    });
+
+    // 2. Hapus data siswa secara permanen dari database
     await prisma.siswa.delete({
-      where: { id_siswa: Number(id) },
+      where: { id_siswa: siswaId },
     });
 
     res.json({
       success: true,
-      message: 'Berhasil menghapus data siswa',
+      message: 'Berhasil menghapus data siswa beserta seluruh pendaftarannya',
     });
   } catch (error) {
+    console.error("ERROR DETAIL DELETE SISWA:", error);
     res.status(500).json({
       success: false,
       message: 'Gagal menghapus data siswa',

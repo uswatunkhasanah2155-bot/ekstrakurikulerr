@@ -30,11 +30,10 @@ router.post('/', verifyToken, async (req, res) => {
     const { id_eskul, id_siswa_input, nama_siswa, kelas, jenis_kelamin } = req.body;
     let targetIdSiswa;
 
-    const userId = req.user.id_user || req.user.id;  
+    const userId = req.user.id_user || req.user.id;
     const userRole = (req.user.role || '').toLowerCase();
     const isAdmin = userRole === 'admin';
 
-    // Validasi data eskul wajib ada
     if (!id_eskul) {
       return res.status(400).json({ success: false, message: 'ID Ekstrakurikuler wajib diisi!' });
     }
@@ -42,7 +41,6 @@ router.post('/', verifyToken, async (req, res) => {
     if (id_siswa_input) {
       targetIdSiswa = Number(id_siswa_input);
     } else if (!isAdmin) {
-      // Alur Siswa: Mendaftarkan diri sendiri, id_user diisi dengan ID akun yang login
       if (!nama_siswa || !kelas) {
         return res.status(400).json({
           success: false,
@@ -55,13 +53,12 @@ router.post('/', verifyToken, async (req, res) => {
           nama_siswa: nama_siswa.trim(),
           kelas: kelas,
           jenis_kelamin: jenis_kelamin || 'L',
-          id_user: Number(userId), // <--- Diubah agar id_user terisi otomatis dari akun siswa yang sedang login
+          id_user: Number(userId),
         },
       });
       targetIdSiswa = siswaBaru.id_siswa;
     }
 
-    // Alur Admin: Menambahkan siswa manual tanpa harus memiliki akun/user khusus
     if (isAdmin) {
       if (!nama_siswa || !kelas) {
         return res.status(400).json({
@@ -70,7 +67,6 @@ router.post('/', verifyToken, async (req, res) => {
         });
       }
 
-      // Cek apakah data siswa manual dengan nama & kelas ini sudah pernah dibuat sebelumnya
       let siswaAdmin = await prisma.siswa.findFirst({
         where: {
           nama_siswa: nama_siswa.trim(),
@@ -81,20 +77,18 @@ router.post('/', verifyToken, async (req, res) => {
       if (siswaAdmin) {
         targetIdSiswa = siswaAdmin.id_siswa;
       } else {
-        // Buat record siswa baru yang independen dengan id_user explicit null khusus admin
         const siswaBaru = await prisma.siswa.create({
           data: {
             nama_siswa: nama_siswa.trim(),
             kelas: kelas,
             jenis_kelamin: jenis_kelamin || 'L',
-            id_user: null, // <--- Tetap null karena diinput manual oleh admin
+            id_user: null,
           },
         });
         targetIdSiswa = siswaBaru.id_siswa;
       }
     }
 
-    // Cek apakah siswa sudah terdaftar pada ekstrakurikuler yang sama
     const existingRegistration = await prisma.pendaftaran.findFirst({
       where: {
         id_siswa: Number(targetIdSiswa),
@@ -109,7 +103,6 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Eksekusi simpan ke tabel pendaftaran
     const pendaftaranBaru = await prisma.pendaftaran.create({
       data: {
         id_siswa: Number(targetIdSiswa),
@@ -191,7 +184,7 @@ router.put('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// DELETE: Membatalkan/menghapus pendaftaran
+// DELETE: Membatalkan/menghapus pendaftaran (dan siswa jika sudah tidak terdaftar di eskul manapun)
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -207,8 +200,24 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    await prisma.pendaftaran.delete({
-      where: { id_pendaftaran: Number(id) },
+    const idSiswa = pendaftaranCek.id_siswa;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.pendaftaran.delete({
+        where: { id_pendaftaran: Number(id) },
+      });
+
+      if (idSiswa) {
+        const pendaftaranLain = await tx.pendaftaran.count({
+          where: { id_siswa: idSiswa },
+        });
+
+        if (pendaftaranLain === 0) {
+          await tx.siswa.delete({
+            where: { id_siswa: idSiswa },
+          });
+        }
+      }
     });
 
     res.json({
