@@ -57,8 +57,8 @@ export async function getSiswaByEskul(namaEskul) {
       nama: item.siswa?.nama_siswa || 'Tanpa Nama',
       kelas: item.siswa?.kelas || 'Belum diisi',
       jenisKelamin: item.siswa?.jenis_kelamin || 'L',
-      tanggal: new Date(item.createdAt || Date.now()).toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric'
+      tanggal: new Date(item.tanggal || Date.now()).toLocaleDateString('en-GB', {
+       day: '2-digit', month: 'short', year: 'numeric'
       })
     }));
 
@@ -67,6 +67,36 @@ export async function getSiswaByEskul(namaEskul) {
   } catch (error) {
     console.error("Error fetching siswa by eskul:", error);
     return [];
+  }
+}
+
+export async function downloadSemuaPendaftarExcel() {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/pendaftaran/download`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Gagal mendownload data excel');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Rekap-Semua-Pendaftar.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error downloading excel:", error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -91,7 +121,7 @@ export async function tambahPendaftar(dataSiswa) {
       },
       body: JSON.stringify({
         id_eskul: Number(dataSiswa.id_eskul),
-        id_user: dataSiswa.id_user ? Number(dataSiswa.id_user) : null, // <--- TAMBAHKAN INI AGAR ID_USER TERKIRIM
+        id_user: dataSiswa.id_user ? Number(dataSiswa.id_user) : null,
         nama_siswa: dataSiswa.nama,
         kelas: dataSiswa.kelas,
         jenis_kelamin: jenisKelaminDB

@@ -21,6 +21,7 @@ export default function ExtracurricularDetail() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentIdPendaftaran, setCurrentIdPendaftaran] = useState(null);
+  const [currentIdSiswa, setCurrentIdSiswa] = useState(null); // Tambahan untuk menyimpan id_siswa yang spesifik
 
   const [daftarEskulOptions, setDaftarEskulOptions] = useState([]);
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
@@ -57,7 +58,6 @@ export default function ExtracurricularDetail() {
       const listEskul = eskulData.data || eskulData || [];
       setDaftarEskulOptions(listEskul);
 
-      // Cari data eskul spesifik yang sesuai dengan URL saat ini
       const matchedEskul = listEskul.find(
         (item) => item.nama_eskul && item.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim()
       );
@@ -73,7 +73,6 @@ export default function ExtracurricularDetail() {
   };
 
   const handleDownloadExcel = () => {
-    // Menyesuaikan pemanggilan endpoint download Excel sesuai backend eskul.js
     window.open(`http://localhost:5000/api/eskul/slug/${namaEskul}/download`, '_blank');
   };
 
@@ -93,6 +92,7 @@ export default function ExtracurricularDetail() {
   const handleOpenEdit = (siswa) => {
     setIsEditMode(true);
     setCurrentIdPendaftaran(siswa.id);
+    setCurrentIdSiswa(siswa.id_siswa); // Simpan id_siswa secara spesifik dari baris yang diklik
     
     const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
     const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
@@ -110,6 +110,7 @@ export default function ExtracurricularDetail() {
   const handleOpenTambah = () => {
     setIsEditMode(false);
     setCurrentIdPendaftaran(null);
+    setCurrentIdSiswa(null);
 
     const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
     const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
@@ -131,12 +132,11 @@ export default function ExtracurricularDetail() {
     const id_eskul_sekarang = currentEskul ? currentEskul.id_eskul : formData.id_eskul;
 
     if (isEditMode) {
-      const siswaDipilih = siswaTerdaftar.find(s => s.id === currentIdPendaftaran);
-      
+      // Menggunakan currentIdSiswa yang spesifik disimpan saat tombol edit diklik
       const result = await updatePendaftar(
         currentIdPendaftaran, 
         id_eskul_sekarang, 
-        siswaDipilih?.id_siswa, 
+        currentIdSiswa, 
         { 
           nama: formData.nama,
           kelas: formData.kelas,
@@ -193,14 +193,13 @@ export default function ExtracurricularDetail() {
           )}
         </div>
 
-        {/* Informasi Utama Eskul dengan penanganan path foto dari backend */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-1/3 h-48 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center text-gray-400 font-medium shrink-0 border border-gray-100">
+         <div className="w-full md:w-1/3 aspect-square max-w-[220px] max-h-[220px] mx-auto md:mx-0 bg-white rounded-lg overflow-hidden flex items-center justify-center text-gray-400 font-medium shrink-0 border border-gray-100">
             {currentEskulDetail?.foto ? (
               <img 
                 src={currentEskulDetail.foto.startsWith('http') ? currentEskulDetail.foto : `http://localhost:5000${currentEskulDetail.foto}`} 
                 alt={formatNamaEskul} 
-                className="w-full h-full object-contain p-2"
+                className="w-full h-full object-contain"
                 onError={(e) => { e.target.style.display = 'none'; }} 
               />
             ) : (
@@ -243,7 +242,6 @@ export default function ExtracurricularDetail() {
           </div>
         </div>
 
-        {/* Daftar Siswa Terdaftar */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
@@ -318,7 +316,6 @@ export default function ExtracurricularDetail() {
 
       </main>
 
-      {/* Modal Tambah / Edit Siswa */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
@@ -388,7 +385,7 @@ export default function ExtracurricularDetail() {
                   type="submit"
                   className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition"
                 >
-                  {isEditMode ? 'Simpan Perubahan' : 'Simpan ke Database'}
+                  {isEditMode ? 'Simpan Perubahan' : 'Daftarkan Siswa'}
                 </button>
               </div>
             </form>

@@ -1,7 +1,7 @@
 // src/pages/PendaftarEskul.jsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import { getPendaftarEskul } from '../services/api'; // sesuaikan path dengan lokasi file api.js kamu
+import { getPendaftarEskul, downloadSemuaPendaftarExcel } from '../services/api';
 
 export default function PendaftarEskul() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -21,31 +21,49 @@ export default function PendaftarEskul() {
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const result = await getPendaftarEskul();
+      try {
+        const result = await getPendaftarEskul();
 
-      // Mapping response backend -> bentuk yang dipakai tabel
-      const mapped = result.map((item) => ({
-        id: item.id_pendaftaran,
-        nama: item.siswa?.nama_siswa || 'Tanpa Nama',
-        kelas: item.siswa?.kelas || 'Belum diisi',
-        eskul: item.ekstrakurikuler?.nama_eskul || '-',
-        tanggal: new Date(item.createdAt || Date.now()).toLocaleDateString('en-GB', {
-          day: '2-digit', month: 'short', year: 'numeric'
-        })
-      }));
+        const grouped = {};
 
-      // urutkan berdasarkan id agar konsisten
-      mapped.sort((a, b) => a.id - b.id);
+        result.forEach((item) => {
+          const idSiswa = item.siswa?.id_siswa || item.id_siswa;
 
-      setDataPendaftar(mapped);
-      setLoading(false);
+          if (!grouped[idSiswa]) {
+            grouped[idSiswa] = {
+              id: idSiswa,
+              nama: item.siswa?.nama_siswa || 'Tanpa Nama',
+              kelas: item.siswa?.kelas || 'Belum diisi',
+              eskul: [],
+              tanggal: new Date(item.tanggal || Date.now()).toLocaleDateString('en-GB', {
+                day: '2-digit', month: 'short', year: 'numeric'
+              })
+            };
+          }
+
+          grouped[idSiswa].eskul.push(item.ekstrakurikuler?.nama_eskul || '-');
+        });
+
+        const mapped = Object.values(grouped);
+        mapped.sort((a, b) => a.id - b.id);
+
+        setDataPendaftar(mapped);
+      } catch (error) {
+        console.error("Error fetching data pendaftar:", error);
+        setErrorMsg('Gagal memuat data pendaftar dari server.');
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchData();
   }, []);
 
-  const handleDownloadExcel = () => {
-    alert("Berhasil mengunduh rekapitulasi data pendaftar dalam format Excel!");
+  const handleDownloadExcel = async () => {
+    const result = await downloadSemuaPendaftarExcel();
+    if (!result.success) {
+      alert("Gagal mendownload Excel: " + result.error);
+    }
   };
 
   return (
@@ -99,9 +117,16 @@ export default function PendaftarEskul() {
                       <td className="py-3 px-4 font-semibold text-gray-800">{pendaftar.nama}</td>
                       <td className="py-3 px-4 text-gray-600">{pendaftar.kelas}</td>
                       <td className="py-3 px-4">
-                        <span className="bg-cyan-50 text-cyan-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                          {pendaftar.eskul}
-                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {pendaftar.eskul.map((namaEskul, i) => (
+                            <span
+                              key={i}
+                              className="bg-cyan-50 text-cyan-700 text-xs font-semibold px-2.5 py-1 rounded-full"
+                            >
+                              {namaEskul}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-gray-500">{pendaftar.tanggal}</td>
                     </tr>

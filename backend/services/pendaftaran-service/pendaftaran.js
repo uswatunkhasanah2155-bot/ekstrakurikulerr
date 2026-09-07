@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
+import { handleDownloadExcelPendaftar } from './DownloadExcelPendaftar.js';
 
 const router = express.Router();
 
@@ -23,6 +24,9 @@ router.get('/', verifyToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Gagal mengambil data', error: error.message });
   }
 });
+
+// GET: Download Excel rekap semua siswa pendaftar (lintas eskul)
+router.get('/download', verifyToken, handleDownloadExcelPendaftar);
 
 // POST: Mendaftarkan siswa ke ekstrakurikuler (Mendukung Siswa atau Admin)
 router.post('/', verifyToken, async (req, res) => {
