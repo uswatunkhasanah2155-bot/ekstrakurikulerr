@@ -12,7 +12,8 @@ export default function RegistrationForm() {
   const [formData, setFormData] = useState({
     namaLengkap: '',
     kelas: '',
-    jenisKelamin: ''
+    jenisKelamin: '',
+    foto: null // Tambahan state untuk menampung file foto
   });
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +25,11 @@ export default function RegistrationForm() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Handler khusus untuk menangkap file gambar yang dipilih
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, foto: e.target.files[0] });
   };
 
   const handleSubmit = async (e) => {
@@ -47,17 +53,22 @@ export default function RegistrationForm() {
         return;
       }
 
-      // Mengambil id_user dari localStorage dan mengubahnya menjadi Number agar tidak NULL di database
       const rawIdUser = localStorage.getItem('id_user') || localStorage.getItem('userId');
       const userIdLogin = rawIdUser ? Number(rawIdUser) : null;
 
-      const result = await tambahPendaftar({
-        id_eskul: eskulDitemukan.id_eskul,
-        id_user: userIdLogin, 
-        nama: formData.namaLengkap,
-        kelas: formData.kelas,
-        jenisKelamin: formData.jenisKelamin
-      });
+      // Ubah data menjadi FormData karena kita mengirim file/gambar
+      const dataToSend = new FormData();
+      dataToSend.append('id_eskul', eskulDitemukan.id_eskul);
+      dataToSend.append('id_user', userIdLogin);
+      dataToSend.append('nama', formData.namaLengkap);
+      dataToSend.append('kelas', formData.kelas);
+      dataToSend.append('jenisKelamin', formData.jenisKelamin);
+      
+      if (formData.foto) {
+        dataToSend.append('foto', formData.foto); // Key harus sesuai dengan multer di backend ('foto')
+      }
+
+      const result = await tambahPendaftar(dataToSend);
 
       if (result.success) {
         alert(`Pendaftaran untuk ${formatNamaEskul} berhasil dikirim!`);
@@ -124,6 +135,18 @@ export default function RegistrationForm() {
                 <option value="Laki-laki">Laki-laki</option>
                 <option value="Perempuan">Perempuan</option>
               </select>
+            </div>
+
+            {/* Input File Foto Siswa */}
+            <div>
+              <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Foto Siswa</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={handleFileChange}
+                required
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+              />
             </div>
 
             <div className="flex gap-3 pt-2">

@@ -17,11 +17,12 @@ export default function ExtracurricularDetail() {
   const [isAdmin, setIsAdmin] = useState(false); 
   const [siswaTerdaftar, setSiswaTerdaftar] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentIdPendaftaran, setCurrentIdPendaftaran] = useState(null);
-  const [currentIdSiswa, setCurrentIdSiswa] = useState(null); // Tambahan untuk menyimpan id_siswa yang spesifik
+  const [currentIdSiswa, setCurrentIdSiswa] = useState(null); 
 
   const [daftarEskulOptions, setDaftarEskulOptions] = useState([]);
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
@@ -31,7 +32,8 @@ export default function ExtracurricularDetail() {
     kelas: '', 
     jenisKelamin: '',
     id_eskul: '',
-    id_user: null
+    id_user: null,
+    foto: null
   });
 
   const daftarKelas = [
@@ -92,7 +94,7 @@ export default function ExtracurricularDetail() {
   const handleOpenEdit = (siswa) => {
     setIsEditMode(true);
     setCurrentIdPendaftaran(siswa.id);
-    setCurrentIdSiswa(siswa.id_siswa); // Simpan id_siswa secara spesifik dari baris yang diklik
+    setCurrentIdSiswa(siswa.id_siswa); 
     
     const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
     const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
@@ -102,7 +104,8 @@ export default function ExtracurricularDetail() {
       kelas: siswa.kelas,
       jenisKelamin: siswa.jenisKelamin === 'P' ? 'Perempuan' : 'Laki-laki',
       id_eskul: currentEskul ? currentEskul.id_eskul : '',
-      id_user: userIdLogin ? Number(userIdLogin) : null
+      id_user: userIdLogin ? Number(userIdLogin) : null,
+      foto: null 
     });
     setIsModalOpen(true);
   };
@@ -120,7 +123,8 @@ export default function ExtracurricularDetail() {
       kelas: '', 
       jenisKelamin: '', 
       id_eskul: currentEskul ? currentEskul.id_eskul : '',
-      id_user: userIdLogin ? Number(userIdLogin) : null
+      id_user: userIdLogin ? Number(userIdLogin) : null,
+      foto: null
     });
     setIsModalOpen(true);
   };
@@ -130,18 +134,25 @@ export default function ExtracurricularDetail() {
 
     const currentEskul = daftarEskulOptions.find(e => e.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim());
     const id_eskul_sekarang = currentEskul ? currentEskul.id_eskul : formData.id_eskul;
+    const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
+
+    const dataToSend = new FormData();
+    dataToSend.append('id_eskul', id_eskul_sekarang);
+    dataToSend.append('nama_siswa', formData.nama);
+    dataToSend.append('kelas', formData.kelas);
+    dataToSend.append('jenis_kelamin', formData.jenisKelamin === 'Perempuan' ? 'P' : 'L');
+    dataToSend.append('id_user', formData.id_user || (userIdLogin ? Number(userIdLogin) : ''));
+
+    if (formData.foto) {
+      dataToSend.append('foto', formData.foto);
+    }
 
     if (isEditMode) {
-      // Menggunakan currentIdSiswa yang spesifik disimpan saat tombol edit diklik
       const result = await updatePendaftar(
         currentIdPendaftaran, 
         id_eskul_sekarang, 
         currentIdSiswa, 
-        { 
-          nama: formData.nama,
-          kelas: formData.kelas,
-          jenis_kelamin: formData.jenisKelamin === 'Perempuan' ? 'P' : 'L'
-        }
+        dataToSend 
       );
 
       if (result.success) {
@@ -153,15 +164,7 @@ export default function ExtracurricularDetail() {
         alert("Gagal memperbarui data: " + result.error);
       }
     } else {
-      const userIdLogin = localStorage.getItem('id_user') || localStorage.getItem('userId');
-
-      const dataKirim = {
-        ...formData,
-        id_eskul: id_eskul_sekarang,
-        id_user: formData.id_user || (userIdLogin ? Number(userIdLogin) : null)
-      };
-
-      const result = await tambahPendaftar(dataKirim);
+      const result = await tambahPendaftar(dataToSend);
       if (result.success) {
         alert("Berhasil mendaftarkan siswa ke eskul!");
         const updatedData = await getSiswaByEskul(cleanNamaEskul);
@@ -172,6 +175,15 @@ export default function ExtracurricularDetail() {
       }
     }
   };
+
+  const filteredSiswa = siswaTerdaftar.filter((siswa) => {
+    const keyword = searchQuery.toLowerCase().trim();
+    if (!keyword) return true;
+    return (
+      siswa.nama?.toLowerCase().includes(keyword) ||
+      siswa.kelas?.toLowerCase().includes(keyword)
+    );
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-50 relative">
@@ -197,7 +209,11 @@ export default function ExtracurricularDetail() {
          <div className="w-full md:w-1/3 aspect-square max-w-[220px] max-h-[220px] mx-auto md:mx-0 bg-white rounded-lg overflow-hidden flex items-center justify-center text-gray-400 font-medium shrink-0 border border-gray-100">
             {currentEskulDetail?.foto ? (
               <img 
-                src={currentEskulDetail.foto.startsWith('http') ? currentEskulDetail.foto : `http://localhost:5000${currentEskulDetail.foto}`} 
+                src={
+                  currentEskulDetail.foto.startsWith('http') 
+                    ? currentEskulDetail.foto 
+                    : `http://localhost:5000/${currentEskulDetail.foto.startsWith('/') ? currentEskulDetail.foto.slice(1) : currentEskulDetail.foto}`
+                } 
                 alt={formatNamaEskul} 
                 className="w-full h-full object-contain"
                 onError={(e) => { e.target.style.display = 'none'; }} 
@@ -205,7 +221,7 @@ export default function ExtracurricularDetail() {
             ) : (
               <span>Foto / Banner {formatNamaEskul}</span>
             )}
-          </div>
+         </div>
 
           <div className="flex-1 flex flex-col justify-between">
             <div>
@@ -243,18 +259,32 @@ export default function ExtracurricularDetail() {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-              📋 Daftar Siswa Terdaftar ({siswaTerdaftar.length} Siswa)
+          <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 shrink-0">
+              📋 Daftar Siswa Terdaftar ({filteredSiswa.length} Siswa)
             </h3>
-            {isAdmin && (
-              <button 
-                onClick={handleOpenTambah}
-                className="bg-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors"
-              >
-                + Tambah Siswa Manual
-              </button>
-            )}
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-64">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari nama atau kelas siswa..."
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
+
+              {isAdmin && (
+                <button 
+                  onClick={handleOpenTambah}
+                  className="bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap"
+                >
+                  + Tambah Siswa Manual
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -265,6 +295,7 @@ export default function ExtracurricularDetail() {
                 <thead>
                   <tr className="border-b border-gray-100 text-xs text-gray-500 uppercase bg-gray-50/50">
                     <th className="py-3 px-4">No</th>
+                    <th className="py-3 px-4">Foto</th>
                     <th className="py-3 px-4">Nama Siswa</th>
                     <th className="py-3 px-4">Kelas</th>
                     <th className="py-3 px-4">Jenis Kelamin</th>
@@ -273,16 +304,38 @@ export default function ExtracurricularDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-                  {siswaTerdaftar.length === 0 ? (
+                  {filteredSiswa.length === 0 ? (
                     <tr>
-                      <td colSpan={isAdmin ? 6 : 5} className="py-4 text-center text-gray-400">
-                        Belum ada siswa yang terdaftar di ekstrakurikuler ini.
+                      <td colSpan={isAdmin ? 7 : 6} className="py-4 text-center text-gray-400">
+                        {searchQuery
+                          ? `Tidak ditemukan siswa dengan kata kunci "${searchQuery}".`
+                          : 'Belum ada siswa yang terdaftar di ekstrakurikuler ini.'}
                       </td>
                     </tr>
                   ) : (
-                    siswaTerdaftar.map((siswa, idx) => (
+                    filteredSiswa.map((siswa, idx) => (
                       <tr key={siswa.id} className="hover:bg-gray-50/50">
                         <td className="py-3 px-4 font-medium text-gray-500">{idx + 1}</td>
+                        
+                        <td className="py-3 px-4">
+                          {siswa.foto ? (
+                            <img 
+                              src={
+                                siswa.foto.startsWith('http') 
+                                  ? siswa.foto 
+                                  : `http://localhost:5000/${siswa.foto.startsWith('/') ? siswa.foto.slice(1) : siswa.foto}`
+                              } 
+                              alt={siswa.nama} 
+                              className="w-20 h-35 object-cover rounded-xl border border-gray-200 shadow-sm" 
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="inline-block px-6 py-4 text-xs font-bold text-gray-500 bg-gray-100 rounded-xl border border-gray-200">
+                              -
+                            </span>
+                          )}
+                        </td>
+
                         <td className="py-3 px-4 font-semibold text-gray-800">{siswa.nama}</td>
                         <td className="py-3 px-4 text-gray-600">{siswa.kelas}</td>
                         <td className="py-3 px-4 text-gray-600">
@@ -371,6 +424,18 @@ export default function ExtracurricularDetail() {
                   <option value="Laki-laki">Laki-laki</option>
                   <option value="Perempuan">Perempuan</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isEditMode ? 'Foto' : 'Foto Siswa'}
+                </label>
+                <input 
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFormData({...formData, foto: e.target.files[0]})}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                />
               </div>
 
               <div className="pt-2 flex gap-3 justify-end">

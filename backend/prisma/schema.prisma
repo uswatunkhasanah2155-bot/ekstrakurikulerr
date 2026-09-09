@@ -21,6 +21,7 @@ model Siswa {
   nama_siswa    String
   kelas         String
   jenis_kelamin String
+  foto          String?
   user          User?         @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
   pendaftaran   Pendaftaran[]  
 }

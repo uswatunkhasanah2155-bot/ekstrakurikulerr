@@ -2,8 +2,23 @@ import express from 'express';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import { handleDownloadExcelPendaftar } from './DownloadExcelPendaftar.js';
+import multer from 'multer';
+import path from 'path';
 
 const router = express.Router();
+
+// Konfigurasi Multer untuk menyimpan foto ke folder 'uploads/siswa'
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/siswa/'); 
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'siswa-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 // GET: Mengambil semua data pendaftaran
 router.get('/', verifyToken, async (req, res) => {
@@ -28,8 +43,8 @@ router.get('/', verifyToken, async (req, res) => {
 // GET: Download Excel rekap semua siswa pendaftar (lintas eskul)
 router.get('/download', verifyToken, handleDownloadExcelPendaftar);
 
-// POST: Mendaftarkan siswa ke ekstrakurikuler (Mendukung Siswa atau Admin)
-router.post('/', verifyToken, async (req, res) => {
+// POST: Mendaftarkan siswa ke ekstrakurikuler (Mendukung Upload Foto + Siswa/Admin)
+router.post('/', verifyToken, upload.single('foto'), async (req, res) => {
   try {
     const { id_eskul, id_siswa_input, nama_siswa, kelas, jenis_kelamin } = req.body;
     let targetIdSiswa;
@@ -42,8 +57,16 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'ID Ekstrakurikuler wajib diisi!' });
     }
 
+    const fotoPath = req.file ? `uploads/siswa/${req.file.filename}` : null;
+
     if (id_siswa_input) {
       targetIdSiswa = Number(id_siswa_input);
+      if (fotoPath) {
+        await prisma.siswa.update({
+          where: { id_siswa: targetIdSiswa },
+          data: { foto: fotoPath }
+        });
+      }
     } else if (!isAdmin) {
       if (!nama_siswa || !kelas) {
         return res.status(400).json({
@@ -52,15 +75,30 @@ router.post('/', verifyToken, async (req, res) => {
         });
       }
 
-      const siswaBaru = await prisma.siswa.create({
-        data: {
-          nama_siswa: nama_siswa.trim(),
-          kelas: kelas,
-          jenis_kelamin: jenis_kelamin || 'L',
-          id_user: Number(userId),
-        },
+      let siswaExisting = await prisma.siswa.findUnique({
+        where: { id_user: Number(userId) },
       });
-      targetIdSiswa = siswaBaru.id_siswa;
+
+      if (siswaExisting) {
+        targetIdSiswa = siswaExisting.id_siswa;
+        if (fotoPath) {
+          await prisma.siswa.update({
+            where: { id_siswa: siswaExisting.id_siswa },
+            data: { foto: fotoPath }
+          });
+        }
+      } else {
+        const siswaBaru = await prisma.siswa.create({
+          data: {
+            nama_siswa: nama_siswa.trim(),
+            kelas: kelas,
+            jenis_kelamin: jenis_kelamin || 'L',
+            id_user: Number(userId),
+            foto: fotoPath,
+          },
+        });
+        targetIdSiswa = siswaBaru.id_siswa;
+      }
     }
 
     if (isAdmin) {
@@ -73,20 +111,27 @@ router.post('/', verifyToken, async (req, res) => {
 
       let siswaAdmin = await prisma.siswa.findFirst({
         where: {
-          nama_siswa: nama_siswa.trim(),
-          kelas: kelas,
+          nama_siswa: { equals: nama_siswa.trim(), mode: 'insensitive' },
+          kelas: { equals: kelas.trim(), mode: 'insensitive' },
         },
       });
 
       if (siswaAdmin) {
         targetIdSiswa = siswaAdmin.id_siswa;
+        if (fotoPath) {
+          await prisma.siswa.update({
+            where: { id_siswa: siswaAdmin.id_siswa },
+            data: { foto: fotoPath }
+          });
+        }
       } else {
         const siswaBaru = await prisma.siswa.create({
           data: {
             nama_siswa: nama_siswa.trim(),
-            kelas: kelas,
+            kelas: kelas.trim(),
             jenis_kelamin: jenis_kelamin || 'L',
             id_user: null,
+            foto: fotoPath,
           },
         });
         targetIdSiswa = siswaBaru.id_siswa;
@@ -129,8 +174,8 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-// PUT: Memperbarui data pendaftaran & profil siswa
-router.put('/:id', verifyToken, async (req, res) => {
+// PUT: Memperbarui data pendaftaran & profil siswa (Ditambahkan upload.single('foto'))
+router.put('/:id', verifyToken, upload.single('foto'), async (req, res) => {
   try {
     const { id } = req.params;
     const { id_eskul, nama_siswa, kelas, jenis_kelamin } = req.body;
@@ -154,13 +199,16 @@ router.put('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    if (pendaftaranCek.id_siswa && (nama_siswa || kelas || jenis_kelamin)) {
+    const fotoPath = req.file ? `uploads/siswa/${req.file.filename}` : null;
+
+    if (pendaftaranCek.id_siswa && (nama_siswa || kelas || jenis_kelamin || fotoPath)) {
       await prisma.siswa.update({
         where: { id_siswa: pendaftaranCek.id_siswa },
         data: {
           ...(nama_siswa && { nama_siswa: nama_siswa.trim() }),
           ...(kelas && { kelas }),
           ...(jenis_kelamin && { jenis_kelamin }),
+          ...(fotoPath && { foto: fotoPath }),
         },
       });
     }

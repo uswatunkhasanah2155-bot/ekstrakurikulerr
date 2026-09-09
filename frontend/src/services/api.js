@@ -1,3 +1,4 @@
+// src/services/api.js
 const API_URL = 'http://localhost:5000';
 
 export async function getDaftarEskul() {
@@ -57,6 +58,7 @@ export async function getSiswaByEskul(namaEskul) {
       nama: item.siswa?.nama_siswa || 'Tanpa Nama',
       kelas: item.siswa?.kelas || 'Belum diisi',
       jenisKelamin: item.siswa?.jenis_kelamin || 'L',
+      foto: item.siswa?.foto || null,
       tanggal: new Date(item.tanggal || Date.now()).toLocaleDateString('en-GB', {
        day: '2-digit', month: 'short', year: 'numeric'
       })
@@ -108,24 +110,26 @@ export async function tambahPendaftar(dataSiswa) {
       throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
     }
 
+    const jenisKelaminVal = dataSiswa.get('jenisKelamin') || dataSiswa.get('jenis_kelamin');
     let jenisKelaminDB = 'L';
-    if (dataSiswa.jenisKelamin === 'Perempuan' || dataSiswa.jenisKelamin === 'P') {
+    if (jenisKelaminVal === 'Perempuan' || jenisKelaminVal === 'P') {
       jenisKelaminDB = 'P';
+    }
+
+    dataSiswa.set('jenis_kelamin', jenisKelaminDB);
+    dataSiswa.delete('jenisKelamin');
+
+    if (dataSiswa.has('nama') && !dataSiswa.has('nama_siswa')) {
+      dataSiswa.set('nama_siswa', dataSiswa.get('nama'));
+      dataSiswa.delete('nama');
     }
 
     const response = await fetch(`${API_URL}/api/pendaftaran`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        id_eskul: Number(dataSiswa.id_eskul),
-        id_user: dataSiswa.id_user ? Number(dataSiswa.id_user) : null,
-        nama_siswa: dataSiswa.nama,
-        kelas: dataSiswa.kelas,
-        jenis_kelamin: jenisKelaminDB
-      }),
+      body: dataSiswa,
     });
 
     const result = await response.json();
@@ -167,47 +171,66 @@ export async function updatePendaftar(idPendaftaran, idPilihanEskul, idSiswa, da
   try {
     const token = localStorage.getItem('token');
     
-    const response = await fetch(`${API_URL}/api/pendaftaran/${idPendaftaran}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        id_eskul: Number(idPilihanEskul),
-        ...(dataUpdate?.nama && { nama_siswa: dataUpdate.nama }),
-        ...(dataUpdate?.kelas && { kelas: dataUpdate.kelas }),
-        ...(dataUpdate?.jenis_kelamin && { jenis_kelamin: dataUpdate.jenis_kelamin })
-      })
-    });
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    let hasFile = false;
+    if (dataUpdate instanceof FormData) {
+      const fotoEntry = dataUpdate.get('foto');
+      if (fotoEntry && typeof fotoEntry === 'object' && fotoEntry.size > 0) {
+        hasFile = true;
+      }
+    }
+
+    let response;
+
+    if (!hasFile) {
+      let payload = {};
+      if (dataUpdate instanceof FormData) {
+        const jkVal = dataUpdate.get('jenisKelamin') || dataUpdate.get('jenis_kelamin');
+        payload = {
+          id_eskul: Number(idPilihanEskul),
+          nama_siswa: dataUpdate.get('nama_siswa') || dataUpdate.get('nama'),
+          kelas: dataUpdate.get('kelas'),
+          jenis_kelamin: (jkVal === 'Perempuan' || jkVal === 'P') ? 'P' : 'L'
+        };
+      } else {
+        payload = {
+          id_eskul: Number(idPilihanEskul),
+          nama_siswa: dataUpdate?.nama,
+          kelas: dataUpdate?.kelas,
+          jenis_kelamin: (dataUpdate?.jenis_kelamin === 'Perempuan' || dataUpdate?.jenis_kelamin === 'P') ? 'P' : 'L'
+        };
+      }
+
+      response = await fetch(`${API_URL}/api/pendaftaran/${idPendaftaran}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      let formDataToSend = dataUpdate;
+      if (!formDataToSend.has('id_eskul') && idPilihanEskul) {
+        formDataToSend.append('id_eskul', Number(idPilihanEskul));
+      }
+
+      response = await fetch(`${API_URL}/api/pendaftaran/${idPendaftaran}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataToSend
+      });
+    }
 
     const result = await response.json();
 
     if (!response.ok) {
       throw new Error(result.message || 'Gagal mengupdate pendaftaran');
-    }
-
-    if (idSiswa && dataUpdate) {
-      let jenisKelaminDB = undefined;
-      if (dataUpdate.jenis_kelamin) {
-        jenisKelaminDB = (dataUpdate.jenis_kelamin === 'Perempuan' || dataUpdate.jenis_kelamin === 'P') ? 'P' : 'L';
-      }
-
-      const bodyData = {};
-      if (dataUpdate.nama) bodyData.nama_siswa = dataUpdate.nama;
-      if (dataUpdate.kelas) bodyData.kelas = dataUpdate.kelas;
-      if (jenisKelaminDB) bodyData.jenis_kelamin = jenisKelaminDB;
-
-      if (Object.keys(bodyData).length > 0) {
-        await fetch(`${API_URL}/api/siswa/${idSiswa}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(bodyData)
-        });
-      }
     }
 
     return { success: true, data: result };

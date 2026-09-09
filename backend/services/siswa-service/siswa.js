@@ -1,8 +1,23 @@
 import express from 'express';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
+import multer from 'multer';
+import path from 'path';
 
 const router = express.Router();
+
+// Konfigurasi Multer untuk menyimpan foto ke folder 'uploads/siswa'
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/siswa/'); 
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'siswa-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 router.get('/', verifyToken, async (req, res) => {
   try {
@@ -25,7 +40,7 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, upload.single('foto'), async (req, res) => {
   try {
     const { nama_siswa, kelas, jenis_kelamin } = req.body;
     const userId = req.user.id_user || req.user.id; 
@@ -44,12 +59,15 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
+    const fotoPath = req.file ? `uploads/siswa/${req.file.filename}` : null;
+
     const siswaBaru = await prisma.siswa.create({
       data: {
         nama_siswa,
         kelas,
         jenis_kelamin,
         id_user: userId,
+        foto: fotoPath,
       },
     });
 
@@ -122,12 +140,10 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // 1. Hapus semua data pendaftaran yang berelasi dengan id_siswa ini terlebih dahulu
     await prisma.pendaftaran.deleteMany({
       where: { id_siswa: siswaId },
     });
 
-    // 2. Hapus data siswa secara permanen dari database
     await prisma.siswa.delete({
       where: { id_siswa: siswaId },
     });
