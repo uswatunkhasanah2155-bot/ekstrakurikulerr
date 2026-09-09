@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { getSiswaByEskul, getDaftarEskul, hapusPendaftar, updatePendaftar, tambahPendaftar } from '../services/api';
+import { Search, FileSpreadsheet, ClipboardList, User, X, Pencil, Trash2, Plus } from 'lucide-react';
 
 export default function ExtracurricularDetail() {
   const { namaEskul } = useParams();
@@ -200,7 +201,8 @@ export default function ExtracurricularDetail() {
               onClick={handleDownloadExcel}
               className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
             >
-              📊 Download Excel ({formatNamaEskul})
+              <FileSpreadsheet className="w-4 h-4" />
+              Download Excel ({formatNamaEskul})
             </button>
           )}
         </div>
@@ -249,9 +251,10 @@ export default function ExtracurricularDetail() {
               ) : (
                 <button 
                   onClick={handleDaftarSiswa}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                 >
-                  + Daftar Eskul Ini
+                  <Plus className="w-4 h-4" />
+                  Daftar Eskul Ini
                 </button>
               )}
             </div>
@@ -261,17 +264,18 @@ export default function ExtracurricularDetail() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 shrink-0">
-              📋 Daftar Siswa Terdaftar ({filteredSiswa.length} Siswa)
+              <ClipboardList className="w-4 h-4 text-gray-600" />
+              Daftar Siswa Terdaftar ({filteredSiswa.length} Siswa)
             </h3>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:w-64">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari nama atau kelas siswa..."
+                  placeholder="Cari nama siswa..."
                   className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg outline-none bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 />
               </div>
@@ -279,9 +283,10 @@ export default function ExtracurricularDetail() {
               {isAdmin && (
                 <button 
                   onClick={handleOpenTambah}
-                  className="bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap"
+                  className="bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap flex items-center gap-1.5"
                 >
-                  + Tambah Siswa Manual
+                  <Plus className="w-3.5 h-3.5" />
+                  Tambah Siswa Manual
                 </button>
               )}
             </div>
@@ -334,10 +339,10 @@ export default function ExtracurricularDetail() {
                             />
                           ) : null}
                           <div
-                            className="w-14 h-14 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400 text-lg"
+                            className="w-14 h-14 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400"
                             style={{ display: siswa.foto ? 'none' : 'flex' }}
                           >
-                            👤
+                            <User className="w-6 h-6" />
                           </div>
                         </td>
 
@@ -351,14 +356,16 @@ export default function ExtracurricularDetail() {
                           <td className="py-3 px-4 text-center space-x-2">
                             <button 
                               onClick={() => handleOpenEdit(siswa)}
-                              className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md font-medium hover:bg-blue-100"
+                              className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md font-medium hover:bg-blue-100 inline-flex items-center gap-1"
                             >
+                              <Pencil className="w-3.5 h-3.5" />
                               Edit
                             </button>
                             <button 
                               onClick={() => handleHapusSiswa(siswa.id)}
-                              className="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded-md font-medium hover:bg-red-100"
+                              className="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded-md font-medium hover:bg-red-100 inline-flex items-center gap-1"
                             >
+                              <Trash2 className="w-3.5 h-3.5" />
                               Hapus
                             </button>
                           </td>
@@ -383,9 +390,9 @@ export default function ExtracurricularDetail() {
               </h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-lg"
+                className="text-gray-400 hover:text-gray-600"
               >
-                &times;
+                <X className="w-5 h-5" />
               </button>
             </div>
             

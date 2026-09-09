@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { getDaftarEskul } from '../services/api';
+import { Pencil, Trash2, Plus, ClipboardList } from 'lucide-react';
 
 export default function KelolaEskul() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -142,8 +143,18 @@ export default function KelolaEskul() {
         </h2>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 max-w-3xl">
-          <h3 className="text-sm font-bold text-gray-800 mb-4">
-            {isEditing ? "✏️ Edit Ekstrakurikuler" : "+ Tambah Ekstrakurikuler Baru"}
+          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <Pencil className="w-4 h-4 text-gray-600" />
+                Edit Ekstrakurikuler
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 text-gray-600" />
+                Tambah Ekstrakurikuler Baru
+              </>
+            )}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,7 +241,10 @@ export default function KelolaEskul() {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-sm font-bold text-gray-800">📋 Daftar Master Ekstrakurikuler</h3>
+            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-gray-600" />
+              Daftar Master Ekstrakurikuler
+            </h3>
           </div>
 
           <div className="overflow-x-auto">
@@ -259,14 +273,16 @@ export default function KelolaEskul() {
                         <td className="py-3 px-4 text-center space-x-2">
                           <button 
                             onClick={() => handleEditClick(item)}
-                            className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-md font-medium hover:bg-blue-100"
+                            className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-md font-medium hover:bg-blue-100 inline-flex items-center gap-1"
                           >
+                            <Pencil className="w-3.5 h-3.5" />
                             Edit
                           </button>
                           <button 
                             onClick={() => handleDelete(rowId)}
-                            className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded-md font-medium hover:bg-red-100"
+                            className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded-md font-medium hover:bg-red-100 inline-flex items-center gap-1"
                           >
+                            <Trash2 className="w-3.5 h-3.5" />
                             Hapus
                           </button>
                         </td>

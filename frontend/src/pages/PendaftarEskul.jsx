@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { getPendaftarEskul, downloadSemuaPendaftarExcel } from '../services/api';
+import { FileSpreadsheet, ClipboardList, Search } from 'lucide-react';
 
 export default function PendaftarEskul() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -32,10 +33,6 @@ export default function PendaftarEskul() {
           const namaSiswa = item.siswa?.nama_siswa || 'Tanpa Nama';
           const kelasSiswa = item.siswa?.kelas || 'Belum diisi';
 
-          // Group berdasarkan nama + kelas (case-insensitive, trimmed), bukan id_siswa.
-          // Ini supaya siswa yang kebetulan punya 2 record berbeda di database
-          // (misal karena beda kapitalisasi huruf saat input dulu) tetap tampil
-          // sebagai 1 baris gabungan di tabel ini.
           const groupKey = `${namaSiswa.trim().toLowerCase()}|${kelasSiswa.trim().toLowerCase()}`;
 
           if (!grouped[groupKey]) {
@@ -48,13 +45,11 @@ export default function PendaftarEskul() {
             };
           }
 
-          // Hindari eskul yang sama muncul dobel dalam 1 baris (misal karena data lama)
           const namaEskul = item.ekstrakurikuler?.nama_eskul || '-';
           if (!grouped[groupKey].eskul.includes(namaEskul)) {
             grouped[groupKey].eskul.push(namaEskul);
           }
 
-          // Simpan tanggal paling baru dari beberapa pendaftaran yang digabung
           const tanggalItem = item.tanggal ? new Date(item.tanggal) : new Date();
           if (tanggalItem > grouped[groupKey].tanggalTerbaru) {
             grouped[groupKey].tanggalTerbaru = tanggalItem;
@@ -89,7 +84,6 @@ export default function PendaftarEskul() {
     }
   };
 
-  // Filter berdasarkan nama siswa, kelas, atau nama eskul yang diikuti
   const filteredPendaftar = dataPendaftar.filter((pendaftar) => {
     const keyword = searchQuery.toLowerCase().trim();
     if (!keyword) return true;
@@ -115,18 +109,20 @@ export default function PendaftarEskul() {
             onClick={handleDownloadExcel}
             className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
           >
-            📊 Download Excel
+            <FileSpreadsheet className="w-4 h-4" />
+            Download Excel
           </button>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <h3 className="text-sm font-bold text-gray-800 shrink-0">
-              📋 Rekapitulasi Siswa Terdaftar ({filteredPendaftar.length} Siswa)
+            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2 shrink-0">
+              <ClipboardList className="w-4 h-4 text-gray-600" />
+              Rekapitulasi Siswa Terdaftar ({filteredPendaftar.length} Siswa)
             </h3>
 
             <div className="relative w-full sm:w-72">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}

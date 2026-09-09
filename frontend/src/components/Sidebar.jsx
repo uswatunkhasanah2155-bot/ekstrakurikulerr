@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDaftarEskul } from '../services/api';
+import { LayoutDashboard, Settings, Users, List, ChevronDown, LogOut, User } from 'lucide-react';
 
 export default function Sidebar({ isAdmin }) {
   const navigate = useNavigate();
@@ -35,10 +36,8 @@ export default function Sidebar({ isAdmin }) {
         </div>
 
         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-6 border border-gray-100">
-          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold shrink-0">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
+          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 shrink-0">
+            <User className="w-6 h-6" />
           </div>
           <div>
             <h4 className="text-sm font-bold text-gray-800">
@@ -55,9 +54,7 @@ export default function Sidebar({ isAdmin }) {
             to="/Dashboard" 
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-            </svg>
+            <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </Link>
 
@@ -66,7 +63,8 @@ export default function Sidebar({ isAdmin }) {
               to="/admin/kelola-eskul" 
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors mt-1"
             >
-              ⚙️ Kelola Data Eskul
+              <Settings className="w-5 h-5" />
+              Kelola Data Eskul
             </Link>
           )}
 
@@ -75,7 +73,8 @@ export default function Sidebar({ isAdmin }) {
               to="/admin/pendaftar" 
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors mt-1"
             >
-              👥 Data Pendaftar
+              <Users className="w-5 h-5" />
+              Data Pendaftar
             </Link>
           )}
 
@@ -85,14 +84,10 @@ export default function Sidebar({ isAdmin }) {
               className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7"></path>
-                </svg>
+                <List className="w-5 h-5" />
                 Daftar Eskul
               </div>
-              <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isDropdownOpen && (
@@ -121,9 +116,7 @@ export default function Sidebar({ isAdmin }) {
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-          </svg>
+          <LogOut className="w-5 h-5" />
           Keluar
         </button>
       </div>
