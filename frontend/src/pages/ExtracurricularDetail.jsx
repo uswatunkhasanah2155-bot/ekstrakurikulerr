@@ -326,14 +326,19 @@ export default function ExtracurricularDetail() {
                                   : `http://localhost:5000/${siswa.foto.startsWith('/') ? siswa.foto.slice(1) : siswa.foto}`
                               } 
                               alt={siswa.nama} 
-                              className="w-20 h-35 object-cover rounded-xl border border-gray-200 shadow-sm" 
-                              onError={(e) => { e.target.style.display = 'none'; }}
+                              className="w-20 h-20 object-cover rounded-full border-2 border-gray-200 shadow-sm"
+                              onError={(e) => { 
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
                             />
-                          ) : (
-                            <span className="inline-block px-6 py-4 text-xs font-bold text-gray-500 bg-gray-100 rounded-xl border border-gray-200">
-                              -
-                            </span>
-                          )}
+                          ) : null}
+                          <div
+                            className="w-14 h-14 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400 text-lg"
+                            style={{ display: siswa.foto ? 'none' : 'flex' }}
+                          >
+                            👤
+                          </div>
                         </td>
 
                         <td className="py-3 px-4 font-semibold text-gray-800">{siswa.nama}</td>
