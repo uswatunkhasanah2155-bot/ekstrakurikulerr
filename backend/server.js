@@ -6,6 +6,7 @@ import eskulRoutes from './services/eskul-service/eskul.js';
 import authRoutes from './services/auth-service/auth.js'; 
 import pendaftaranRoutes from './services/pendaftaran-service/pendaftaran.js';
 import siswaRoutes from './services/siswa-service/siswa.js';
+import galeriRoutes from './services/galeri-service/index.js';
 
 dotenv.config();
 
@@ -30,6 +31,9 @@ app.use('/api/pendaftaran', pendaftaranRoutes);
 
 // Panggil Route Siswa
 app.use('/api/siswa', siswaRoutes);
+
+// Panggil Route Galeri Eskul
+app.use('/api/galeri', galeriRoutes);
 
 // Route uji coba utama
 app.get('/', (req, res) => {

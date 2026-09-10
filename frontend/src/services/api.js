@@ -239,3 +239,68 @@ export async function updatePendaftar(idPendaftaran, idPilihanEskul, idSiswa, da
     return { success: false, error: error.message };
   }
 }
+
+export async function getGaleriEskul(idEskul) {
+  try {
+    const response = await fetch(`${API_URL}/api/galeri/${idEskul}`);
+    if (!response.ok) {
+      throw new Error('Gagal mengambil data galeri dari server backend');
+    }
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error("Error fetching galeri:", error);
+    return [];
+  }
+}
+
+export async function uploadGaleriEskul(dataGaleri) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(`${API_URL}/api/galeri`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: dataGaleri,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal mengupload foto galeri');
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error uploading galeri:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function hapusGaleriEskul(idGaleri) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/galeri/${idGaleri}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorResult = await response.json();
+      throw new Error(errorResult.message || 'Gagal menghapus foto galeri');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting galeri:", error);
+    return { success: false, error: error.message };
+  }
+}

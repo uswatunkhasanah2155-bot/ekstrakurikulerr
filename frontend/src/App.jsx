@@ -8,6 +8,7 @@ import ExtracurricularDetail from './pages/ExtracurricularDetail';
 import RegistrationForm from './pages/RegistrationForm';
 import KelolaEskul from './pages/KelolaEskul';
 import PendaftarEskul from './pages/PendaftarEskul';
+import GaleriEskul from './pages/GaleriEskul';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         {/* Halaman Detail & Pendaftaran Eskul */}
         <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
         <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
+        <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
       </Routes>
     </Router>
   );

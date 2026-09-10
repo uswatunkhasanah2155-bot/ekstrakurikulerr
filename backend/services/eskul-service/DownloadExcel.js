@@ -52,7 +52,7 @@ export const handleDownloadExcel = async (req, res) => {
       const row = worksheet.getRow(rowIndex);
 
       row.getCell('A').value = index + 1;
-      row.getCell('B').value = item.siswa.nama;
+      row.getCell('B').value = item.siswa.nama_siswa;
       row.getCell('C').value = item.siswa.kelas || '-';
 
       // Styling baris data dan border
