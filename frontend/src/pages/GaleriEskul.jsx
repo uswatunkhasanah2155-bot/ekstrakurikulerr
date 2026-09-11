@@ -26,13 +26,10 @@ export default function GaleriEskul() {
   const [uploading, setUploading] = useState(false);
   const [settingUtama, setSettingUtama] = useState(null);
 
-  // State untuk modal EDIT foto
   const [editTarget, setEditTarget] = useState(null);
   const [editFile, setEditFile] = useState(null);
   const [editKeterangan, setEditKeterangan] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
-
-  const [lightboxFoto, setLightboxFoto] = useState(null);
 
   useEffect(() => {
     const roleUser = localStorage.getItem('role');
@@ -114,8 +111,6 @@ export default function GaleriEskul() {
     }
   };
 
-  // Menjadikan satu foto sebagai foto utama yang tampil di halaman detail eskul.
-  // Ini TIDAK berubah otomatis saat ada foto baru diupload - murni pilihan admin.
   const handleJadikanUtama = async (idGaleri) => {
     setSettingUtama(idGaleri);
     const result = await setFotoUtamaGaleri(idGaleri);
@@ -130,7 +125,6 @@ export default function GaleriEskul() {
     }
   };
 
-  // Buka modal edit untuk foto tertentu, isi form dengan data yang sudah ada
   const handleBukaEdit = (item) => {
     setEditTarget(item);
     setEditKeterangan(item.keterangan || '');
@@ -166,6 +160,11 @@ export default function GaleriEskul() {
     } else {
       alert('Gagal mengupdate foto: ' + result.error);
     }
+  };
+
+  // Klik foto sekarang PINDAH HALAMAN ke detail foto, bukan buka lightbox
+  const handleLihatFoto = (idGaleri) => {
+    navigate(`/eskul/${namaEskul}/galeri/${idGaleri}`);
   };
 
   const getFotoUrl = (foto) => {
@@ -205,7 +204,7 @@ export default function GaleriEskul() {
 
         {isAdmin && daftarFoto.length > 0 && (
           <p className="text-xs text-gray-500 mb-4 -mt-2">
-            Klik ikon bintang untuk foto utama, ikon pensil untuk edit foto/keterangan.
+            Klik ikon bintang untuk foto utama, ikon pensil untuk edit foto/keterangan. Klik foto untuk melihat lebih besar.
           </p>
         )}
 
@@ -230,7 +229,7 @@ export default function GaleriEskul() {
                     src={getFotoUrl(item.foto)}
                     alt={item.keterangan || formatNamaEskul}
                     className="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
-                    onClick={() => setLightboxFoto(item)}
+                    onClick={() => handleLihatFoto(item.id_galeri)}
                   />
 
                   {item.is_featured && (
@@ -344,7 +343,6 @@ export default function GaleriEskul() {
         </div>
       )}
 
-      {/* MODAL EDIT FOTO */}
       {editTarget && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
@@ -418,31 +416,6 @@ export default function GaleriEskul() {
               </div>
             </form>
           </div>
-        </div>
-      )}
-
-      {lightboxFoto && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex justify-center items-center p-4"
-          onClick={() => setLightboxFoto(null)}
-        >
-          <button
-            onClick={() => setLightboxFoto(null)}
-            className="absolute top-4 right-4 text-gray-800 bg-white/80 hover:bg-white rounded-full w-10 h-10 flex items-center justify-center text-2xl font-bold shadow-lg transition-colors"
-          >
-            &times;
-          </button>
-          <img
-            src={getFotoUrl(lightboxFoto.foto)}
-            alt={lightboxFoto.keterangan || formatNamaEskul}
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-          {lightboxFoto.keterangan && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-4 py-2 rounded-lg">
-              {lightboxFoto.keterangan}
-            </div>
-          )}
         </div>
       )}
     </div>

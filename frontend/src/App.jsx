@@ -9,29 +9,28 @@ import RegistrationForm from './pages/RegistrationForm';
 import KelolaEskul from './pages/KelolaEskul';
 import PendaftarEskul from './pages/PendaftarEskul';
 import GaleriEskul from './pages/GaleriEskul';
+import GaleriFotoDetail from './pages/GaleriFotoDetail';
+import GaleriUploadFoto from './pages/GaleriUploadFoto';
+import TambahSiswaManual from './pages/TambahSiswaManual';
+import EditSiswaManual from './pages/EditSiswaManual';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Mengarahkan URL utama langsung ke halaman login */}
         <Route path="/" element={<Navigate to="/login" />} />
-        
-        {/* Halaman Login & Register */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
-        {/* Halaman Dashboard Utama */}
         <Route path="/Dashboard" element={<StudentDashboard />} />
-        
-        {/* Halaman Khusus Admin */}
         <Route path="/admin/kelola-eskul" element={<KelolaEskul />} />
         <Route path="/admin/pendaftar" element={<PendaftarEskul />} />
-
-        {/* Halaman Detail & Pendaftaran Eskul */}
         <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
         <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
         <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
+        <Route path="/eskul/:namaEskul/galeri/upload" element={<GaleriUploadFoto />} />
+        <Route path="/eskul/:namaEskul/galeri/:idGaleri" element={<GaleriFotoDetail />} />
+        <Route path="/eskul/:namaEskul/siswa/tambah" element={<TambahSiswaManual />} />
+        <Route path="/eskul/:namaEskul/siswa/edit/:idPendaftaran" element={<EditSiswaManual />} />
       </Routes>
     </Router>
   );
