@@ -304,3 +304,60 @@ export async function hapusGaleriEskul(idGaleri) {
     return { success: false, error: error.message };
   }
 }
+
+export async function setFotoUtamaGaleri(idGaleri) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(`${API_URL}/api/galeri/${idGaleri}/featured`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal mengatur foto utama');
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error setting foto utama:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateGaleriEskul(idGaleri, dataUpdate) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(`${API_URL}/api/galeri/${idGaleri}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: dataUpdate,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal mengupdate foto galeri');
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error updating galeri:", error);
+    return { success: false, error: error.message };
+  }
+}

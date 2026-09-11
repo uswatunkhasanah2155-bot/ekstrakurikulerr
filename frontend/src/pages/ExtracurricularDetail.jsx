@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { getSiswaByEskul, getDaftarEskul, hapusPendaftar, updatePendaftar, tambahPendaftar } from '../services/api';
+import { getSiswaByEskul, getDaftarEskul, hapusPendaftar, updatePendaftar, tambahPendaftar, getGaleriEskul } from '../services/api';
 import { Search, FileSpreadsheet, ClipboardList, User, X, Pencil, Trash2, Plus } from 'lucide-react';
 
 export default function ExtracurricularDetail() {
@@ -27,6 +27,7 @@ export default function ExtracurricularDetail() {
 
   const [daftarEskulOptions, setDaftarEskulOptions] = useState([]);
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
+  const [fotoUtamaGaleri, setFotoUtamaGaleri] = useState(null);
 
   const [formData, setFormData] = useState({ 
     nama: '', 
@@ -66,6 +67,12 @@ export default function ExtracurricularDetail() {
       );
       setCurrentEskulDetail(matchedEskul || null);
 
+      if (matchedEskul) {
+        const fotoGaleri = await getGaleriEskul(matchedEskul.id_eskul);
+        const fotoUtama = (fotoGaleri || []).find((item) => item.is_featured);
+        setFotoUtamaGaleri(fotoUtama || null);
+      }
+
       setLoading(false);
     }
     fetchData();
@@ -73,6 +80,10 @@ export default function ExtracurricularDetail() {
 
   const handleDaftarSiswa = () => {
     navigate(`/eskul/${namaEskul}/daftar`);
+  };
+
+  const handleLihatGaleri = () => {
+    navigate(`/eskul/${namaEskul}/galeri`);
   };
 
   const handleDownloadExcel = () => {
@@ -196,15 +207,17 @@ export default function ExtracurricularDetail() {
             Detail Ekstrakurikuler: {formatNamaEskul}
           </h2>
 
-          {isAdmin && (
-            <button 
-              onClick={handleDownloadExcel}
-              className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              Download Excel ({formatNamaEskul})
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button 
+                onClick={handleDownloadExcel}
+                className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Download Excel ({formatNamaEskul})
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-6">
@@ -259,7 +272,131 @@ export default function ExtracurricularDetail() {
               )}
             </div>
           </div>
+
+          {fotoUtamaGaleri ? (
+            <button
+              type="button"
+              onClick={handleLihatGaleri}
+              className="relative hidden md:block w-[360px] h-52 self-center rounded-lg overflow-hidden group cursor-pointer shrink-0"
+            >
+              <img
+                src={
+                  fotoUtamaGaleri.foto.startsWith('http')
+                    ? fotoUtamaGaleri.foto
+                    : `http://localhost:5000/${fotoUtamaGaleri.foto.startsWith('/') ? fotoUtamaGaleri.foto.slice(1) : fotoUtamaGaleri.foto}`
+                }
+                alt=""
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: 'linear-gradient(90deg, white 0%, rgba(255,255,255,0) 25%)' }}
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+              <span className="absolute bottom-2 right-2.5 text-[11px] text-white/90 bg-black/25 px-2 py-0.5 rounded-md">
+                Kegiatan terbaru
+              </span>
+            </button>
+          ) : (
+            isAdmin && (
+              <button
+                type="button"
+                onClick={handleLihatGaleri}
+                className="hidden md:flex w-[360px] h-52 self-center rounded-lg border-2 border-dashed border-gray-200 items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-300 transition-colors text-sm font-medium shrink-0 text-center px-4"
+              >
+                Belum ada foto utama.<br />Pilih di halaman Galeri Foto →
+              </button>
+            )
+          )}
         </div>
+
+        {isModalOpen && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-gray-800">
+                {isEditMode ? `Edit Data Siswa (${formatNamaEskul})` : `Tambah Siswa Manual (${formatNamaEskul})`}
+              </h3>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSimpanSiswa} className="p-5 space-y-4 max-w-md">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Siswa</label>
+                <input 
+                  type="text"
+                  required
+                  value={formData.nama}
+                  onChange={(e) => setFormData({...formData, nama: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none bg-white focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Masukkan nama lengkap"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                <select
+                  value={formData.kelas}
+                  onChange={(e) => setFormData({...formData, kelas: e.target.value})}
+                  required
+                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                >
+                  <option value="" disabled>Pilih Kelas</option>
+                  {daftarKelas.map((kls, i) => (
+                    <option key={i} value={kls}>{kls}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+                <select
+                  value={formData.jenisKelamin}
+                  onChange={(e) => setFormData({...formData, jenisKelamin: e.target.value})}
+                  required
+                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                >
+                  <option value="" disabled>Pilih Jenis Kelamin</option>
+                  <option value="Laki-laki">Laki-laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {isEditMode ? 'Foto' : 'Foto Siswa'}
+                </label>
+                <input 
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFormData({...formData, foto: e.target.files[0]})}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3 justify-end">
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition"
+                >
+                  {isEditMode ? 'Simpan Perubahan' : 'Daftarkan Siswa'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -331,18 +468,18 @@ export default function ExtracurricularDetail() {
                                   : `http://localhost:5000/${siswa.foto.startsWith('/') ? siswa.foto.slice(1) : siswa.foto}`
                               } 
                               alt={siswa.nama} 
-                              className="w-20 h-20 object-cover rounded-full border-2 border-gray-200 shadow-sm"
+                              className="w-19 h-19 object-cover rounded-full border-2 border-gray-200 shadow-sm"
                               onError={(e) => { 
                                 e.target.style.display = 'none';
                                 e.target.nextSibling.style.display = 'flex';
-                              }}
+                              }} 
                             />
                           ) : null}
                           <div
-                            className="w-14 h-14 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400"
+                            className="w-19 h-19 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400"
                             style={{ display: siswa.foto ? 'none' : 'flex' }}
                           >
-                            <User className="w-6 h-6" />
+                            <User className="w-5 h-5" />
                           </div>
                         </td>
 
@@ -380,95 +517,6 @@ export default function ExtracurricularDetail() {
         </div>
 
       </main>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
-                {isEditMode ? `Edit Data Siswa (${formatNamaEskul})` : `Tambah Siswa Manual (${formatNamaEskul})`}
-              </h3>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSimpanSiswa} className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Siswa</label>
-                <input 
-                  type="text"
-                  required
-                  value={formData.nama}
-                  onChange={(e) => setFormData({...formData, nama: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none bg-white focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="Masukkan nama lengkap"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
-                <select
-                  value={formData.kelas}
-                  onChange={(e) => setFormData({...formData, kelas: e.target.value})}
-                  required
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
-                >
-                  <option value="" disabled>Pilih Kelas</option>
-                  {daftarKelas.map((kls, i) => (
-                    <option key={i} value={kls}>{kls}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
-                <select
-                  value={formData.jenisKelamin}
-                  onChange={(e) => setFormData({...formData, jenisKelamin: e.target.value})}
-                  required
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
-                >
-                  <option value="" disabled>Pilih Jenis Kelamin</option>
-                  <option value="Laki-laki">Laki-laki</option>
-                  <option value="Perempuan">Perempuan</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isEditMode ? 'Foto' : 'Foto Siswa'}
-                </label>
-                <input 
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setFormData({...formData, foto: e.target.files[0]})}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
-                />
-              </div>
-
-              <div className="pt-2 flex gap-3 justify-end">
-                <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button 
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition"
-                >
-                  {isEditMode ? 'Simpan Perubahan' : 'Daftarkan Siswa'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );

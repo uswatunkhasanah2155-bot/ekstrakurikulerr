@@ -52,6 +52,7 @@ model GaleriEskul {
   id_eskul        Int
   foto            String
   keterangan      String?
+  is_featured     Boolean         @default(false)
   created_at      DateTime        @default(now())
   ekstrakurikuler Ekstrakurikuler @relation(fields: [id_eskul], references: [id_eskul], onDelete: Cascade)
 }
