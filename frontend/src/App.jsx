@@ -7,12 +7,14 @@ import StudentDashboard from './pages/Dashboard';
 import ExtracurricularDetail from './pages/ExtracurricularDetail';
 import RegistrationForm from './pages/RegistrationForm';
 import KelolaEskul from './pages/KelolaEskul';
+import KelolaPembina from './pages/KelolaPembina';
 import PendaftarEskul from './pages/PendaftarEskul';
 import GaleriEskul from './pages/GaleriEskul';
 import GaleriFotoDetail from './pages/GaleriFotoDetail';
 import GaleriUploadFoto from './pages/GaleriUploadFoto';
 import TambahSiswaManual from './pages/TambahSiswaManual';
 import EditSiswaManual from './pages/EditSiswaManual';
+import ManajemenKelas from './pages/ManajemenKelas';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/Dashboard" element={<StudentDashboard />} />
         <Route path="/admin/kelola-eskul" element={<KelolaEskul />} />
+        <Route path="/admin/kelola-pembina" element={<KelolaPembina />} />
+        <Route path="/admin/manajemen-kelas" element={<ManajemenKelas />} />
         <Route path="/admin/pendaftar" element={<PendaftarEskul />} />
         <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
         <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />

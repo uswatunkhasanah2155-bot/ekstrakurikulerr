@@ -361,3 +361,214 @@ export async function updateGaleriEskul(idGaleri, dataUpdate) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getDaftarPembina() {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/auth/pembina`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Gagal mengambil daftar pembina');
+    }
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error("Error fetching pembina:", error);
+    return [];
+  }
+}
+
+export async function tambahPembina(dataPembina) {
+  try {
+    const response = await fetch(`${API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: dataPembina.username,
+        password: dataPembina.password,
+        role: 'pembina',
+        id_eskul: Number(dataPembina.id_eskul),
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal menambahkan akun pembina');
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error adding pembina:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function hapusPembina(idUser) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/auth/pembina/${idUser}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorResult = await response.json();
+      throw new Error(errorResult.message || 'Gagal menghapus akun pembina');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting pembina:", error);
+    return { success: false, error: error.message };
+  }
+}
+// ===============================
+// MANAJEMEN KELAS
+// ===============================
+
+export async function getDaftarKelas() {
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(`${API_URL}/api/kelas`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal mengambil daftar kelas');
+    }
+
+    return result.data || [];
+  } catch (error) {
+    console.error("Error fetching kelas:", error);
+    return [];
+  }
+}
+
+
+export async function tambahKelas(namaKelas) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(`${API_URL}/api/kelas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nama_kelas: namaKelas
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal menambahkan kelas');
+    }
+
+    return {
+      success: true,
+      data: result.data
+    };
+  } catch (error) {
+    console.error("Error adding kelas:", error);
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+
+export async function updateKelas(idKelas, namaKelas) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(`${API_URL}/api/kelas/${idKelas}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        nama_kelas: namaKelas
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal mengupdate kelas');
+    }
+
+    return {
+      success: true,
+      data: result.data
+    };
+  } catch (error) {
+    console.error("Error updating kelas:", error);
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+
+export async function hapusKelas(idKelas) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(`${API_URL}/api/kelas/${idKelas}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal menghapus kelas');
+    }
+
+    return {
+      success: true,
+      data: result
+    };
+  } catch (error) {
+    console.error("Error deleting kelas:", error);
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}

@@ -7,6 +7,7 @@ import authRoutes from './services/auth-service/auth.js';
 import pendaftaranRoutes from './services/pendaftaran-service/pendaftaran.js';
 import siswaRoutes from './services/siswa-service/siswa.js';
 import galeriRoutes from './services/galeri-service/index.js';
+import kelasRoutes from './services/kelas-service/kelas.js';
 
 dotenv.config();
 
@@ -35,9 +36,14 @@ app.use('/api/siswa', siswaRoutes);
 // Panggil Route Galeri Eskul
 app.use('/api/galeri', galeriRoutes);
 
+// Panggil Route Manajemen Kelas
+app.use('/api/kelas', kelasRoutes);
+
 // Route uji coba utama
 app.get('/', (req, res) => {
-  res.json({ message: 'Server API Ekstrakurikuler Berjalan Lancar! 🚀' });
+  res.json({ 
+    message: 'Server API Ekstrakurikuler Berjalan Lancar! 🚀' 
+  });
 });
 
 // Jalankan server
