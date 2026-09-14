@@ -21,13 +21,12 @@ model Siswa {
   id_siswa      Int           @id @default(autoincrement())
   id_user       Int?          @unique
   nama_siswa    String
-  kelas         String?
-  id_kelas      Int?          
+  id_kelas      Int?
   jenis_kelamin String
   foto          String?
   user          User?         @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
   kelasData     Kelas?        @relation(fields: [id_kelas], references: [id_kelas])
-  pendaftaran   Pendaftaran[]  
+  pendaftaran   Pendaftaran[]
 }
 
 model Kelas {
