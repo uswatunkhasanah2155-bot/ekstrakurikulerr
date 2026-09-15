@@ -487,7 +487,7 @@ export default function ExtracurricularDetail() {
                           ) : null}
 
                           <div
-                            className="w-14 h-14 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400"
+                            className="w-20 h-20 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-400"
                             style={{
                               display: siswa.foto ? 'none' : 'flex'
                             }}

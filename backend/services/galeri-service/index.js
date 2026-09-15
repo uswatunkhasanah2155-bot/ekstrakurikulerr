@@ -26,7 +26,70 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+
+// ==================================================
+// HELPER: OTORISASI GALERI
+// ==================================================
+// Aturan:
+// - admin   -> boleh akses galeri eskul manapun
+// - pembina -> boleh akses HANYA galeri eskul yang dia bina
+// - role lain -> ditolak
+//
+// idEskulTarget = id_eskul yang mau diakses (dari body saat upload,
+// atau dari data galeri yang sudah ada saat edit/hapus/set featured)
+//
+// Mengembalikan { allowed: boolean, statusCode, message }
+async function cekAksesGaleri(req, idEskulTarget) {
+  const userRole = (req.user.role || '').toLowerCase();
+
+  if (userRole === 'admin') {
+    return { allowed: true };
+  }
+
+  if (userRole === 'pembina') {
+    let idEskulPembina = req.user.id_eskul;
+
+    if (!idEskulPembina) {
+      const userId = req.user.id_user || req.user.id;
+
+      const userRecord = await prisma.user.findUnique({
+        where: { id_user: Number(userId) },
+        select: { id_eskul: true },
+      });
+
+      idEskulPembina = userRecord?.id_eskul;
+    }
+
+    if (!idEskulPembina) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        message: 'Akun pembina ini tidak terhubung ke eskul manapun.',
+      };
+    }
+
+    if (Number(idEskulPembina) !== Number(idEskulTarget)) {
+      return {
+        allowed: false,
+        statusCode: 403,
+        message: 'Anda hanya bisa mengelola galeri eskul yang Anda bina.',
+      };
+    }
+
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    statusCode: 403,
+    message: 'Anda tidak memiliki akses untuk mengelola galeri ini.',
+  };
+}
+
+
+// ==================================================
 // GET: Mengambil semua foto galeri berdasarkan id_eskul
+// ==================================================
 router.get('/:id_eskul', async (req, res) => {
   try {
     const { id_eskul } = req.params;
@@ -47,18 +110,26 @@ router.get('/:id_eskul', async (req, res) => {
   }
 });
 
-// POST: Upload banyak foto sekaligus ke galeri (khusus admin)
+
+// ==================================================
+// POST: Upload banyak foto sekaligus ke galeri
+// admin -> eskul manapun, pembina -> hanya eskul miliknya
+// ==================================================
 router.post('/', verifyToken, upload.array('foto', 20), async (req, res) => {
   try {
-    const userRole = (req.user.role || '').toLowerCase();
-    if (userRole !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Hanya admin yang boleh upload foto galeri' });
-    }
-
     const { id_eskul, keterangan } = req.body;
 
     if (!id_eskul) {
       return res.status(400).json({ success: false, message: 'ID Ekstrakurikuler wajib diisi!' });
+    }
+
+    // ---------------------------------------------
+    // CEK OTORISASI
+    // ---------------------------------------------
+    const akses = await cekAksesGaleri(req, id_eskul);
+
+    if (!akses.allowed) {
+      return res.status(akses.statusCode).json({ success: false, message: akses.message });
     }
 
     if (!req.files || req.files.length === 0) {
@@ -91,15 +162,13 @@ router.post('/', verifyToken, upload.array('foto', 20), async (req, res) => {
   }
 });
 
-// PATCH: Menjadikan satu foto sebagai foto utama/unggulan eskul (khusus admin)
-// Foto lain di eskul yang sama otomatis di-unset agar cuma ada 1 foto utama per eskul
+
+// ==================================================
+// PATCH: Menjadikan satu foto sebagai foto utama/unggulan eskul
+// admin -> eskul manapun, pembina -> hanya eskul miliknya
+// ==================================================
 router.patch('/:id_galeri/featured', verifyToken, async (req, res) => {
   try {
-    const userRole = (req.user.role || '').toLowerCase();
-    if (userRole !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Hanya admin yang boleh mengatur foto utama' });
-    }
-
     const { id_galeri } = req.params;
 
     const galeriTarget = await prisma.galeriEskul.findUnique({
@@ -108,6 +177,15 @@ router.patch('/:id_galeri/featured', verifyToken, async (req, res) => {
 
     if (!galeriTarget) {
       return res.status(404).json({ success: false, message: 'Foto galeri tidak ditemukan' });
+    }
+
+    // ---------------------------------------------
+    // CEK OTORISASI (berdasarkan id_eskul milik foto ini)
+    // ---------------------------------------------
+    const akses = await cekAksesGaleri(req, galeriTarget.id_eskul);
+
+    if (!akses.allowed) {
+      return res.status(akses.statusCode).json({ success: false, message: akses.message });
     }
 
     await prisma.$transaction([
@@ -131,14 +209,13 @@ router.patch('/:id_galeri/featured', verifyToken, async (req, res) => {
   }
 });
 
-// PUT: Mengedit foto galeri (ganti gambar dan/atau keterangan) - khusus admin
+
+// ==================================================
+// PUT: Mengedit foto galeri (ganti gambar dan/atau keterangan)
+// admin -> eskul manapun, pembina -> hanya eskul miliknya
+// ==================================================
 router.put('/:id_galeri', verifyToken, upload.single('foto'), async (req, res) => {
   try {
-    const userRole = (req.user.role || '').toLowerCase();
-    if (userRole !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Hanya admin yang boleh mengedit foto galeri' });
-    }
-
     const { id_galeri } = req.params;
     const { keterangan } = req.body;
 
@@ -148,6 +225,15 @@ router.put('/:id_galeri', verifyToken, upload.single('foto'), async (req, res) =
 
     if (!galeriCek) {
       return res.status(404).json({ success: false, message: 'Foto galeri tidak ditemukan' });
+    }
+
+    // ---------------------------------------------
+    // CEK OTORISASI (berdasarkan id_eskul milik foto ini)
+    // ---------------------------------------------
+    const akses = await cekAksesGaleri(req, galeriCek.id_eskul);
+
+    if (!akses.allowed) {
+      return res.status(akses.statusCode).json({ success: false, message: akses.message });
     }
 
     const dataUpdate = {
@@ -183,14 +269,13 @@ router.put('/:id_galeri', verifyToken, upload.single('foto'), async (req, res) =
   }
 });
 
-// DELETE: Menghapus satu foto galeri (khusus admin)
+
+// ==================================================
+// DELETE: Menghapus satu foto galeri
+// admin -> eskul manapun, pembina -> hanya eskul miliknya
+// ==================================================
 router.delete('/:id_galeri', verifyToken, async (req, res) => {
   try {
-    const userRole = (req.user.role || '').toLowerCase();
-    if (userRole !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Hanya admin yang boleh menghapus foto galeri' });
-    }
-
     const { id_galeri } = req.params;
 
     const galeriCek = await prisma.galeriEskul.findUnique({
@@ -199,6 +284,15 @@ router.delete('/:id_galeri', verifyToken, async (req, res) => {
 
     if (!galeriCek) {
       return res.status(404).json({ success: false, message: 'Foto galeri tidak ditemukan' });
+    }
+
+    // ---------------------------------------------
+    // CEK OTORISASI (berdasarkan id_eskul milik foto ini)
+    // ---------------------------------------------
+    const akses = await cekAksesGaleri(req, galeriCek.id_eskul);
+
+    if (!akses.allowed) {
+      return res.status(akses.statusCode).json({ success: false, message: akses.message });
     }
 
     await prisma.galeriEskul.delete({

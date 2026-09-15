@@ -5,7 +5,8 @@ import Sidebar from '../components/Sidebar';
 import {
   tambahPendaftar,
   getDaftarEskul,
-  getDaftarKelas
+  getDaftarKelas,
+  getProfilSiswaSaya
 } from '../services/api';
 
 export default function RegistrationForm() {
@@ -34,10 +35,14 @@ export default function RegistrationForm() {
   const [daftarKelas, setDaftarKelas] = useState([]);
   const [loadingKelas, setLoadingKelas] = useState(true);
 
+  // OPSI 2: kalau siswa sudah punya profil, nama/kelas/gender
+  // tidak bisa diubah lagi lewat form pendaftaran eskul baru.
+  const [profilSudahAda, setProfilSudahAda] = useState(false);
+  const [loadingProfil, setLoadingProfil] = useState(true);
+
   useEffect(() => {
     async function fetchKelas() {
       setLoadingKelas(true);
-
       try {
         const data = await getDaftarKelas();
         setDaftarKelas(data || []);
@@ -49,7 +54,35 @@ export default function RegistrationForm() {
       }
     }
 
+    async function fetchProfilSaya() {
+      setLoadingProfil(true);
+      try {
+        const profil = await getProfilSiswaSaya();
+
+        if (profil) {
+          setProfilSudahAda(true);
+
+          setFormData((prev) => ({
+            ...prev,
+            namaLengkap: profil.nama_siswa || '',
+            id_kelas: profil.id_kelas
+              ? String(profil.id_kelas)
+              : '',
+            jenisKelamin:
+              profil.jenis_kelamin === 'P'
+                ? 'Perempuan'
+                : 'Laki-laki'
+          }));
+        }
+      } catch (error) {
+        console.error('Gagal mengambil profil siswa:', error);
+      } finally {
+        setLoadingProfil(false);
+      }
+    }
+
     fetchKelas();
+    fetchProfilSaya();
   }, []);
 
   const handleChange = (e) => {
@@ -119,7 +152,6 @@ export default function RegistrationForm() {
         formData.namaLengkap
       );
 
-      // Sekarang yang dikirim adalah ID kelas
       dataToSend.append(
         'id_kelas',
         formData.id_kelas
@@ -163,6 +195,14 @@ export default function RegistrationForm() {
         </h2>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-2xl">
+          {profilSudahAda && (
+            <div className="mb-4 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-3 py-2">
+              Data profil kamu sudah tersimpan. Nama, kelas, dan jenis
+              kelamin tidak bisa diubah dari form ini — hubungi admin
+              kalau ada yang perlu dikoreksi.
+            </div>
+          )}
+
           <form
             onSubmit={handleSubmit}
             className="space-y-4"
@@ -179,8 +219,9 @@ export default function RegistrationForm() {
                 value={formData.namaLengkap}
                 onChange={handleChange}
                 required
+                disabled={profilSudahAda || loadingProfil}
                 placeholder="Masukkan nama lengkapmu"
-                className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
 
@@ -195,7 +236,11 @@ export default function RegistrationForm() {
                 value={formData.id_kelas}
                 onChange={handleChange}
                 required
-                disabled={loadingKelas}
+                disabled={
+                  loadingKelas ||
+                  profilSudahAda ||
+                  loadingProfil
+                }
                 className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100"
               >
                 <option value="" disabled>
@@ -226,7 +271,8 @@ export default function RegistrationForm() {
                 value={formData.jenisKelamin}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                disabled={profilSudahAda || loadingProfil}
+                className="w-full px-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100"
               >
                 <option value="" disabled>
                   Pilih Jenis Kelamin
@@ -252,16 +298,22 @@ export default function RegistrationForm() {
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                required
+                required={!profilSudahAda}
                 className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
               />
+
+              {profilSudahAda && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Opsional — hanya diisi kalau ingin memperbarui foto.
+                </p>
+              )}
             </div>
 
             {/* Tombol */}
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || loadingProfil}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-50"
               >
                 {loading

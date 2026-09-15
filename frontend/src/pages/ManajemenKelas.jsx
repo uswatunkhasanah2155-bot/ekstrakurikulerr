@@ -143,7 +143,7 @@ export default function ManajemenKelas() {
             type="text"
             value={namaKelas}
             onChange={(e) => setNamaKelas(e.target.value)}
-            placeholder="Contoh: X RPL1"
+            placeholder="Masukan Nama Kelas"
             className="flex-1 border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
           />
 

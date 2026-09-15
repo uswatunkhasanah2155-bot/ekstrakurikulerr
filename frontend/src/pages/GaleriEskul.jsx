@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { getDaftarEskul, getGaleriEskul, uploadGaleriEskul, hapusGaleriEskul, setFotoUtamaGaleri, updateGaleriEskul } from '../services/api';
+import { getDaftarEskul, getGaleriEskul, hapusGaleriEskul, setFotoUtamaGaleri, updateGaleriEskul } from '../services/api';
 import { Star, Pencil } from 'lucide-react';
 
 export default function GaleriEskul() {
@@ -16,14 +16,14 @@ export default function GaleriEskul() {
     .join(' ');
 
   const [isAdmin, setIsAdmin] = useState(false);
+  // isStaff = admin ATAU pembina -> keduanya boleh kelola galeri.
+  // Backend tetap membatasi pembina hanya ke eskul yang dia bina;
+  // ini cuma soal menampilkan tombolnya di UI.
+  const [isStaff, setIsStaff] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
   const [daftarFoto, setDaftarFoto] = useState([]);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [fileList, setFileList] = useState([]);
-  const [keterangan, setKeterangan] = useState('');
-  const [uploading, setUploading] = useState(false);
   const [settingUtama, setSettingUtama] = useState(null);
 
   const [editTarget, setEditTarget] = useState(null);
@@ -32,12 +32,10 @@ export default function GaleriEskul() {
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
-    const roleUser = localStorage.getItem('role');
-    if (roleUser && roleUser.toUpperCase() === 'ADMIN') {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
-    }
+    const roleUser = (localStorage.getItem('role') || '').toUpperCase();
+
+    setIsAdmin(roleUser === 'ADMIN');
+    setIsStaff(roleUser === 'ADMIN' || roleUser === 'PEMBINA');
 
     async function fetchData() {
       setLoading(true);
@@ -59,46 +57,6 @@ export default function GaleriEskul() {
     }
     fetchData();
   }, [namaEskul, cleanNamaEskul]);
-
-  const handlePilihFile = (e) => {
-    setFileList(Array.from(e.target.files));
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
-
-    if (!currentEskulDetail) return;
-    if (fileList.length === 0) {
-      alert('Pilih minimal 1 foto terlebih dahulu!');
-      return;
-    }
-
-    setUploading(true);
-
-    const formData = new FormData();
-    formData.append('id_eskul', currentEskulDetail.id_eskul);
-    if (keterangan) {
-      formData.append('keterangan', keterangan);
-    }
-    fileList.forEach((file) => {
-      formData.append('foto', file);
-    });
-
-    const result = await uploadGaleriEskul(formData);
-
-    setUploading(false);
-
-    if (result.success) {
-      alert(`Berhasil upload ${fileList.length} foto!`);
-      const fotoData = await getGaleriEskul(currentEskulDetail.id_eskul);
-      setDaftarFoto(fotoData || []);
-      setIsModalOpen(false);
-      setFileList([]);
-      setKeterangan('');
-    } else {
-      alert('Gagal upload foto: ' + result.error);
-    }
-  };
 
   const handleHapusFoto = async (idGaleri) => {
     if (window.confirm('Yakin ingin menghapus foto ini dari galeri?')) {
@@ -192,9 +150,9 @@ export default function GaleriEskul() {
             </h2>
           </div>
 
-          {isAdmin && (
+          {isStaff && (
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => navigate(`/eskul/${namaEskul}/galeri/upload`)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
             >
               + Upload Foto
@@ -202,7 +160,7 @@ export default function GaleriEskul() {
           )}
         </div>
 
-        {isAdmin && daftarFoto.length > 0 && (
+        {isStaff && daftarFoto.length > 0 && (
           <p className="text-xs text-gray-500 mb-4 -mt-2">
             Klik ikon bintang untuk foto utama, ikon pensil untuk edit foto/keterangan. Klik foto untuk melihat lebih besar.
           </p>
@@ -239,7 +197,7 @@ export default function GaleriEskul() {
                     </div>
                   )}
 
-                  {isAdmin && (
+                  {isStaff && (
                     <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleJadikanUtama(item.id_galeri)}
@@ -276,72 +234,6 @@ export default function GaleriEskul() {
           )}
         </div>
       </main>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
-                Upload Foto Galeri ({formatNamaEskul})
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-lg"
-              >
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleUpload} className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Pilih Foto (bisa lebih dari satu)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePilihFile}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
-                />
-                {fileList.length > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">{fileList.length} foto dipilih</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Keterangan (opsional)
-                </label>
-                <input
-                  type="text"
-                  value={keterangan}
-                  onChange={(e) => setKeterangan(e.target.value)}
-                  placeholder="Keterangan Kegiatan"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none bg-white focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              </div>
-
-              <div className="pt-2 flex gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition disabled:opacity-50"
-                >
-                  {uploading ? 'Mengupload...' : 'Upload'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {editTarget && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center p-4">
