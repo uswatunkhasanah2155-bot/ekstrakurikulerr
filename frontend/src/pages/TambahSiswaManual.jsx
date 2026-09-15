@@ -20,8 +20,9 @@ export default function TambahSiswaManual() {
   const formatNamaEskul = cleanNamaEskul
     .split(' ')
     .map(
-      word =>
-        word.charAt(0).toUpperCase() + word.slice(1)
+      (word) =>
+        word.charAt(0).toUpperCase() +
+        word.slice(1)
     )
     .join(' ');
 
@@ -52,11 +53,12 @@ export default function TambahSiswaManual() {
       try {
         // Ambil data eskul
         const eskulData = await getDaftarEskul();
+
         const listEskul =
           eskulData.data || eskulData || [];
 
         const matched = listEskul.find(
-          item =>
+          (item) =>
             item.nama_eskul &&
             item.nama_eskul
               .toLowerCase()
@@ -68,8 +70,9 @@ export default function TambahSiswaManual() {
 
         setCurrentEskul(matched || null);
 
-        // Ambil data kelas dari database
-        const kelasData = await getDaftarKelas();
+        // Ambil data kelas
+        const kelasData =
+          await getDaftarKelas();
 
         setDaftarKelas(
           Array.isArray(kelasData)
@@ -81,6 +84,7 @@ export default function TambahSiswaManual() {
           'Gagal mengambil data:',
           error
         );
+
         setDaftarKelas([]);
       } finally {
         setLoadingKelas(false);
@@ -90,7 +94,7 @@ export default function TambahSiswaManual() {
     fetchData();
   }, [namaEskul, cleanNamaEskul]);
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.id_kelas) {
@@ -99,7 +103,9 @@ export default function TambahSiswaManual() {
     }
 
     if (!currentEskul) {
-      alert('Data ekstrakurikuler tidak ditemukan');
+      alert(
+        'Data ekstrakurikuler tidak ditemukan'
+      );
       return;
     }
 
@@ -121,7 +127,6 @@ export default function TambahSiswaManual() {
       formData.nama
     );
 
-    // Sekarang kirim ID kelas
     dataToSend.append(
       'id_kelas',
       formData.id_kelas
@@ -168,26 +173,30 @@ export default function TambahSiswaManual() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 relative">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+
       <Sidebar isAdmin={isAdmin} />
 
       <main className="flex-1 p-6 overflow-y-auto">
 
+        {/* KEMBALI */}
         <button
           onClick={() =>
             navigate(`/eskul/${namaEskul}`)
           }
-          className="text-sm text-gray-500 hover:text-emerald-600 font-medium inline-flex items-center gap-1.5 mb-6 transition-colors"
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium inline-flex items-center gap-1.5 mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Kembali ke Detail Eskul
         </button>
 
-        <h2 className="text-xl font-bold text-gray-800 mb-6">
+        {/* JUDUL */}
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">
           Tambah Siswa Manual: {formatNamaEskul}
         </h2>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-lg">
+        {/* FORM */}
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 max-w-lg transition-colors duration-300">
 
           <form
             onSubmit={handleSubmit}
@@ -196,7 +205,8 @@ export default function TambahSiswaManual() {
 
             {/* NAMA SISWA */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Nama Siswa
               </label>
 
@@ -204,26 +214,28 @@ export default function TambahSiswaManual() {
                 type="text"
                 required
                 value={formData.nama}
-                onChange={e =>
+                onChange={(e) =>
                   setFormData({
                     ...formData,
                     nama: e.target.value
                   })
                 }
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none bg-white focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 placeholder="Masukkan nama lengkap"
               />
+
             </div>
 
             {/* KELAS */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Kelas
               </label>
 
               <select
                 value={formData.id_kelas}
-                onChange={e =>
+                onChange={(e) =>
                   setFormData({
                     ...formData,
                     id_kelas: e.target.value
@@ -231,15 +243,16 @@ export default function TambahSiswaManual() {
                 }
                 required
                 disabled={loadingKelas}
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white disabled:bg-gray-100"
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-400 transition-colors"
               >
+
                 <option value="">
                   {loadingKelas
                     ? 'Memuat kelas...'
                     : 'Pilih Kelas'}
                 </option>
 
-                {daftarKelas.map(kelas => (
+                {daftarKelas.map((kelas) => (
                   <option
                     key={kelas.id_kelas}
                     value={kelas.id_kelas}
@@ -247,18 +260,21 @@ export default function TambahSiswaManual() {
                     {kelas.nama_kelas}
                   </option>
                 ))}
+
               </select>
+
             </div>
 
             {/* JENIS KELAMIN */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Jenis Kelamin
               </label>
 
               <select
                 value={formData.jenisKelamin}
-                onChange={e =>
+                onChange={(e) =>
                   setFormData({
                     ...formData,
                     jenisKelamin:
@@ -266,8 +282,9 @@ export default function TambahSiswaManual() {
                   })
                 }
                 required
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition-colors"
               >
+
                 <option value="" disabled>
                   Pilih Jenis Kelamin
                 </option>
@@ -279,26 +296,30 @@ export default function TambahSiswaManual() {
                 <option value="Perempuan">
                   Perempuan
                 </option>
+
               </select>
+
             </div>
 
             {/* FOTO */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Foto Siswa
               </label>
 
               <input
                 type="file"
                 accept="image/*"
-                onChange={e =>
+                onChange={(e) =>
                   setFormData({
                     ...formData,
                     foto: e.target.files[0]
                   })
                 }
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/40 file:text-emerald-700 dark:file:text-emerald-300 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/60 cursor-pointer"
               />
+
             </div>
 
             {/* BUTTON */}
@@ -323,7 +344,7 @@ export default function TambahSiswaManual() {
                     `/eskul/${namaEskul}`
                   )
                 }
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+                className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
               >
                 Batal
               </button>
@@ -331,7 +352,9 @@ export default function TambahSiswaManual() {
             </div>
 
           </form>
+
         </div>
+
       </main>
     </div>
   );

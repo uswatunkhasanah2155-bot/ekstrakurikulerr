@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import InputField from '../components/InputField';
 import { useNavigate } from 'react-router-dom';
+import logoSekolah from '../assets/logosmkc.jpeg';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -76,21 +77,13 @@ export default function Login() {
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 relative z-10 border border-purple-50">
 
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-50 text-purple-600 rounded-full mb-3 shadow-inner">
-            <svg
-              className="w-8 h-8 text-purple-600"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-              />
-            </svg>
-          </div>
+          <div className="flex items-center justify-center mb-4">
+        <img
+      src={logoSekolah}
+      alt="Logo Sekolah"
+      className="w-24 h-24 object-contain"
+      />
+      </div>
 
           <h2 className="text-2xl font-bold text-gray-900">
             Login

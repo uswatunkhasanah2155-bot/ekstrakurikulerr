@@ -2,90 +2,169 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { getDaftarEskul, getGaleriEskul, hapusGaleriEskul, setFotoUtamaGaleri, updateGaleriEskul } from '../services/api';
+import {
+  getDaftarEskul,
+  getGaleriEskul,
+  hapusGaleriEskul,
+  setFotoUtamaGaleri,
+  updateGaleriEskul
+} from '../services/api';
 import { Star, Pencil } from 'lucide-react';
 
 export default function GaleriEskul() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
 
-  const cleanNamaEskul = namaEskul ? namaEskul.replace(/-/g, ' ') : '';
+  const cleanNamaEskul = namaEskul
+    ? namaEskul.replace(/-/g, ' ')
+    : '';
+
   const formatNamaEskul = cleanNamaEskul
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map(
+      word =>
+        word.charAt(0).toUpperCase() +
+        word.slice(1)
+    )
     .join(' ');
 
   const [isAdmin, setIsAdmin] = useState(false);
-  // isStaff = admin ATAU pembina -> keduanya boleh kelola galeri.
-  // Backend tetap membatasi pembina hanya ke eskul yang dia bina;
-  // ini cuma soal menampilkan tombolnya di UI.
+
   const [isStaff, setIsStaff] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
+  const [currentEskulDetail, setCurrentEskulDetail] =
+    useState(null);
   const [daftarFoto, setDaftarFoto] = useState([]);
 
-  const [settingUtama, setSettingUtama] = useState(null);
+  const [settingUtama, setSettingUtama] =
+    useState(null);
 
-  const [editTarget, setEditTarget] = useState(null);
+  const [editTarget, setEditTarget] =
+    useState(null);
   const [editFile, setEditFile] = useState(null);
-  const [editKeterangan, setEditKeterangan] = useState('');
-  const [savingEdit, setSavingEdit] = useState(false);
+  const [editKeterangan, setEditKeterangan] =
+    useState('');
+  const [savingEdit, setSavingEdit] =
+    useState(false);
 
   useEffect(() => {
-    const roleUser = (localStorage.getItem('role') || '').toUpperCase();
+    const roleUser = (
+      localStorage.getItem('role') || ''
+    ).toUpperCase();
 
     setIsAdmin(roleUser === 'ADMIN');
-    setIsStaff(roleUser === 'ADMIN' || roleUser === 'PEMBINA');
+    setIsStaff(
+      roleUser === 'ADMIN' ||
+      roleUser === 'PEMBINA'
+    );
 
     async function fetchData() {
       setLoading(true);
 
-      const eskulData = await getDaftarEskul();
-      const listEskul = eskulData.data || eskulData || [];
+      const eskulData =
+        await getDaftarEskul();
 
-      const matchedEskul = listEskul.find(
-        (item) => item.nama_eskul && item.nama_eskul.toLowerCase().trim() === cleanNamaEskul.toLowerCase().trim()
+      const listEskul =
+        eskulData.data ||
+        eskulData ||
+        [];
+
+      const matchedEskul =
+        listEskul.find(
+          item =>
+            item.nama_eskul &&
+            item.nama_eskul
+              .toLowerCase()
+              .trim() ===
+              cleanNamaEskul
+                .toLowerCase()
+                .trim()
+        );
+
+      setCurrentEskulDetail(
+        matchedEskul || null
       );
-      setCurrentEskulDetail(matchedEskul || null);
 
       if (matchedEskul) {
-        const fotoData = await getGaleriEskul(matchedEskul.id_eskul);
-        setDaftarFoto(fotoData || []);
+        const fotoData =
+          await getGaleriEskul(
+            matchedEskul.id_eskul
+          );
+
+        setDaftarFoto(
+          fotoData || []
+        );
       }
 
       setLoading(false);
     }
+
     fetchData();
   }, [namaEskul, cleanNamaEskul]);
 
-  const handleHapusFoto = async (idGaleri) => {
-    if (window.confirm('Yakin ingin menghapus foto ini dari galeri?')) {
-      const result = await hapusGaleriEskul(idGaleri);
+  const handleHapusFoto = async (
+    idGaleri
+  ) => {
+    if (
+      window.confirm(
+        'Yakin ingin menghapus foto ini dari galeri?'
+      )
+    ) {
+      const result =
+        await hapusGaleriEskul(
+          idGaleri
+        );
+
       if (result.success) {
-        setDaftarFoto((prev) => prev.filter((f) => f.id_galeri !== idGaleri));
+        setDaftarFoto(prev =>
+          prev.filter(
+            f =>
+              f.id_galeri !==
+              idGaleri
+          )
+        );
       } else {
-        alert('Gagal menghapus foto: ' + result.error);
+        alert(
+          'Gagal menghapus foto: ' +
+            result.error
+        );
       }
     }
   };
 
-  const handleJadikanUtama = async (idGaleri) => {
+  const handleJadikanUtama = async (
+    idGaleri
+  ) => {
     setSettingUtama(idGaleri);
-    const result = await setFotoUtamaGaleri(idGaleri);
+
+    const result =
+      await setFotoUtamaGaleri(
+        idGaleri
+      );
+
     setSettingUtama(null);
 
     if (result.success) {
-      setDaftarFoto((prev) =>
-        prev.map((f) => ({ ...f, is_featured: f.id_galeri === idGaleri }))
+      setDaftarFoto(prev =>
+        prev.map(f => ({
+          ...f,
+          is_featured:
+            f.id_galeri === idGaleri
+        }))
       );
     } else {
-      alert('Gagal mengatur foto utama: ' + result.error);
+      alert(
+        'Gagal mengatur foto utama: ' +
+          result.error
+      );
     }
   };
 
-  const handleBukaEdit = (item) => {
+  const handleBukaEdit = item => {
     setEditTarget(item);
-    setEditKeterangan(item.keterangan || '');
+    setEditKeterangan(
+      item.keterangan || ''
+    );
     setEditFile(null);
   };
 
@@ -95,101 +174,184 @@ export default function GaleriEskul() {
     setEditKeterangan('');
   };
 
-  const handleSimpanEdit = async (e) => {
+  const handleSimpanEdit = async e => {
     e.preventDefault();
+
     if (!editTarget) return;
 
     setSavingEdit(true);
 
-    const formData = new FormData();
-    formData.append('keterangan', editKeterangan);
+    const formData =
+      new FormData();
+
+    formData.append(
+      'keterangan',
+      editKeterangan
+    );
+
     if (editFile) {
-      formData.append('foto', editFile);
+      formData.append(
+        'foto',
+        editFile
+      );
     }
 
-    const result = await updateGaleriEskul(editTarget.id_galeri, formData);
+    const result =
+      await updateGaleriEskul(
+        editTarget.id_galeri,
+        formData
+      );
 
     setSavingEdit(false);
 
     if (result.success) {
-      const fotoData = await getGaleriEskul(currentEskulDetail.id_eskul);
-      setDaftarFoto(fotoData || []);
+      const fotoData =
+        await getGaleriEskul(
+          currentEskulDetail.id_eskul
+        );
+
+      setDaftarFoto(
+        fotoData || []
+      );
+
       handleTutupEdit();
     } else {
-      alert('Gagal mengupdate foto: ' + result.error);
+      alert(
+        'Gagal mengupdate foto: ' +
+          result.error
+      );
     }
   };
 
-  // Klik foto sekarang PINDAH HALAMAN ke detail foto, bukan buka lightbox
-  const handleLihatFoto = (idGaleri) => {
-    navigate(`/eskul/${namaEskul}/galeri/${idGaleri}`);
+  const handleLihatFoto = idGaleri => {
+    navigate(
+      `/eskul/${namaEskul}/galeri/${idGaleri}`
+    );
   };
 
-  const getFotoUrl = (foto) => {
+  const getFotoUrl = foto => {
     if (!foto) return null;
+
     return foto.startsWith('http')
       ? foto
-      : `http://localhost:5000/${foto.startsWith('/') ? foto.slice(1) : foto}`;
+      : `http://localhost:5000/${
+          foto.startsWith('/')
+            ? foto.slice(1)
+            : foto
+        }`;
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 relative">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+
       <Sidebar isAdmin={isAdmin} />
 
       <main className="flex-1 p-6 overflow-y-auto">
+
+        {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+
           <div>
+
             <button
-              onClick={() => navigate(`/eskul/${namaEskul}`)}
-              className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold mb-1 inline-flex items-center gap-1"
+              onClick={() =>
+                navigate(
+                  `/eskul/${namaEskul}`
+                )
+              }
+              className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold mb-1 inline-flex items-center gap-1"
             >
               ← Kembali ke Detail Eskul
             </button>
-            <h2 className="text-xl font-bold text-gray-800">
+
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
               Galeri Foto: {formatNamaEskul}
             </h2>
+
           </div>
 
           {isStaff && (
             <button
-              onClick={() => navigate(`/eskul/${namaEskul}/galeri/upload`)}
+              onClick={() =>
+                navigate(
+                  `/eskul/${namaEskul}/galeri/upload`
+                )
+              }
               className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
             >
               + Upload Foto
             </button>
           )}
+
         </div>
 
-        {isStaff && daftarFoto.length > 0 && (
-          <p className="text-xs text-gray-500 mb-4 -mt-2">
-            Klik ikon bintang untuk foto utama, ikon pensil untuk edit foto/keterangan. Klik foto untuk melihat lebih besar.
-          </p>
-        )}
+        {/* PETUNJUK */}
+        {isStaff &&
+          daftarFoto.length > 0 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 -mt-2">
+              Klik ikon bintang untuk foto
+              utama, ikon pensil untuk edit
+              foto/keterangan. Klik foto untuk
+              melihat lebih besar.
+            </p>
+          )}
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {/* GALERI */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 transition-colors duration-300">
+
           {loading ? (
-            <div className="p-6 text-center text-gray-500 text-sm">Memuat galeri dari backend...</div>
-          ) : daftarFoto.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-              <span className="text-4xl mb-2">📷</span>
-              <p className="text-sm">Belum ada foto di galeri {formatNamaEskul}.</p>
+
+            <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+              Memuat galeri dari backend...
             </div>
+
+          ) : daftarFoto.length === 0 ? (
+
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+
+              <span className="text-4xl mb-2">
+                📷
+              </span>
+
+              <p className="text-sm">
+                Belum ada foto di galeri{' '}
+                {formatNamaEskul}.
+              </p>
+
+            </div>
+
           ) : (
+
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {daftarFoto.map((item) => (
+
+              {daftarFoto.map(item => (
+
                 <div
                   key={item.id_galeri}
-                  className={`relative group rounded-xl overflow-hidden border aspect-square bg-gray-50 ${
-                    item.is_featured ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-gray-100'
+                  className={`relative group rounded-xl overflow-hidden border aspect-square bg-gray-50 dark:bg-gray-800 ${
+                    item.is_featured
+                      ? 'border-emerald-400 ring-2 ring-emerald-200 dark:ring-emerald-800'
+                      : 'border-gray-100 dark:border-gray-700'
                   }`}
                 >
+
                   <img
-                    src={getFotoUrl(item.foto)}
-                    alt={item.keterangan || formatNamaEskul}
+                    src={getFotoUrl(
+                      item.foto
+                    )}
+                    alt={
+                      item.keterangan ||
+                      formatNamaEskul
+                    }
                     className="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
-                    onClick={() => handleLihatFoto(item.id_galeri)}
+                    onClick={() =>
+                      handleLihatFoto(
+                        item.id_galeri
+                      )
+                    }
                   />
 
+                  {/* FOTO UTAMA */}
                   {item.is_featured && (
                     <div className="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
                       <Star className="w-3 h-3 fill-white" />
@@ -197,119 +359,207 @@ export default function GaleriEskul() {
                     </div>
                   )}
 
+                  {/* AKSI */}
                   {isStaff && (
                     <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+
                       <button
-                        onClick={() => handleJadikanUtama(item.id_galeri)}
-                        disabled={item.is_featured || settingUtama === item.id_galeri}
+                        onClick={() =>
+                          handleJadikanUtama(
+                            item.id_galeri
+                          )
+                        }
+                        disabled={
+                          item.is_featured ||
+                          settingUtama ===
+                            item.id_galeri
+                        }
                         title="Jadikan foto utama"
-                        className="bg-white/90 hover:bg-white text-emerald-600 text-xs font-semibold w-7 h-7 rounded-full flex items-center justify-center shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-800 text-emerald-600 dark:text-emerald-400 text-xs font-semibold w-7 h-7 rounded-full flex items-center justify-center shadow disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Star className={`w-3.5 h-3.5 ${item.is_featured ? 'fill-emerald-500' : ''}`} />
+                        <Star
+                          className={`w-3.5 h-3.5 ${
+                            item.is_featured
+                              ? 'fill-emerald-500'
+                              : ''
+                          }`}
+                        />
                       </button>
+
                       <button
-                        onClick={() => handleBukaEdit(item)}
+                        onClick={() =>
+                          handleBukaEdit(item)
+                        }
                         title="Edit foto/keterangan"
-                        className="bg-white/90 hover:bg-white text-blue-600 text-xs font-semibold w-7 h-7 rounded-full flex items-center justify-center shadow"
+                        className="bg-white/90 dark:bg-gray-900/90 hover:bg-white dark:hover:bg-gray-800 text-blue-600 dark:text-blue-400 text-xs font-semibold w-7 h-7 rounded-full flex items-center justify-center shadow"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
+
                       <button
-                        onClick={() => handleHapusFoto(item.id_galeri)}
+                        onClick={() =>
+                          handleHapusFoto(
+                            item.id_galeri
+                          )
+                        }
                         className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold w-7 h-7 rounded-full flex items-center justify-center shadow"
                       >
                         ×
                       </button>
+
                     </div>
                   )}
 
+                  {/* KETERANGAN */}
                   {item.keterangan && (
                     <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1 truncate">
                       {item.keterangan}
                     </div>
                   )}
+
                 </div>
+
               ))}
+
             </div>
+
           )}
+
         </div>
       </main>
 
+      {/* MODAL EDIT */}
       {editTarget && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-gray-800">
-                Edit Foto Galeri ({formatNamaEskul})
+        <div className="fixed inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg w-full max-w-md overflow-hidden border border-gray-100 dark:border-gray-800">
+
+            {/* HEADER MODAL */}
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/60">
+
+              <h3 className="font-bold text-gray-800 dark:text-gray-100">
+                Edit Foto Galeri (
+                {formatNamaEskul})
               </h3>
+
               <button
-                onClick={handleTutupEdit}
-                className="text-gray-400 hover:text-gray-600 font-bold text-lg"
+                onClick={
+                  handleTutupEdit
+                }
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 font-bold text-lg"
               >
                 &times;
               </button>
+
             </div>
 
-            <form onSubmit={handleSimpanEdit} className="p-5 space-y-4">
+            {/* FORM */}
+            <form
+              onSubmit={
+                handleSimpanEdit
+              }
+              className="p-5 space-y-4"
+            >
+
+              {/* FOTO SAAT INI */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Foto Saat Ini
                 </label>
+
                 <img
-                  src={getFotoUrl(editTarget.foto)}
+                  src={getFotoUrl(
+                    editTarget.foto
+                  )}
                   alt="Foto saat ini"
-                  className="w-full h-40 object-cover rounded-lg border border-gray-200"
+                  className="w-full h-40 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                 />
+
               </div>
 
+              {/* GANTI FOTO */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ganti Foto (opsional, kosongkan jika tidak ingin diganti)
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Ganti Foto (opsional,
+                  kosongkan jika tidak ingin
+                  diganti)
                 </label>
+
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setEditFile(e.target.files[0])}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                  onChange={e =>
+                    setEditFile(
+                      e.target.files[0]
+                    )
+                  }
+                  className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/30 file:text-emerald-700 dark:file:text-emerald-300 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/50 cursor-pointer"
                 />
+
                 {editFile && (
-                  <p className="text-xs text-gray-500 mt-1">Foto baru dipilih: {editFile.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Foto baru dipilih:{' '}
+                    {editFile.name}
+                  </p>
                 )}
+
               </div>
 
+              {/* KETERANGAN */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Keterangan
                 </label>
+
                 <input
                   type="text"
                   value={editKeterangan}
-                  onChange={(e) => setEditKeterangan(e.target.value)}
+                  onChange={e =>
+                    setEditKeterangan(
+                      e.target.value
+                    )
+                  }
                   placeholder="Keterangan Kegiatan"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none bg-white focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-emerald-500 focus:border-emerald-500"
                 />
+
               </div>
 
+              {/* BUTTON */}
               <div className="pt-2 flex gap-3 justify-end">
+
                 <button
                   type="button"
-                  onClick={handleTutupEdit}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                  onClick={
+                    handleTutupEdit
+                  }
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
                 >
                   Batal
                 </button>
+
                 <button
                   type="submit"
                   disabled={savingEdit}
                   className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition disabled:opacity-50"
                 >
-                  {savingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  {savingEdit
+                    ? 'Menyimpan...'
+                    : 'Simpan Perubahan'}
                 </button>
+
               </div>
+
             </form>
+
           </div>
+
         </div>
       )}
+
     </div>
   );
 }

@@ -21,7 +21,7 @@ export default function EditSiswaManual() {
   const formatNamaEskul = cleanNamaEskul
     .split(' ')
     .map(
-      word =>
+      (word) =>
         word.charAt(0).toUpperCase() +
         word.slice(1)
     )
@@ -83,14 +83,14 @@ export default function EditSiswaManual() {
 
         const matched =
           listEskul.find(
-            item =>
+            (item) =>
               item.nama_eskul &&
               item.nama_eskul
                 .toLowerCase()
                 .trim() ===
-                cleanNamaEskul
-                  .toLowerCase()
-                  .trim()
+              cleanNamaEskul
+                .toLowerCase()
+                .trim()
           );
 
         setCurrentEskul(
@@ -120,7 +120,7 @@ export default function EditSiswaManual() {
 
         const target =
           siswaData.find(
-            s =>
+            (s) =>
               String(s.id) ===
               String(idPendaftaran)
           );
@@ -168,11 +168,13 @@ export default function EditSiswaManual() {
   // ==================================================
   // HANDLE SUBMIT
   // ==================================================
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.id_kelas) {
-      alert('Silakan pilih kelas terlebih dahulu.');
+      alert(
+        'Silakan pilih kelas terlebih dahulu.'
+      );
       return;
     }
 
@@ -250,43 +252,48 @@ export default function EditSiswaManual() {
   // TAMPILAN
   // ==================================================
   return (
-    <div className="flex min-h-screen bg-gray-50 relative">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
 
       <Sidebar isAdmin={isAdmin} />
 
       <main className="flex-1 p-6 overflow-y-auto">
 
+        {/* KEMBALI */}
         <button
           onClick={() =>
             navigate(
               `/eskul/${namaEskul}`
             )
           }
-          className="text-sm text-gray-500 hover:text-emerald-600 font-medium inline-flex items-center gap-1.5 mb-6 transition-colors"
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium inline-flex items-center gap-1.5 mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Kembali ke Detail Eskul
         </button>
 
-        <h2 className="text-xl font-bold text-gray-800 mb-6">
+        {/* JUDUL */}
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">
           Edit Data Siswa: {formatNamaEskul}
         </h2>
 
+        {/* LOADING */}
         {fetching ? (
 
-          <div className="text-center text-gray-500 text-sm py-10">
+          <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-10">
             Memuat data siswa...
           </div>
 
         ) : notFound ? (
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-gray-400 max-w-lg">
+          /* DATA TIDAK DITEMUKAN */
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 text-center text-gray-400 dark:text-gray-500 max-w-lg transition-colors duration-300">
             Data siswa tidak ditemukan.
           </div>
 
         ) : (
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 max-w-lg">
+          /* FORM */
+          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 max-w-lg transition-colors duration-300">
 
             <form
               onSubmit={handleSubmit}
@@ -295,7 +302,8 @@ export default function EditSiswaManual() {
 
               {/* NAMA */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nama Siswa
                 </label>
 
@@ -303,26 +311,28 @@ export default function EditSiswaManual() {
                   type="text"
                   required
                   value={formData.nama}
-                  onChange={e =>
+                  onChange={(e) =>
                     setFormData({
                       ...formData,
                       nama: e.target.value
                     })
                   }
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none bg-white focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   placeholder="Masukkan nama lengkap"
                 />
+
               </div>
 
               {/* KELAS */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Kelas
                 </label>
 
                 <select
                   value={formData.id_kelas}
-                  onChange={e =>
+                  onChange={(e) =>
                     setFormData({
                       ...formData,
                       id_kelas:
@@ -330,7 +340,7 @@ export default function EditSiswaManual() {
                     })
                   }
                   required
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition-colors"
                 >
 
                   <option
@@ -341,7 +351,7 @@ export default function EditSiswaManual() {
                   </option>
 
                   {daftarKelas.map(
-                    kelas => (
+                    (kelas) => (
                       <option
                         key={kelas.id_kelas}
                         value={
@@ -354,11 +364,13 @@ export default function EditSiswaManual() {
                   )}
 
                 </select>
+
               </div>
 
               {/* JENIS KELAMIN */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Jenis Kelamin
                 </label>
 
@@ -366,7 +378,7 @@ export default function EditSiswaManual() {
                   value={
                     formData.jenisKelamin
                   }
-                  onChange={e =>
+                  onChange={(e) =>
                     setFormData({
                       ...formData,
                       jenisKelamin:
@@ -374,7 +386,7 @@ export default function EditSiswaManual() {
                     })
                   }
                   required
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition-colors"
                 >
 
                   <option
@@ -393,26 +405,29 @@ export default function EditSiswaManual() {
                   </option>
 
                 </select>
+
               </div>
 
               {/* FOTO */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Foto (opsional, kosongkan jika tidak diganti)
                 </label>
 
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={e =>
+                  onChange={(e) =>
                     setFormData({
                       ...formData,
                       foto:
                         e.target.files[0]
                     })
                   }
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                  className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/40 file:text-emerald-700 dark:file:text-emerald-300 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/60 cursor-pointer"
                 />
+
               </div>
 
               {/* BUTTON */}
@@ -435,7 +450,7 @@ export default function EditSiswaManual() {
                       `/eskul/${namaEskul}`
                     )
                   }
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+                  className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
                 >
                   Batal
                 </button>
