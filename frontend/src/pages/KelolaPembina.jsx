@@ -127,7 +127,7 @@ export default function KelolaPembina() {
           'Gagal menghapus akun: ' +
             result.error
         );
-      }
+      }    
     }
   };
 
