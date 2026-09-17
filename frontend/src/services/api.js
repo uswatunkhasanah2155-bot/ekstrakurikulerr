@@ -3,6 +3,23 @@
 const API_URL = 'http://localhost:5000';
 
 // ==================================================
+// HELPER: Deteksi token invalid/expired, otomatis logout
+// ==================================================
+
+ export function handleUnauthorized(response) {
+  if (response.status === 401 || response.status === 403) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('id_user');
+    localStorage.removeItem('id_eskul');
+    window.location.href = '/login';
+    return true;
+  }
+  return false;
+}
+
+
+// ==================================================
 // EKSTRAKURIKULER
 // ==================================================
 
@@ -36,6 +53,8 @@ export async function getPendaftarEskul() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
+    if (handleUnauthorized(response)) return [];
+
     if (!response.ok) {
       throw new Error('Gagal mengambil data pendaftar dari server backend');
     }
@@ -57,6 +76,8 @@ export async function getSiswaByEskul(namaEskul) {
     const response = await fetch(`${API_URL}/api/pendaftaran`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (handleUnauthorized(response)) return [];
 
     if (!response.ok) {
       throw new Error('Gagal mengambil data pendaftaran');
@@ -117,6 +138,8 @@ export async function getProfilSiswaSaya() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
+    if (handleUnauthorized(response)) return null;
+
     // Belum punya profil -> ini kondisi normal, bukan error
     if (response.status === 404) {
       return null;
@@ -176,6 +199,8 @@ export async function tambahPendaftar(dataSiswa) {
       headers: { 'Authorization': `Bearer ${token}` },
       body: dataSiswa
     });
+
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
 
     const result = await response.json();
 
@@ -315,6 +340,8 @@ export async function updatePendaftar(
       });
     }
 
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+
     // ==================================================
     // HASIL RESPONSE
     // ==================================================
@@ -343,6 +370,8 @@ export async function hapusPendaftar(idPendaftaran) {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+
     if (!response.ok) {
       const errorResult = await response.json();
       throw new Error(errorResult.message || 'Gagal menghapus pendaftaran');
@@ -364,6 +393,8 @@ export async function downloadSemuaPendaftarExcel() {
     const response = await fetch(`${API_URL}/api/pendaftaran/download`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
 
     if (!response.ok) {
       throw new Error('Gagal mendownload data excel');
@@ -427,6 +458,8 @@ export async function uploadGaleriEskul(dataGaleri) {
       body: dataGaleri
     });
 
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+
     const result = await response.json();
 
     if (!response.ok) {
@@ -450,6 +483,8 @@ export async function hapusGaleriEskul(idGaleri) {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
 
     if (!response.ok) {
       const errorResult = await response.json();
@@ -477,6 +512,8 @@ export async function setFotoUtamaGaleri(idGaleri) {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
 
     const result = await response.json();
 
@@ -507,6 +544,8 @@ export async function updateGaleriEskul(idGaleri, dataUpdate) {
       body: dataUpdate
     });
 
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+
     const result = await response.json();
 
     if (!response.ok) {
@@ -533,6 +572,8 @@ export async function getDaftarPembina() {
     const response = await fetch(`${API_URL}/api/auth/pembina`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (handleUnauthorized(response)) return [];
 
     if (!response.ok) {
       throw new Error('Gagal mengambil daftar pembina');
@@ -585,6 +626,8 @@ export async function hapusPembina(idUser) {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+
     if (!response.ok) {
       const errorResult = await response.json();
       throw new Error(errorResult.message || 'Gagal menghapus akun pembina');
@@ -610,6 +653,8 @@ export async function getDaftarKelas() {
     const response = await fetch(`${API_URL}/api/kelas`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (handleUnauthorized(response)) return [];
 
     const result = await response.json();
 
@@ -643,6 +688,8 @@ export async function tambahKelas(namaKelas) {
       body: JSON.stringify({ nama_kelas: namaKelas })
     });
 
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+
     const result = await response.json();
 
     if (!response.ok) {
@@ -675,6 +722,8 @@ export async function updateKelas(idKelas, namaKelas) {
       body: JSON.stringify({ nama_kelas: namaKelas })
     });
 
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+
     const result = await response.json();
 
     if (!response.ok) {
@@ -702,6 +751,8 @@ export async function hapusKelas(idKelas) {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+
+    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
 
     const result = await response.json();
 

@@ -1,7 +1,7 @@
 // src/pages/KelolaEskul.jsx
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import { getDaftarEskul } from '../services/api';
+import { getDaftarEskul, handleUnauthorized } from '../services/api';
 import {
   Pencil,
   Trash2,
@@ -125,6 +125,8 @@ export default function KelolaEskul() {
         }
       );
 
+      if (handleUnauthorized(response)) return;
+
       const result =
         await response.json();
 
@@ -213,6 +215,8 @@ export default function KelolaEskul() {
               }
             }
           );
+
+        if (handleUnauthorized(response)) return;
 
         if (!response.ok) {
           throw new Error(

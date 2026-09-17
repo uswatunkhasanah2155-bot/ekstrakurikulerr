@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma.js';
+import { verifyToken } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -114,7 +115,7 @@ router.post('/login', async (req, res) => {
 });
 
 // 3. UPDATE ROLE USER: Mengubah role user
-router.patch('/users/:id/role', async (req, res) => {
+router.patch('/users/:id/role', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { role, id_eskul } = req.body;
@@ -164,8 +165,8 @@ router.patch('/users/:id/role', async (req, res) => {
   }
 });
 
-// 4. GET DAFTAR PEMBINA
-router.get('/pembina', async (req, res) => {
+// 4. GET DAFTAR PEMBINA (DIPERBAIKI: sekarang wajib login/token valid)
+router.get('/pembina', verifyToken, async (req, res) => {
   try {
     const pembina = await prisma.user.findMany({
       where: {
@@ -197,6 +198,39 @@ router.get('/pembina', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Gagal mengambil daftar pembina',
+      error: error.message,
+    });
+  }
+});
+
+// 5. HAPUS AKUN PEMBINA (BARU: endpoint ini sebelumnya belum ada sama sekali)
+router.delete('/pembina/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const userCek = await prisma.user.findUnique({
+      where: { id_user: Number(id) }
+    });
+
+    if (!userCek || userCek.role.toLowerCase() !== 'pembina') {
+      return res.status(404).json({
+        success: false,
+        message: 'Akun pembina tidak ditemukan'
+      });
+    }
+
+    await prisma.user.delete({
+      where: { id_user: Number(id) }
+    });
+
+    res.json({
+      success: true,
+      message: 'Akun pembina berhasil dihapus'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Gagal menghapus akun pembina',
       error: error.message,
     });
   }
