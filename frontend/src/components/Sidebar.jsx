@@ -2,12 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDaftarEskul } from '../services/api';
+import logoSekolah from '../assets/logosmkc.jpeg';
 import {
   LayoutDashboard,
   Settings,
   Users,
   List,
   ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
   LogOut,
   User,
   UserCog,
@@ -21,6 +24,29 @@ export default function Sidebar({ isAdmin }) {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
   const [daftarEskulSidebar, setDaftarEskulSidebar] = useState([]);
+
+  // ======================================================
+  // COLLAPSE / EXPAND SIDEBAR
+  // ======================================================
+
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', isCollapsed);
+
+    // Kalau sidebar di-collapse, tutup juga dropdown daftar eskul
+    // biar nggak "menggantung" saat lebar sidebar mengecil
+    if (isCollapsed) {
+      setIsDropdownOpen(false);
+    }
+  }, [isCollapsed]);
+
+  const toggleSidebar = () => {
+    setIsCollapsed((prev) => !prev);
+  };
+
 
   // ======================================================
   // DARK MODE
@@ -125,8 +151,9 @@ export default function Sidebar({ isAdmin }) {
 
   return (
     <aside
-      className="
-        w-64
+      className={`
+        relative
+        ${isCollapsed ? 'w-20' : 'w-64'}
         bg-white dark:bg-gray-900
         border-r border-gray-200 dark:border-gray-700
         min-h-screen
@@ -134,9 +161,39 @@ export default function Sidebar({ isAdmin }) {
         justify-between
         p-4
         shadow-sm
-        transition-colors duration-300
-      "
+        transition-all duration-300
+      `}
     >
+
+      {/* ==================================================
+          TOMBOL COLLAPSE / EXPAND
+      ================================================== */}
+
+      <button
+        onClick={toggleSidebar}
+        title={isCollapsed ? 'Perluas sidebar' : 'Perkecil sidebar'}
+        className="
+          absolute
+          -right-3 top-8
+          w-6 h-6
+          rounded-full
+          bg-white dark:bg-gray-800
+          border border-gray-200 dark:border-gray-700
+          shadow-sm
+          flex items-center justify-center
+          text-gray-500 dark:text-gray-300
+          hover:bg-gray-100 dark:hover:bg-gray-700
+          transition-colors
+          z-10
+        "
+      >
+        {isCollapsed ? (
+          <PanelLeftOpen className="w-3.5 h-3.5" />
+        ) : (
+          <PanelLeftClose className="w-3.5 h-3.5" />
+        )}
+      </button>
+
 
       <div>
 
@@ -144,15 +201,26 @@ export default function Sidebar({ isAdmin }) {
             LOGO
         ================================================== */}
 
-        <div className="flex items-center gap-2 px-2 mb-6">
+        <div
+          className={`
+            flex items-center gap-2 px-2 mb-6
+            ${isCollapsed ? 'justify-center' : ''}
+          `}
+        >
 
-          <div className="w-8 h-8 bg-cyan-700 rounded-lg flex items-center justify-center text-white font-bold">
-            E
+          <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-white">
+            <img
+              src={logoSekolah}
+              alt="Logo Sekolah"
+              className="w-full h-full object-contain"
+            />
           </div>
 
-          <span className="font-bold text-gray-800 dark:text-white text-lg">
-            EskulApp
-          </span>
+          {!isCollapsed && (
+            <span className="font-bold text-gray-800 dark:text-white text-lg whitespace-nowrap">
+              SESCO ESKUL
+            </span>
+          )}
 
         </div>
 
@@ -162,7 +230,7 @@ export default function Sidebar({ isAdmin }) {
         ================================================== */}
 
         <div
-          className="
+          className={`
             flex items-center gap-3
             p-3
             bg-gray-50 dark:bg-gray-800
@@ -170,7 +238,8 @@ export default function Sidebar({ isAdmin }) {
             mb-6
             border border-gray-100 dark:border-gray-700
             transition-colors duration-300
-          "
+            ${isCollapsed ? 'justify-center' : ''}
+          `}
         >
 
           <div
@@ -186,34 +255,38 @@ export default function Sidebar({ isAdmin }) {
             <User className="w-6 h-6" />
           </div>
 
-          <div>
+          {!isCollapsed && (
 
-            <h4 className="text-sm font-bold text-gray-800 dark:text-white">
+            <div className="overflow-hidden">
 
-              {isAdmin
-                ? 'Administrator'
-                : isPembina
-                ? namaEskulDibina
-                  ? `Pembina ${namaEskulDibina}`
-                  : 'Pembina'
-                : 'Halo, Pengguna'}
+              <h4 className="text-sm font-bold text-gray-800 dark:text-white truncate">
 
-            </h4>
+                {isAdmin
+                  ? 'Administrator'
+                  : isPembina
+                  ? namaEskulDibina
+                    ? `Pembina ${namaEskulDibina}`
+                    : 'Pembina'
+                  : 'Halo, Pengguna'}
 
-            <span
-              className={`
-                text-[11px]
-                px-2
-                py-0.5
-                rounded-full
-                font-semibold
-                ${roleBadgeClass}
-              `}
-            >
-              {roleLabel}
-            </span>
+              </h4>
 
-          </div>
+              <span
+                className={`
+                  text-[11px]
+                  px-2
+                  py-0.5
+                  rounded-full
+                  font-semibold
+                  ${roleBadgeClass}
+                `}
+              >
+                {roleLabel}
+              </span>
+
+            </div>
+
+          )}
 
         </div>
 
@@ -228,7 +301,8 @@ export default function Sidebar({ isAdmin }) {
 
           <Link
             to="/Dashboard"
-            className="
+            title="Dashboard"
+            className={`
               flex items-center gap-3
               px-3 py-2.5
               rounded-lg
@@ -237,10 +311,11 @@ export default function Sidebar({ isAdmin }) {
               bg-emerald-50 dark:bg-emerald-900/30
               hover:bg-emerald-100 dark:hover:bg-emerald-900/50
               transition-colors
-            "
+              ${isCollapsed ? 'justify-center' : ''}
+            `}
           >
-            <LayoutDashboard className="w-5 h-5" />
-            Dashboard
+            <LayoutDashboard className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span className="whitespace-nowrap">Dashboard</span>}
           </Link>
 
 
@@ -249,7 +324,8 @@ export default function Sidebar({ isAdmin }) {
           {isAdmin && (
             <Link
               to="/admin/kelola-eskul"
-              className="
+              title="Kelola Data Eskul"
+              className={`
                 flex items-center gap-3
                 px-3 py-2.5
                 rounded-lg
@@ -258,10 +334,11 @@ export default function Sidebar({ isAdmin }) {
                 bg-blue-50 dark:bg-blue-900/30
                 hover:bg-blue-100 dark:hover:bg-blue-900/50
                 transition-colors mt-1
-              "
+                ${isCollapsed ? 'justify-center' : ''}
+              `}
             >
-              <Settings className="w-5 h-5" />
-              Kelola Data Eskul
+              <Settings className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span className="whitespace-nowrap">Kelola Data Eskul</span>}
             </Link>
           )}
 
@@ -271,7 +348,8 @@ export default function Sidebar({ isAdmin }) {
           {isAdmin && (
             <Link
               to="/admin/pendaftar"
-              className="
+              title="Data Pendaftar"
+              className={`
                 flex items-center gap-3
                 px-3 py-2.5
                 rounded-lg
@@ -280,10 +358,11 @@ export default function Sidebar({ isAdmin }) {
                 bg-purple-50 dark:bg-purple-900/30
                 hover:bg-purple-100 dark:hover:bg-purple-900/50
                 transition-colors mt-1
-              "
+                ${isCollapsed ? 'justify-center' : ''}
+              `}
             >
-              <Users className="w-5 h-5" />
-              Data Pendaftar
+              <Users className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span className="whitespace-nowrap">Data Pendaftar</span>}
             </Link>
           )}
 
@@ -293,7 +372,8 @@ export default function Sidebar({ isAdmin }) {
           {isAdmin && (
             <Link
               to="/admin/kelola-pembina"
-              className="
+              title="Kelola Pembina"
+              className={`
                 flex items-center gap-3
                 px-3 py-2.5
                 rounded-lg
@@ -302,10 +382,11 @@ export default function Sidebar({ isAdmin }) {
                 bg-cyan-50 dark:bg-cyan-900/30
                 hover:bg-cyan-100 dark:hover:bg-cyan-900/50
                 transition-colors mt-1
-              "
+                ${isCollapsed ? 'justify-center' : ''}
+              `}
             >
-              <UserCog className="w-5 h-5" />
-              Kelola Pembina
+              <UserCog className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span className="whitespace-nowrap">Kelola Pembina</span>}
             </Link>
           )}
 
@@ -315,7 +396,8 @@ export default function Sidebar({ isAdmin }) {
           {isAdmin && (
             <Link
               to="/admin/manajemen-kelas"
-              className="
+              title="Manajemen Kelas"
+              className={`
                 flex items-center gap-3
                 px-3 py-2.5
                 rounded-lg
@@ -324,10 +406,11 @@ export default function Sidebar({ isAdmin }) {
                 bg-orange-50 dark:bg-orange-900/30
                 hover:bg-orange-100 dark:hover:bg-orange-900/50
                 transition-colors mt-1
-              "
+                ${isCollapsed ? 'justify-center' : ''}
+              `}
             >
-              <School className="w-5 h-5" />
-              Manajemen Kelas
+              <School className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span className="whitespace-nowrap">Manajemen Kelas</span>}
             </Link>
           )}
 
@@ -338,7 +421,8 @@ export default function Sidebar({ isAdmin }) {
 
           <button
             onClick={toggleDarkMode}
-            className="
+            title={darkMode ? 'Mode Terang' : 'Mode Gelap'}
+            className={`
               w-full
               flex items-center gap-3
               px-3 py-2.5
@@ -349,18 +433,21 @@ export default function Sidebar({ isAdmin }) {
               hover:bg-gray-100 dark:hover:bg-gray-700
               transition-colors
               mt-1
-            "
+              ${isCollapsed ? 'justify-center' : ''}
+            `}
           >
 
             {darkMode ? (
-              <Sun className="w-5 h-5 text-yellow-500" />
+              <Sun className="w-5 h-5 text-yellow-500 shrink-0" />
             ) : (
-              <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300 shrink-0" />
             )}
 
-            <span>
-              {darkMode ? 'Mode Terang' : 'Mode Gelap'}
-            </span>
+            {!isCollapsed && (
+              <span className="whitespace-nowrap">
+                {darkMode ? 'Mode Terang' : 'Mode Gelap'}
+              </span>
+            )}
 
           </button>
 
@@ -372,10 +459,18 @@ export default function Sidebar({ isAdmin }) {
           <div className="mt-1">
 
             <button
-              onClick={() =>
-                setIsDropdownOpen(!isDropdownOpen)
-              }
-              className="
+              onClick={() => {
+                // Kalau sidebar sedang collapsed, klik ini otomatis
+                // membuka sidebar dulu supaya daftarnya kebaca
+                if (isCollapsed) {
+                  setIsCollapsed(false);
+                  setIsDropdownOpen(true);
+                } else {
+                  setIsDropdownOpen(!isDropdownOpen);
+                }
+              }}
+              title={isPembina ? 'Eskul yang Dibina' : 'Daftar Eskul'}
+              className={`
                 w-full
                 flex items-center justify-between
                 px-3 py-2.5
@@ -384,33 +479,39 @@ export default function Sidebar({ isAdmin }) {
                 text-gray-600 dark:text-gray-300
                 hover:bg-gray-100 dark:hover:bg-gray-800
                 transition-colors
-              "
+                ${isCollapsed ? 'justify-center' : ''}
+              `}
             >
 
-              <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
 
-                <List className="w-5 h-5" />
+                <List className="w-5 h-5 shrink-0" />
 
-                <span>
-                  {isPembina
-                    ? 'Eskul yang Dibina'
-                    : 'Daftar Eskul'}
-                </span>
+                {!isCollapsed && (
+                  <span className="whitespace-nowrap">
+                    {isPembina
+                      ? 'Eskul yang Dibina'
+                      : 'Daftar Eskul'}
+                  </span>
+                )}
 
               </div>
 
-              <ChevronDown
-                className={`
-                  w-4 h-4
-                  transition-transform
-                  ${isDropdownOpen ? 'rotate-180' : ''}
-                `}
-              />
+              {!isCollapsed && (
+                <ChevronDown
+                  className={`
+                    w-4 h-4
+                    transition-transform
+                    shrink-0
+                    ${isDropdownOpen ? 'rotate-180' : ''}
+                  `}
+                />
+              )}
 
             </button>
 
 
-            {isDropdownOpen && (
+            {!isCollapsed && isDropdownOpen && (
 
               <div
                 className="
@@ -450,7 +551,7 @@ export default function Sidebar({ isAdmin }) {
                           block
                           py-1.5 px-2
                           rounded-md
-                          text-xs font-medium
+                          text-xs font-bold
                           text-gray-500 dark:text-gray-400
                           hover:text-emerald-700 dark:hover:text-emerald-300
                           hover:bg-emerald-50 dark:hover:bg-emerald-900/30
@@ -485,7 +586,8 @@ export default function Sidebar({ isAdmin }) {
 
         <button
           onClick={handleLogout}
-          className="
+          title="Keluar"
+          className={`
             w-full
             flex items-center gap-3
             px-3 py-2.5
@@ -494,12 +596,13 @@ export default function Sidebar({ isAdmin }) {
             text-red-600 dark:text-red-400
             hover:bg-red-50 dark:hover:bg-red-900/20
             transition-colors
-          "
+            ${isCollapsed ? 'justify-center' : ''}
+          `}
         >
 
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-5 h-5 shrink-0" />
 
-          Keluar
+          {!isCollapsed && <span className="whitespace-nowrap">Keluar</span>}
 
         </button>
 

@@ -15,7 +15,8 @@ import {
   User,
   Pencil,
   Trash2,
-  Plus
+  Plus,
+  Images
 } from 'lucide-react';
 
 export default function ExtracurricularDetail() {
@@ -91,9 +92,9 @@ export default function ExtracurricularDetail() {
               item.nama_eskul
                 .toLowerCase()
                 .trim() ===
-                cleanNamaEskul
-                  .toLowerCase()
-                  .trim()
+              cleanNamaEskul
+                .toLowerCase()
+                .trim()
           );
 
         setCurrentEskulDetail(
@@ -310,160 +311,140 @@ export default function ExtracurricularDetail() {
         </div>
 
         {/* ==============================
-            DETAIL ESKUL
+            DETAIL ESKUL (FOTO DI BELAKANG DENGAN TOMBOL LIHAT GALERI)
         ============================== */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 flex flex-col md:flex-row gap-6 transition-colors">
-
-          {/* FOTO ESKUL */}
-          <div className="w-full md:w-1/3 aspect-square max-w-[220px] max-h-[220px] mx-auto md:mx-0 bg-white dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 font-medium shrink-0 border border-gray-100 dark:border-gray-700">
-
-            {currentEskulDetail?.foto ? (
+        <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 overflow-hidden transition-colors">
+          
+          {/* FOTO GALERI SEBAGAI BACKGROUND UTAMA */}
+          {fotoUtamaGaleri && (
+            <div className="absolute inset-0 z-0">
               <img
                 src={
-                  currentEskulDetail.foto.startsWith(
-                    'http'
-                  )
-                    ? currentEskulDetail.foto
-                    : `http://localhost:5000/${
-                        currentEskulDetail.foto.startsWith(
-                          '/'
-                        )
-                          ? currentEskulDetail.foto.slice(
-                              1
-                            )
-                          : currentEskulDetail.foto
-                      }`
-                }
-                alt={formatNamaEskul}
-                className="w-full h-full object-contain"
-                onError={e => {
-                  e.target.style.display =
-                    'none';
-                }}
-              />
-            ) : (
-              <span>
-                Foto / Banner {formatNamaEskul}
-              </span>
-            )}
-
-          </div>
-
-          {/* INFORMASI ESKUL */}
-          <div className="flex-1 flex flex-col justify-between">
-
-            <div>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">
-                {currentEskulDetail?.nama_eskul ||
-                  `Eskul ${formatNamaEskul}`}
-              </h3>
-
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">
-                Pembina:{' '}
-                {currentEskulDetail?.pembina ||
-                  'Belum ditentukan'}
-              </p>
-
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                {currentEskulDetail?.deskripsi ||
-                  `Program latihan untuk pengembangan skill ${formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.`}
-              </p>
-
-              <div className="text-xs text-gray-700 dark:text-gray-300 font-medium bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 mb-4">
-                <span className="font-bold">
-                  Jadwal:
-                </span>{' '}
-                {currentEskulDetail?.jadwal ||
-                  'Belum diatur'}
-              </div>
-            </div>
-
-            {/* TOMBOL SESUAI ROLE */}
-            <div>
-
-              {isAdmin && (
-                <span className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 inline-flex items-center">
-                  Mode Admin: Hak Akses CRUD Aktif
-                </span>
-              )}
-
-              {isPembina && (
-                <span className="bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400 text-xs font-semibold px-3 py-2 rounded-lg border border-cyan-200 dark:border-cyan-800 inline-flex items-center">
-                  Mode Pembina: Hak Akses CRUD Aktif
-                </span>
-              )}
-
-              {!isAdmin &&
-                !isPembina && (
-                  <button
-                    onClick={handleDaftarSiswa}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Daftar Eskul Ini
-                  </button>
-                )}
-
-            </div>
-          </div>
-
-          {/* FOTO GALERI */}
-          {fotoUtamaGaleri ? (
-            <button
-              type="button"
-              onClick={handleLihatGaleri}
-              className="relative hidden md:block w-[360px] self-stretch rounded-lg overflow-hidden group cursor-pointer shrink-0"
-            >
-              <img
-                src={
-                  fotoUtamaGaleri.foto.startsWith(
-                    'http'
-                  )
+                  fotoUtamaGaleri.foto.startsWith('http')
                     ? fotoUtamaGaleri.foto
                     : `http://localhost:5000/${
-                        fotoUtamaGaleri.foto.startsWith(
-                          '/'
-                        )
-                          ? fotoUtamaGaleri.foto.slice(
-                              1
-                            )
+                        fotoUtamaGaleri.foto.startsWith('/')
+                          ? fotoUtamaGaleri.foto.slice(1)
                           : fotoUtamaGaleri.foto
                       }`
                 }
                 alt=""
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-full object-cover"
                 onError={e => {
-                  e.target.style.display =
-                    'none';
+                  e.target.style.display = 'none';
                 }}
               />
-
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background:
-                    'linear-gradient(90deg, white 0%, rgba(255,255,255,0) 25%)'
-                }}
-              />
-
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-
-              <span className="absolute bottom-2 right-2.5 text-[11px] text-white/90 bg-black/25 px-2 py-0.5 rounded-md">
-                Kegiatan terbaru
-              </span>
-            </button>
-          ) : (
-            canManage && (
-              <button
-                type="button"
-                onClick={handleLihatGaleri}
-                className="hidden md:flex w-[360px] self-stretch rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 items-center justify-center text-gray-400 dark:text-gray-500 hover:text-emerald-600 hover:border-emerald-300 transition-colors text-sm font-medium shrink-0 text-center px-4"
-              >
-                Belum ada foto utama. Pilih di halaman Galeri Foto →
-              </button>
-            )
+              <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-[1px]" />
+            </div>
           )}
 
+          {/* KONTEN UTAMA DI ATAS BACKGROUND */}
+          <div className="relative z-10 p-6 flex flex-col md:flex-row gap-6">
+
+            {/* FOTO LOGO / BANNER KIRI */}
+            <div className="w-full md:w-1/3 aspect-square max-w-[220px] max-h-[220px] mx-auto md:mx-0 bg-white dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 font-medium shrink-0 border border-gray-100 dark:border-gray-700 shadow-sm">
+
+              {currentEskulDetail?.foto ? (
+                <img
+                  src={
+                    currentEskulDetail.foto.startsWith(
+                      'http'
+                    )
+                      ? currentEskulDetail.foto
+                      : `http://localhost:5000/${
+                          currentEskulDetail.foto.startsWith(
+                            '/'
+                          )
+                            ? currentEskulDetail.foto.slice(
+                                1
+                              )
+                            : currentEskulDetail.foto
+                        }`
+                  }
+                  alt={formatNamaEskul}
+                  className="w-full h-full object-contain"
+                  onError={e => {
+                    e.target.style.display =
+                      'none';
+                  }}
+                />
+              ) : (
+                <span>
+                  Foto / Banner {formatNamaEskul}
+                </span>
+              )}
+
+            </div>
+
+            {/* INFORMASI ESKUL */}
+            <div className="flex-1 flex flex-col justify-between">
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 drop-shadow-sm">
+                    {currentEskulDetail?.nama_eskul ||
+                      `Eskul ${formatNamaEskul}`}
+                  </h3>
+
+                  {/* Tombol Lihat Galeri */}
+                  <button
+                    type="button"
+                    onClick={handleLihatGaleri}
+                    className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 px-2.5 py-1 rounded-md shadow-sm transition-colors"
+                  >
+                    <Images className="w-3.5 h-3.5" />
+                    Lihat Galeri →
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-700 dark:text-gray-200 mb-3 font-medium drop-shadow-sm">
+                  Pembina:{' '}
+                  {currentEskulDetail?.pembina ||
+                    'Belum ditentukan'}
+                </p>
+
+                <p className="text-sm text-gray-800 dark:text-gray-100 mb-4 leading-relaxed font-medium drop-shadow-sm">
+                  {currentEskulDetail?.deskripsi ||
+                    `Program latihan untuk pengembangan skill ${formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.`}
+                </p>
+
+                <div className="text-xs text-gray-900 dark:text-gray-100 font-semibold bg-white/80 dark:bg-gray-900/80 p-3 rounded-lg border border-gray-200 dark:border-gray-700 mb-4 shadow-sm">
+                  <span>Jadwal:</span>{' '}
+                  {currentEskulDetail?.jadwal ||
+                    'Belum diatur'}
+                </div>
+              </div>
+
+              {/* TOMBOL SESUAI ROLE */}
+              <div>
+
+                {isAdmin && (
+                  <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-700 inline-flex items-center shadow-sm">
+                    Mode Admin: Hak Akses CRUD Aktif
+                  </span>
+                )}
+
+                {isPembina && (
+                  <span className="bg-cyan-100 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 text-xs font-semibold px-3 py-2 rounded-lg border border-cyan-300 dark:border-cyan-700 inline-flex items-center shadow-sm">
+                    Mode Pembina: Hak Akses CRUD Aktif
+                  </span>
+                )}
+
+                {!isAdmin &&
+                  !isPembina && (
+                    <button
+                      onClick={handleDaftarSiswa}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Daftar Eskul Ini
+                    </button>
+                  )}
+
+              </div>
+            </div>
+
+          </div>
         </div>
 
         {/* ==============================
