@@ -218,14 +218,14 @@ export default function ExtracurricularDetail() {
   // ==============================
   // HAPUS SISWA
   // ==============================
-  const handleHapusSiswa = async id => {
+  const handleHapusSiswa = async siswa => {
     if (
       window.confirm(
-        'Yakin ingin menghapus data siswa ini dari eskul?'
+        `Yakin ingin menghapus data ${siswa.nama} dari eskul?`
       )
     ) {
       const result =
-        await hapusPendaftar(id);
+        await hapusPendaftar(siswa.id);
 
       if (result.success) {
         alert(
@@ -655,9 +655,7 @@ export default function ExtracurricularDetail() {
 
                               <button
                                 onClick={() =>
-                                  handleHapusSiswa(
-                                    siswa.id
-                                  )
+                                  handleHapusSiswa(siswa)
                                 }
                                 className="text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center gap-1"
                               >
