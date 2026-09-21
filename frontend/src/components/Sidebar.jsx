@@ -1,8 +1,10 @@
 // src/components/Sidebar.jsx
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDaftarEskul } from '../services/api';
 import logoSekolah from '../assets/logosmkc.jpeg';
+
 import {
   LayoutDashboard,
   Settings,
@@ -16,14 +18,32 @@ import {
   UserCog,
   School,
   Moon,
-  Sun
+  Sun,
+  Contact
 } from 'lucide-react';
 
-export default function Sidebar({ isAdmin }) {
+export default function Sidebar() {
+
   const navigate = useNavigate();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
   const [daftarEskulSidebar, setDaftarEskulSidebar] = useState([]);
+
+  // ======================================================
+  // ROLE
+  // ======================================================
+
+  const role = (
+    localStorage.getItem('role') || ''
+  ).toUpperCase();
+
+  const isAdmin = role === 'ADMIN';
+  const isPembina = role === 'PEMBINA';
+  const isSiswa = role === 'SISWA';
+
+  const idEskulPembina =
+    localStorage.getItem('id_eskul');
+
 
   // ======================================================
   // COLLAPSE / EXPAND SIDEBAR
@@ -34,17 +54,19 @@ export default function Sidebar({ isAdmin }) {
   });
 
   useEffect(() => {
-    localStorage.setItem('sidebarCollapsed', isCollapsed);
+    localStorage.setItem(
+      'sidebarCollapsed',
+      isCollapsed
+    );
 
-    // Kalau sidebar di-collapse, tutup juga dropdown daftar eskul
-    // biar nggak "menggantung" saat lebar sidebar mengecil
     if (isCollapsed) {
       setIsDropdownOpen(false);
     }
   }, [isCollapsed]);
 
+
   const toggleSidebar = () => {
-    setIsCollapsed((prev) => !prev);
+    setIsCollapsed(prev => !prev);
   };
 
 
@@ -57,6 +79,7 @@ export default function Sidebar({ isAdmin }) {
   });
 
   useEffect(() => {
+
     if (darkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -64,20 +87,13 @@ export default function Sidebar({ isAdmin }) {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
+
   }, [darkMode]);
 
+
   const toggleDarkMode = () => {
-    setDarkMode((prev) => !prev);
+    setDarkMode(prev => !prev);
   };
-
-
-  // ======================================================
-  // ROLE
-  // ======================================================
-
-  const role = (localStorage.getItem('role') || '').toUpperCase();
-  const isPembina = role === 'PEMBINA';
-  const idEskulPembina = localStorage.getItem('id_eskul');
 
 
   // ======================================================
@@ -85,31 +101,54 @@ export default function Sidebar({ isAdmin }) {
   // ======================================================
 
   useEffect(() => {
+
     async function fetchEskul() {
+
       try {
+
         const data = await getDaftarEskul();
 
-        const listEskul = data?.data || data || [];
+        const listEskul =
+          data?.data || data || [];
 
-        // Pembina hanya melihat eskul yang menjadi tanggung jawabnya
+        // Pembina hanya melihat eskul yang dibina
         if (isPembina) {
-          const eskulPembina = listEskul.filter(
-            (eskul) =>
-              String(eskul.id_eskul) === String(idEskulPembina)
+
+          const eskulPembina =
+            listEskul.filter(
+              eskul =>
+                String(eskul.id_eskul) ===
+                String(idEskulPembina)
+            );
+
+          setDaftarEskulSidebar(
+            eskulPembina
           );
 
-          setDaftarEskulSidebar(eskulPembina);
         } else {
+
           // Admin dan Siswa melihat semua eskul
-          setDaftarEskulSidebar(listEskul);
+          setDaftarEskulSidebar(
+            listEskul
+          );
+
         }
+
       } catch (error) {
-        console.error('Gagal mengambil daftar eskul:', error);
+
+        console.error(
+          'Gagal mengambil daftar eskul:',
+          error
+        );
+
         setDaftarEskulSidebar([]);
+
       }
+
     }
 
     fetchEskul();
+
   }, [isPembina, idEskulPembina]);
 
 
@@ -122,6 +161,7 @@ export default function Sidebar({ isAdmin }) {
   // ======================================================
 
   const handleLogout = () => {
+
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('id_user');
@@ -149,7 +189,12 @@ export default function Sidebar({ isAdmin }) {
     : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-300';
 
 
+  // ======================================================
+  // RENDER
+  // ======================================================
+
   return (
+
     <aside
       className={`
         relative
@@ -171,7 +216,11 @@ export default function Sidebar({ isAdmin }) {
 
       <button
         onClick={toggleSidebar}
-        title={isCollapsed ? 'Perluas sidebar' : 'Perkecil sidebar'}
+        title={
+          isCollapsed
+            ? 'Perluas sidebar'
+            : 'Perkecil sidebar'
+        }
         className="
           absolute
           -right-3 top-8
@@ -187,11 +236,13 @@ export default function Sidebar({ isAdmin }) {
           z-10
         "
       >
+
         {isCollapsed ? (
           <PanelLeftOpen className="w-3.5 h-3.5" />
         ) : (
           <PanelLeftClose className="w-3.5 h-3.5" />
         )}
+
       </button>
 
 
@@ -208,18 +259,35 @@ export default function Sidebar({ isAdmin }) {
           `}
         >
 
-          <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-white">
+          <div className="
+            w-9 h-9
+            rounded-lg
+            overflow-hidden
+            flex items-center justify-center
+            shrink-0
+            bg-white
+          ">
+
             <img
               src={logoSekolah}
               alt="Logo Sekolah"
               className="w-full h-full object-contain"
             />
+
           </div>
 
+
           {!isCollapsed && (
-            <span className="font-bold text-gray-800 dark:text-white text-lg whitespace-nowrap">
+
+            <span className="
+              font-bold
+              text-gray-800 dark:text-white
+              text-lg
+              whitespace-nowrap
+            ">
               SESCO ESKUL
             </span>
+
           )}
 
         </div>
@@ -242,24 +310,30 @@ export default function Sidebar({ isAdmin }) {
           `}
         >
 
-          <div
-            className="
-              w-10 h-10
-              rounded-full
-              bg-gray-300 dark:bg-gray-700
-              flex items-center justify-center
-              text-gray-700 dark:text-gray-200
-              shrink-0
-            "
-          >
+          <div className="
+            w-10 h-10
+            rounded-full
+            bg-gray-300 dark:bg-gray-700
+            flex items-center justify-center
+            text-gray-700 dark:text-gray-200
+            shrink-0
+          ">
+
             <User className="w-6 h-6" />
+
           </div>
+
 
           {!isCollapsed && (
 
             <div className="overflow-hidden">
 
-              <h4 className="text-sm font-bold text-gray-800 dark:text-white truncate">
+              <h4 className="
+                text-sm
+                font-bold
+                text-gray-800 dark:text-white
+                truncate
+              ">
 
                 {isAdmin
                   ? 'Administrator'
@@ -270,6 +344,7 @@ export default function Sidebar({ isAdmin }) {
                   : 'Halo, Pengguna'}
 
               </h4>
+
 
               <span
                 className={`
@@ -314,14 +389,22 @@ export default function Sidebar({ isAdmin }) {
               ${isCollapsed ? 'justify-center' : ''}
             `}
           >
+
             <LayoutDashboard className="w-5 h-5 shrink-0" />
-            {!isCollapsed && <span className="whitespace-nowrap">Dashboard</span>}
+
+            {!isCollapsed && (
+              <span className="whitespace-nowrap">
+                Dashboard
+              </span>
+            )}
+
           </Link>
 
 
-          {/* KELOLA DATA ESKUL - ADMIN SAJA */}
+          {/* KELOLA DATA ESKUL - ADMIN */}
 
           {isAdmin && (
+
             <Link
               to="/admin/kelola-eskul"
               title="Kelola Data Eskul"
@@ -337,15 +420,24 @@ export default function Sidebar({ isAdmin }) {
                 ${isCollapsed ? 'justify-center' : ''}
               `}
             >
+
               <Settings className="w-5 h-5 shrink-0" />
-              {!isCollapsed && <span className="whitespace-nowrap">Kelola Data Eskul</span>}
+
+              {!isCollapsed && (
+                <span className="whitespace-nowrap">
+                  Kelola Data Eskul
+                </span>
+              )}
+
             </Link>
+
           )}
 
 
-          {/* DATA PENDAFTAR - ADMIN SAJA */}
+          {/* DATA PENDAFTAR - ADMIN */}
 
           {isAdmin && (
+
             <Link
               to="/admin/pendaftar"
               title="Data Pendaftar"
@@ -361,15 +453,24 @@ export default function Sidebar({ isAdmin }) {
                 ${isCollapsed ? 'justify-center' : ''}
               `}
             >
+
               <Users className="w-5 h-5 shrink-0" />
-              {!isCollapsed && <span className="whitespace-nowrap">Data Pendaftar</span>}
+
+              {!isCollapsed && (
+                <span className="whitespace-nowrap">
+                  Data Pendaftar
+                </span>
+              )}
+
             </Link>
+
           )}
 
 
-          {/* KELOLA PEMBINA - ADMIN SAJA */}
+          {/* KELOLA PEMBINA - ADMIN */}
 
           {isAdmin && (
+
             <Link
               to="/admin/kelola-pembina"
               title="Kelola Pembina"
@@ -385,15 +486,24 @@ export default function Sidebar({ isAdmin }) {
                 ${isCollapsed ? 'justify-center' : ''}
               `}
             >
+
               <UserCog className="w-5 h-5 shrink-0" />
-              {!isCollapsed && <span className="whitespace-nowrap">Kelola Pembina</span>}
+
+              {!isCollapsed && (
+                <span className="whitespace-nowrap">
+                  Kelola Pembina
+                </span>
+              )}
+
             </Link>
+
           )}
 
 
-          {/* MANAJEMEN KELAS - ADMIN SAJA */}
+          {/* MANAJEMEN KELAS - ADMIN */}
 
           {isAdmin && (
+
             <Link
               to="/admin/manajemen-kelas"
               title="Manajemen Kelas"
@@ -409,19 +519,62 @@ export default function Sidebar({ isAdmin }) {
                 ${isCollapsed ? 'justify-center' : ''}
               `}
             >
+
               <School className="w-5 h-5 shrink-0" />
-              {!isCollapsed && <span className="whitespace-nowrap">Manajemen Kelas</span>}
+
+              {!isCollapsed && (
+                <span className="whitespace-nowrap">
+                  Manajemen Kelas
+                </span>
+              )}
+
             </Link>
+
           )}
 
 
-          {/* ==================================================
-              MODE GELAP / TERANG
-          ================================================== */}
+          {/* DATA USER - ADMIN */}
+
+          {isAdmin && (
+
+            <Link
+              to="/admin/data-user"
+              title="Data User"
+              className={`
+                flex items-center gap-3
+                px-3 py-2.5
+                rounded-lg
+                text-sm font-semibold
+                text-indigo-700 dark:text-indigo-300
+                bg-indigo-50 dark:bg-indigo-900/30
+                hover:bg-indigo-100 dark:hover:bg-indigo-900/50
+                transition-colors mt-1
+                ${isCollapsed ? 'justify-center' : ''}
+              `}
+            >
+
+              <Contact className="w-5 h-5 shrink-0" />
+
+              {!isCollapsed && (
+                <span className="whitespace-nowrap">
+                  Data User
+                </span>
+              )}
+
+            </Link>
+
+          )}
+
+
+          {/* MODE GELAP / TERANG */}
 
           <button
             onClick={toggleDarkMode}
-            title={darkMode ? 'Mode Terang' : 'Mode Gelap'}
+            title={
+              darkMode
+                ? 'Mode Terang'
+                : 'Mode Gelap'
+            }
             className={`
               w-full
               flex items-center gap-3
@@ -438,14 +591,25 @@ export default function Sidebar({ isAdmin }) {
           >
 
             {darkMode ? (
-              <Sun className="w-5 h-5 text-yellow-500 shrink-0" />
+              <Sun className="
+                w-5 h-5
+                text-yellow-500
+                shrink-0
+              " />
             ) : (
-              <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300 shrink-0" />
+              <Moon className="
+                w-5 h-5
+                text-gray-600
+                dark:text-gray-300
+                shrink-0
+              " />
             )}
 
             {!isCollapsed && (
               <span className="whitespace-nowrap">
-                {darkMode ? 'Mode Terang' : 'Mode Gelap'}
+                {darkMode
+                  ? 'Mode Terang'
+                  : 'Mode Gelap'}
               </span>
             )}
 
@@ -460,16 +624,26 @@ export default function Sidebar({ isAdmin }) {
 
             <button
               onClick={() => {
-                // Kalau sidebar sedang collapsed, klik ini otomatis
-                // membuka sidebar dulu supaya daftarnya kebaca
+
                 if (isCollapsed) {
+
                   setIsCollapsed(false);
                   setIsDropdownOpen(true);
+
                 } else {
-                  setIsDropdownOpen(!isDropdownOpen);
+
+                  setIsDropdownOpen(
+                    !isDropdownOpen
+                  );
+
                 }
+
               }}
-              title={isPembina ? 'Eskul yang Dibina' : 'Daftar Eskul'}
+              title={
+                isPembina
+                  ? 'Eskul yang Dibina'
+                  : 'Daftar Eskul'
+              }
               className={`
                 w-full
                 flex items-center justify-between
@@ -483,49 +657,68 @@ export default function Sidebar({ isAdmin }) {
               `}
             >
 
-              <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+              <div
+                className={`
+                  flex items-center gap-3
+                  ${isCollapsed ? 'justify-center' : ''}
+                `}
+              >
 
                 <List className="w-5 h-5 shrink-0" />
 
                 {!isCollapsed && (
+
                   <span className="whitespace-nowrap">
                     {isPembina
                       ? 'Eskul yang Dibina'
                       : 'Daftar Eskul'}
                   </span>
+
                 )}
 
               </div>
 
+
               {!isCollapsed && (
+
                 <ChevronDown
                   className={`
                     w-4 h-4
                     transition-transform
                     shrink-0
-                    ${isDropdownOpen ? 'rotate-180' : ''}
+                    ${
+                      isDropdownOpen
+                        ? 'rotate-180'
+                        : ''
+                    }
                   `}
                 />
+
               )}
 
             </button>
 
 
-            {!isCollapsed && isDropdownOpen && (
+            {!isCollapsed &&
+              isDropdownOpen && (
 
               <div
                 className="
                   pl-9 pr-2 py-1
                   space-y-1 mt-1
                   border-l-2
-                  border-emerald-100 dark:border-emerald-900
+                  border-emerald-100
+                  dark:border-emerald-900
                   ml-4
                 "
               >
 
                 {daftarEskulSidebar.length === 0 ? (
 
-                  <span className="block py-1.5 px-2 text-xs text-gray-400">
+                  <span className="
+                    block py-1.5 px-2
+                    text-xs text-gray-400
+                  ">
                     Belum ada eskul
                   </span>
 
@@ -553,8 +746,10 @@ export default function Sidebar({ isAdmin }) {
                           rounded-md
                           text-xs font-bold
                           text-gray-500 dark:text-gray-400
-                          hover:text-emerald-700 dark:hover:text-emerald-300
-                          hover:bg-emerald-50 dark:hover:bg-emerald-900/30
+                          hover:text-emerald-700
+                          dark:hover:text-emerald-300
+                          hover:bg-emerald-50
+                          dark:hover:bg-emerald-900/30
                           transition-colors
                           truncate
                         "
@@ -563,6 +758,7 @@ export default function Sidebar({ isAdmin }) {
                       </Link>
 
                     );
+
                   })
 
                 )}
@@ -582,7 +778,12 @@ export default function Sidebar({ isAdmin }) {
           LOGOUT
       ================================================== */}
 
-      <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+      <div className="
+        pt-4
+        border-t
+        border-gray-100
+        dark:border-gray-700
+      ">
 
         <button
           onClick={handleLogout}
@@ -594,7 +795,8 @@ export default function Sidebar({ isAdmin }) {
             rounded-lg
             text-sm font-medium
             text-red-600 dark:text-red-400
-            hover:bg-red-50 dark:hover:bg-red-900/20
+            hover:bg-red-50
+            dark:hover:bg-red-900/20
             transition-colors
             ${isCollapsed ? 'justify-center' : ''}
           `}
@@ -602,7 +804,13 @@ export default function Sidebar({ isAdmin }) {
 
           <LogOut className="w-5 h-5 shrink-0" />
 
-          {!isCollapsed && <span className="whitespace-nowrap">Keluar</span>}
+          {!isCollapsed && (
+
+            <span className="whitespace-nowrap">
+              Keluar
+            </span>
+
+          )}
 
         </button>
 

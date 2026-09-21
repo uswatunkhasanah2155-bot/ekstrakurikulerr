@@ -6,7 +6,7 @@ const API_URL = 'http://localhost:5000';
 // HELPER: Deteksi token invalid/expired, otomatis logout
 // ==================================================
 
- export function handleUnauthorized(response) {
+export function handleUnauthorized(response) {
   if (response.status === 401 || response.status === 403) {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
@@ -15,7 +15,52 @@ const API_URL = 'http://localhost:5000';
     window.location.href = '/login';
     return true;
   }
+
   return false;
+}
+
+
+// ==================================================
+// VERIFIKASI TOKEN JWT
+// ==================================================
+
+export async function verifyToken() {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      return {
+        valid: false
+      };
+    }
+
+    const response = await fetch(`${API_URL}/api/auth/verify`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      return {
+        valid: false
+      };
+    }
+
+    const result = await response.json();
+
+    return {
+      valid: true,
+      data: result.data
+    };
+
+  } catch (error) {
+    console.error('Error verifying token:', error);
+
+    return {
+      valid: false
+    };
+  }
 }
 
 
@@ -28,10 +73,13 @@ export async function getDaftarEskul() {
     const response = await fetch(`${API_URL}/api/eskul`);
 
     if (!response.ok) {
-      throw new Error('Gagal mengambil data dari server backend');
+      throw new Error(
+        'Gagal mengambil data dari server backend'
+      );
     }
 
     const result = await response.json();
+
     return result.data || [];
 
   } catch (error) {
@@ -49,17 +97,25 @@ export async function getPendaftarEskul() {
   try {
     const token = localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/pendaftaran`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
     if (handleUnauthorized(response)) return [];
 
     if (!response.ok) {
-      throw new Error('Gagal mengambil data pendaftar dari server backend');
+      throw new Error(
+        'Gagal mengambil data pendaftar dari server backend'
+      );
     }
 
     const result = await response.json();
+
     return result.data || [];
 
   } catch (error) {
@@ -73,17 +129,25 @@ export async function getSiswaByEskul(namaEskul) {
   try {
     const token = localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/pendaftaran`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
     if (handleUnauthorized(response)) return [];
 
     if (!response.ok) {
-      throw new Error('Gagal mengambil data pendaftaran');
+      throw new Error(
+        'Gagal mengambil data pendaftaran'
+      );
     }
 
     const result = await response.json();
+
     const semuaPendaftar = result.data || [];
 
     const filtered = semuaPendaftar.filter(
@@ -97,25 +161,40 @@ export async function getSiswaByEskul(namaEskul) {
       id_siswa: item.siswa?.id_siswa,
       nama: item.siswa?.nama_siswa || 'Tanpa Nama',
 
-      // ID kelas dari tabel Kelas
       id_kelas: item.siswa?.id_kelas || null,
 
-      // Nama kelas untuk ditampilkan
-      kelas: item.siswa?.kelasData?.nama_kelas || 'Belum diisi',
+      kelas:
+        item.siswa?.kelasData?.nama_kelas ||
+        'Belum diisi',
 
-      jenisKelamin: item.siswa?.jenis_kelamin || 'L',
-      foto: item.siswa?.foto || null,
+      jenisKelamin:
+        item.siswa?.jenis_kelamin || 'L',
 
-      tanggal: new Date(item.tanggal || Date.now()).toLocaleDateString(
+      foto:
+        item.siswa?.foto || null,
+
+      tanggal: new Date(
+        item.tanggal || Date.now()
+      ).toLocaleDateString(
         'en-GB',
-        { day: '2-digit', month: 'short', year: 'numeric' }
+        {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }
       )
     }));
 
-    return mappedData.sort((a, b) => a.id - b.id);
+    return mappedData.sort(
+      (a, b) => a.id - b.id
+    );
 
   } catch (error) {
-    console.error('Error fetching siswa by eskul:', error);
+    console.error(
+      'Error fetching siswa by eskul:',
+      error
+    );
+
     return [];
   }
 }
@@ -123,37 +202,51 @@ export async function getSiswaByEskul(namaEskul) {
 
 // --------------------------------------------------
 // Ambil profil siswa milik akun yang sedang login
-// (dipakai RegistrationForm.jsx untuk cek apakah siswa
-// sudah pernah membuat profil, sebelum daftar eskul baru)
 // --------------------------------------------------
+
 export async function getProfilSiswaSaya() {
   try {
     const token = localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
       return null;
     }
 
-    const response = await fetch(`${API_URL}/api/siswa/me`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/siswa/me`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
     if (handleUnauthorized(response)) return null;
 
-    // Belum punya profil -> ini kondisi normal, bukan error
     if (response.status === 404) {
       return null;
     }
 
     if (!response.ok) {
-      throw new Error('Gagal mengambil profil siswa');
+      throw new Error(
+        'Gagal mengambil profil siswa'
+      );
     }
 
     const result = await response.json();
+
     return result.data || null;
 
   } catch (error) {
-    console.error('Error fetching profil siswa saya:', error);
+    console.error(
+      'Error fetching profil siswa saya:',
+      error
+    );
+
     return null;
   }
 }
@@ -163,56 +256,105 @@ export async function tambahPendaftar(dataSiswa) {
   try {
     const token = localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
     const jenisKelaminVal =
-      dataSiswa.get('jenisKelamin') || dataSiswa.get('jenis_kelamin');
+      dataSiswa.get('jenisKelamin') ||
+      dataSiswa.get('jenis_kelamin');
 
     let jenisKelaminDB = 'L';
 
-    if (jenisKelaminVal === 'Perempuan' || jenisKelaminVal === 'P') {
+    if (
+      jenisKelaminVal === 'Perempuan' ||
+      jenisKelaminVal === 'P'
+    ) {
       jenisKelaminDB = 'P';
     }
 
-    dataSiswa.set('jenis_kelamin', jenisKelaminDB);
+    dataSiswa.set(
+      'jenis_kelamin',
+      jenisKelaminDB
+    );
+
     dataSiswa.delete('jenisKelamin');
 
-    // Ubah nama menjadi nama_siswa
-    if (dataSiswa.has('nama') && !dataSiswa.has('nama_siswa')) {
-      dataSiswa.set('nama_siswa', dataSiswa.get('nama'));
+    if (
+      dataSiswa.has('nama') &&
+      !dataSiswa.has('nama_siswa')
+    ) {
+      dataSiswa.set(
+        'nama_siswa',
+        dataSiswa.get('nama')
+      );
+
       dataSiswa.delete('nama');
     }
 
-    // Pastikan id_kelas berupa angka
     if (dataSiswa.has('id_kelas')) {
-      const idKelas = dataSiswa.get('id_kelas');
+      const idKelas =
+        dataSiswa.get('id_kelas');
 
-      if (idKelas !== null && idKelas !== '') {
-        dataSiswa.set('id_kelas', Number(idKelas));
+      if (
+        idKelas !== null &&
+        idKelas !== ''
+      ) {
+        dataSiswa.set(
+          'id_kelas',
+          Number(idKelas)
+        );
       }
     }
 
-    const response = await fetch(`${API_URL}/api/pendaftaran`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: dataSiswa
-    });
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: dataSiswa
+      }
+    );
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
 
     const result = await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal menyimpan data pendaftar baru');
+      throw new Error(
+        result.message ||
+        'Gagal menyimpan data pendaftar baru'
+      );
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: result
+    };
 
   } catch (error) {
-    console.error('Error adding pendaftar:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error adding pendaftar:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -226,17 +368,27 @@ export async function updatePendaftar(
   try {
     const token = localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
     let hasFile = false;
 
-    // Cek apakah ada foto yang diupload
     if (dataUpdate instanceof FormData) {
-      const fotoEntry = dataUpdate.get('foto');
+      const fotoEntry =
+        dataUpdate.get('foto');
 
-      if (fotoEntry && typeof fotoEntry === 'object' && fotoEntry.size > 0) {
+      if (
+        fotoEntry &&
+        typeof fotoEntry === 'object' &&
+        fotoEntry.size > 0
+      ) {
         hasFile = true;
       }
     }
@@ -252,172 +404,308 @@ export async function updatePendaftar(
 
       if (dataUpdate instanceof FormData) {
         const jkVal =
-          dataUpdate.get('jenisKelamin') || dataUpdate.get('jenis_kelamin');
+          dataUpdate.get('jenisKelamin') ||
+          dataUpdate.get('jenis_kelamin');
 
         payload = {
           id_eskul: Number(idPilihanEskul),
-          nama_siswa: dataUpdate.get('nama_siswa') || dataUpdate.get('nama'),
-          id_kelas: dataUpdate.get('id_kelas'),
+
+          nama_siswa:
+            dataUpdate.get('nama_siswa') ||
+            dataUpdate.get('nama'),
+
+          id_kelas:
+            dataUpdate.get('id_kelas'),
+
           jenis_kelamin:
-            (jkVal === 'Perempuan' || jkVal === 'P') ? 'P' : 'L'
+            (
+              jkVal === 'Perempuan' ||
+              jkVal === 'P'
+            )
+              ? 'P'
+              : 'L'
         };
 
       } else {
         payload = {
-          id_eskul: Number(idPilihanEskul),
-          nama_siswa: dataUpdate?.nama,
-          id_kelas: dataUpdate?.id_kelas,
+          id_eskul:
+            Number(idPilihanEskul),
+
+          nama_siswa:
+            dataUpdate?.nama,
+
+          id_kelas:
+            dataUpdate?.id_kelas,
+
           jenis_kelamin:
-            (dataUpdate?.jenis_kelamin === 'Perempuan' ||
-              dataUpdate?.jenis_kelamin === 'P')
+            (
+              dataUpdate?.jenis_kelamin === 'Perempuan' ||
+              dataUpdate?.jenis_kelamin === 'P'
+            )
               ? 'P'
               : 'L'
         };
       }
 
-      // Pastikan id_kelas berupa angka
       if (
         payload.id_kelas !== null &&
         payload.id_kelas !== undefined &&
         payload.id_kelas !== ''
       ) {
-        payload.id_kelas = Number(payload.id_kelas);
+        payload.id_kelas =
+          Number(payload.id_kelas);
       }
 
-      response = await fetch(`${API_URL}/api/pendaftaran/${idPendaftaran}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      response = await fetch(
+        `${API_URL}/api/pendaftaran/${idPendaftaran}`,
+        {
+          method: 'PUT',
+
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+
+          body: JSON.stringify(payload)
+        }
+      );
 
     // ==================================================
     // UPDATE DENGAN FOTO
     // ==================================================
 
     } else {
-      const formDataToSend = dataUpdate;
+      const formDataToSend =
+        dataUpdate;
 
-      // Tambahkan id eskul jika belum ada
-      if (!formDataToSend.has('id_eskul') && idPilihanEskul) {
-        formDataToSend.append('id_eskul', Number(idPilihanEskul));
+      if (
+        !formDataToSend.has('id_eskul') &&
+        idPilihanEskul
+      ) {
+        formDataToSend.append(
+          'id_eskul',
+          Number(idPilihanEskul)
+        );
       }
 
-      // Ubah nama menjadi nama_siswa
-      if (formDataToSend.has('nama') && !formDataToSend.has('nama_siswa')) {
-        formDataToSend.append('nama_siswa', formDataToSend.get('nama'));
+      if (
+        formDataToSend.has('nama') &&
+        !formDataToSend.has('nama_siswa')
+      ) {
+        formDataToSend.append(
+          'nama_siswa',
+          formDataToSend.get('nama')
+        );
+
         formDataToSend.delete('nama');
       }
 
-      // Pastikan id_kelas berupa angka
-      if (formDataToSend.has('id_kelas')) {
-        const idKelas = formDataToSend.get('id_kelas');
+      if (
+        formDataToSend.has('id_kelas')
+      ) {
+        const idKelas =
+          formDataToSend.get('id_kelas');
 
-        if (idKelas !== null && idKelas !== '') {
-          formDataToSend.set('id_kelas', Number(idKelas));
+        if (
+          idKelas !== null &&
+          idKelas !== ''
+        ) {
+          formDataToSend.set(
+            'id_kelas',
+            Number(idKelas)
+          );
         }
       }
 
-      // Normalisasi jenis kelamin
       const jkVal =
         formDataToSend.get('jenisKelamin') ||
         formDataToSend.get('jenis_kelamin');
 
       if (jkVal) {
         const jenisKelaminDB =
-          (jkVal === 'Perempuan' || jkVal === 'P') ? 'P' : 'L';
+          (
+            jkVal === 'Perempuan' ||
+            jkVal === 'P'
+          )
+            ? 'P'
+            : 'L';
 
-        formDataToSend.set('jenis_kelamin', jenisKelaminDB);
-        formDataToSend.delete('jenisKelamin');
+        formDataToSend.set(
+          'jenis_kelamin',
+          jenisKelaminDB
+        );
+
+        formDataToSend.delete(
+          'jenisKelamin'
+        );
       }
 
-      response = await fetch(`${API_URL}/api/pendaftaran/${idPendaftaran}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formDataToSend
-      });
+      response = await fetch(
+        `${API_URL}/api/pendaftaran/${idPendaftaran}`,
+        {
+          method: 'PUT',
+
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+
+          body: formDataToSend
+        }
+      );
     }
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
 
-    // ==================================================
-    // HASIL RESPONSE
-    // ==================================================
-
-    const result = await response.json();
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal mengupdate pendaftar');
+      throw new Error(
+        result.message ||
+        'Gagal mengupdate pendaftar'
+      );
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: result
+    };
 
   } catch (error) {
-    console.error('Error updating pendaftar:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error updating pendaftar:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
-export async function hapusPendaftar(idPendaftaran) {
+export async function hapusPendaftar(
+  idPendaftaran
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/pendaftaran/${idPendaftaran}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran/${idPendaftaran}`,
+      {
+        method: 'DELETE',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    if (!response.ok) {
-      const errorResult = await response.json();
-      throw new Error(errorResult.message || 'Gagal menghapus pendaftaran');
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
     }
 
-    return { success: true };
+    if (!response.ok) {
+      const errorResult =
+        await response.json();
+
+      throw new Error(
+        errorResult.message ||
+        'Gagal menghapus pendaftaran'
+      );
+    }
+
+    return {
+      success: true
+    };
 
   } catch (error) {
-    console.error('Error deleting pendaftar:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error deleting pendaftar:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
 export async function downloadSemuaPendaftarExcel() {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/pendaftaran/download`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran/download`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
-
-    if (!response.ok) {
-      throw new Error('Gagal mendownload data excel');
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
     }
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    if (!response.ok) {
+      throw new Error(
+        'Gagal mendownload data excel'
+      );
+    }
+
+    const blob =
+      await response.blob();
+
+    const url =
+      window.URL.createObjectURL(blob);
+
+    const a =
+      document.createElement('a');
 
     a.href = url;
-    a.download = 'Rekap-Semua-Pendaftar.xlsx';
+
+    a.download =
+      'Rekap-Semua-Pendaftar.xlsx';
 
     document.body.appendChild(a);
+
     a.click();
+
     a.remove();
 
     window.URL.revokeObjectURL(url);
 
-    return { success: true };
+    return {
+      success: true
+    };
 
   } catch (error) {
-    console.error('Error downloading excel:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error downloading excel:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -428,135 +716,278 @@ export async function downloadSemuaPendaftarExcel() {
 
 export async function getGaleriEskul(idEskul) {
   try {
-    const response = await fetch(`${API_URL}/api/galeri/${idEskul}`);
+    const response = await fetch(
+      `${API_URL}/api/galeri/${idEskul}`
+    );
 
     if (!response.ok) {
-      throw new Error('Gagal mengambil data galeri dari server backend');
+      throw new Error(
+        'Gagal mengambil data galeri dari server backend'
+      );
     }
 
-    const result = await response.json();
+    const result =
+      await response.json();
+
     return result.data || [];
 
   } catch (error) {
-    console.error('Error fetching galeri:', error);
+    console.error(
+      'Error fetching galeri:',
+      error
+    );
+
     return [];
   }
 }
 
 
-export async function uploadGaleriEskul(dataGaleri) {
+export async function uploadGaleriEskul(
+  dataGaleri
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
-    const response = await fetch(`${API_URL}/api/galeri`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: dataGaleri
-    });
+    const response = await fetch(
+      `${API_URL}/api/galeri`,
+      {
+        method: 'POST',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
 
-    const result = await response.json();
+        body: dataGaleri
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal mengupload foto galeri');
+      throw new Error(
+        result.message ||
+        'Gagal mengupload foto galeri'
+      );
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: result
+    };
 
   } catch (error) {
-    console.error('Error uploading galeri:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error uploading galeri:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
-export async function hapusGaleriEskul(idGaleri) {
+export async function hapusGaleriEskul(
+  idGaleri
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/galeri/${idGaleri}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/galeri/${idGaleri}`,
+      {
+        method: 'DELETE',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    if (!response.ok) {
-      const errorResult = await response.json();
-      throw new Error(errorResult.message || 'Gagal menghapus foto galeri');
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
     }
 
-    return { success: true };
+    if (!response.ok) {
+      const errorResult =
+        await response.json();
+
+      throw new Error(
+        errorResult.message ||
+        'Gagal menghapus foto galeri'
+      );
+    }
+
+    return {
+      success: true
+    };
 
   } catch (error) {
-    console.error('Error deleting galeri:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error deleting galeri:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
-export async function setFotoUtamaGaleri(idGaleri) {
+export async function setFotoUtamaGaleri(
+  idGaleri
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
-    const response = await fetch(`${API_URL}/api/galeri/${idGaleri}/featured`, {
-      method: 'PATCH',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/galeri/${idGaleri}/featured`,
+      {
+        method: 'PATCH',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    const result = await response.json();
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal mengatur foto utama');
+      throw new Error(
+        result.message ||
+        'Gagal mengatur foto utama'
+      );
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: result
+    };
 
   } catch (error) {
-    console.error('Error setting foto utama:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error setting foto utama:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
-export async function updateGaleriEskul(idGaleri, dataUpdate) {
+export async function updateGaleriEskul(
+  idGaleri,
+  dataUpdate
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
-    const response = await fetch(`${API_URL}/api/galeri/${idGaleri}`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: dataUpdate
-    });
+    const response = await fetch(
+      `${API_URL}/api/galeri/${idGaleri}`,
+      {
+        method: 'PUT',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
 
-    const result = await response.json();
+        body: dataUpdate
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal mengupdate foto galeri');
+      throw new Error(
+        result.message ||
+        'Gagal mengupdate foto galeri'
+      );
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: result
+    };
 
   } catch (error) {
-    console.error('Error updating galeri:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error updating galeri:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -567,77 +998,512 @@ export async function updateGaleriEskul(idGaleri, dataUpdate) {
 
 export async function getDaftarPembina() {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/auth/pembina`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/auth/pembina`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    if (handleUnauthorized(response)) return [];
-
-    if (!response.ok) {
-      throw new Error('Gagal mengambil daftar pembina');
+    if (handleUnauthorized(response)) {
+      return [];
     }
 
-    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(
+        'Gagal mengambil daftar pembina'
+      );
+    }
+
+    const result =
+      await response.json();
+
     return result.data || [];
 
   } catch (error) {
-    console.error('Error fetching pembina:', error);
+    console.error(
+      'Error fetching pembina:',
+      error
+    );
+
     return [];
   }
 }
 
 
-export async function tambahPembina(dataPembina) {
+export async function tambahPembina(
+  dataPembina
+) {
   try {
-    const response = await fetch(`${API_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: dataPembina.username,
-        password: dataPembina.password,
-        role: 'pembina',
-        id_eskul: Number(dataPembina.id_eskul)
-      })
-    });
+    const response = await fetch(
+      `${API_URL}/api/auth/register`,
+      {
+        method: 'POST',
 
-    const result = await response.json();
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+          username:
+            dataPembina.username,
+
+          password:
+            dataPembina.password,
+
+          role: 'pembina',
+
+          id_eskul:
+            Number(dataPembina.id_eskul)
+        })
+      }
+    );
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal menambahkan akun pembina');
+      throw new Error(
+        result.message ||
+        'Gagal menambahkan akun pembina'
+      );
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: result
+    };
 
   } catch (error) {
-    console.error('Error adding pembina:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error adding pembina:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
-export async function hapusPembina(idUser) {
+export async function hapusPembina(
+  idUser
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/auth/pembina/${idUser}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/auth/pembina/${idUser}`,
+      {
+        method: 'DELETE',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    if (!response.ok) {
-      const errorResult = await response.json();
-      throw new Error(errorResult.message || 'Gagal menghapus akun pembina');
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
     }
 
-    return { success: true };
+    if (!response.ok) {
+      const errorResult =
+        await response.json();
+
+      throw new Error(
+        errorResult.message ||
+        'Gagal menghapus akun pembina'
+      );
+    }
+
+    return {
+      success: true
+    };
 
   } catch (error) {
-    console.error('Error deleting pembina:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error deleting pembina:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+
+// ==================================================
+// USER
+// ==================================================
+
+export async function getDaftarUser() {
+  try {
+    const token =
+      localStorage.getItem('token');
+
+    const response = await fetch(
+      `${API_URL}/api/auth/users`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return [];
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        'Gagal mengambil daftar user'
+      );
+    }
+
+    const result =
+      await response.json();
+
+    return result.data || [];
+
+  } catch (error) {
+    console.error(
+      'Error fetching user:',
+      error
+    );
+
+    return [];
+  }
+}
+
+
+// ==================================================
+// TAMBAH USER
+// ==================================================
+
+export async function tambahUser(dataUser) {
+  try {
+    const token =
+      localStorage.getItem('token');
+
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/auth/users`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+
+        body: JSON.stringify({
+          username: dataUser.username,
+          password: dataUser.password,
+          email: dataUser.email || null,
+          role: dataUser.role,
+
+          id_eskul:
+            dataUser.role === 'PEMBINA'
+              ? Number(dataUser.id_eskul)
+              : null
+        })
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        'Gagal menambahkan user'
+      );
+    }
+
+    return {
+      success: true,
+      data: result
+    };
+
+  } catch (error) {
+    console.error(
+      'Error adding user:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+
+// ==================================================
+// UPDATE USER
+// ==================================================
+
+export async function updateUser(
+  idUser,
+  dataUser
+) {
+  try {
+    const token =
+      localStorage.getItem('token');
+
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
+    }
+
+    const body = {
+      username: dataUser.username,
+      email: dataUser.email || null,
+      role: dataUser.role,
+
+      id_eskul:
+        dataUser.role === 'PEMBINA'
+          ? Number(dataUser.id_eskul)
+          : null
+    };
+
+    if (
+      dataUser.password &&
+      dataUser.password.trim() !== ''
+    ) {
+      body.password =
+        dataUser.password;
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/auth/users/${idUser}`,
+      {
+        method: 'PATCH',
+
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+
+        body: JSON.stringify(body)
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        'Gagal mengupdate user'
+      );
+    }
+
+    return {
+      success: true,
+      data: result
+    };
+
+  } catch (error) {
+    console.error(
+      'Error updating user:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+
+// ==================================================
+// HAPUS USER
+// ==================================================
+
+export async function hapusUser(
+  idUser
+) {
+  try {
+    const token =
+      localStorage.getItem('token');
+
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/auth/users/${idUser}`,
+      {
+        method: 'DELETE',
+
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        'Gagal menghapus user'
+      );
+    }
+
+    return {
+      success: true,
+      data: result
+    };
+
+  } catch (error) {
+    console.error(
+      'Error deleting user:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+
+// ==================================================
+// UPDATE ROLE USER
+// ==================================================
+
+export async function updateRoleUser(
+  idUser,
+  role,
+  idEskul = null
+) {
+  try {
+    const token =
+      localStorage.getItem('token');
+
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/auth/users/${idUser}/role`,
+      {
+        method: 'PATCH',
+
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+
+        body: JSON.stringify({
+          role,
+
+          id_eskul:
+            role.toLowerCase() === 'pembina'
+              ? Number(idEskul)
+              : null
+        })
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        'Gagal mengubah role user'
+      );
+    }
+
+    return {
+      success: true,
+      data: result.data
+    };
+
+  } catch (error) {
+    console.error(
+      'Error updating role user:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
@@ -648,122 +1514,243 @@ export async function hapusPembina(idUser) {
 
 export async function getDaftarKelas() {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    const response = await fetch(`${API_URL}/api/kelas`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/kelas`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    if (handleUnauthorized(response)) return [];
+    if (handleUnauthorized(response)) {
+      return [];
+    }
 
-    const result = await response.json();
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal mengambil daftar kelas');
+      throw new Error(
+        result.message ||
+        'Gagal mengambil daftar kelas'
+      );
     }
 
     return result.data || [];
 
   } catch (error) {
-    console.error('Error fetching kelas:', error);
+    console.error(
+      'Error fetching kelas:',
+      error
+    );
+
     return [];
   }
 }
 
 
-export async function tambahKelas(namaKelas) {
+export async function tambahKelas(
+  namaKelas
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
-    const response = await fetch(`${API_URL}/api/kelas`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ nama_kelas: namaKelas })
-    });
+    const response = await fetch(
+      `${API_URL}/api/kelas`,
+      {
+        method: 'POST',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
 
-    const result = await response.json();
+        body: JSON.stringify({
+          nama_kelas: namaKelas
+        })
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal menambahkan kelas');
+      throw new Error(
+        result.message ||
+        'Gagal menambahkan kelas'
+      );
     }
 
-    return { success: true, data: result.data };
+    return {
+      success: true,
+      data: result.data
+    };
 
   } catch (error) {
-    console.error('Error adding kelas:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error adding kelas:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
-export async function updateKelas(idKelas, namaKelas) {
+export async function updateKelas(
+  idKelas,
+  namaKelas
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
-    const response = await fetch(`${API_URL}/api/kelas/${idKelas}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ nama_kelas: namaKelas })
-    });
+    const response = await fetch(
+      `${API_URL}/api/kelas/${idKelas}`,
+      {
+        method: 'PUT',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
 
-    const result = await response.json();
+        body: JSON.stringify({
+          nama_kelas: namaKelas
+        })
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal mengupdate kelas');
+      throw new Error(
+        result.message ||
+        'Gagal mengupdate kelas'
+      );
     }
 
-    return { success: true, data: result.data };
+    return {
+      success: true,
+      data: result.data
+    };
 
   } catch (error) {
-    console.error('Error updating kelas:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error updating kelas:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 
-export async function hapusKelas(idKelas) {
+export async function hapusKelas(
+  idKelas
+) {
   try {
-    const token = localStorage.getItem('token');
+    const token =
+      localStorage.getItem('token');
 
-    if (!token || token === 'null' || token === 'undefined') {
-      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    if (
+      !token ||
+      token === 'null' ||
+      token === 'undefined'
+    ) {
+      throw new Error(
+        'Sesi login kedaluwarsa. Silakan login ulang.'
+      );
     }
 
-    const response = await fetch(`${API_URL}/api/kelas/${idKelas}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await fetch(
+      `${API_URL}/api/kelas/${idKelas}`,
+      {
+        method: 'DELETE',
 
-    if (handleUnauthorized(response)) return { success: false, error: 'Sesi login berakhir.' };
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
 
-    const result = await response.json();
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(result.message || 'Gagal menghapus kelas');
+      throw new Error(
+        result.message ||
+        'Gagal menghapus kelas'
+      );
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: result
+    };
 
   } catch (error) {
-    console.error('Error deleting kelas:', error);
-    return { success: false, error: error.message };
+    console.error(
+      'Error deleting kelas:',
+      error
+    );
+
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
