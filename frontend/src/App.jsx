@@ -266,7 +266,7 @@ function App() {
 
         <Routes>
 
-          <Route path="/"element={ <Navigate to="/login" replace/>}/>
+          <Route path="/" element={ <Navigate to="/login" replace/>}/>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/Dashboard" element={<StudentDashboard />} />
@@ -274,6 +274,7 @@ function App() {
           <Route path="/admin/manajemen-kelas" element={ <AdminRoute> <ManajemenKelas /> </AdminRoute> } />
           <Route path="/admin/pendaftar" element={ <AdminRoute> <PendaftarEskul /> </AdminRoute> } />
           <Route path="/admin/data-user" element={  <AdminRoute> <DataUser /> </AdminRoute> }/>
+          <Route path="/admin/kelola-eskul" element={ <AdminRoute><KelolaEskul /></AdminRoute> } />
           <Route path="/admin/*" element={ <Navigate to="/login" replace /> } />
           <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
           <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
