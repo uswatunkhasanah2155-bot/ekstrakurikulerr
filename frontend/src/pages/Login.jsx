@@ -57,8 +57,17 @@ export default function Login() {
 
       setSuccessMessage('Login berhasil! Mengalihkan...');
 
+      // Tentukan tujuan redirect berdasarkan role user yang login
+      const userRole = (data.role || '').toLowerCase();
+
       setTimeout(() => {
-        navigate('/Dashboard');
+        if (userRole === 'admin') {
+          navigate('/admin/Dashboard');
+        } else if (userRole === 'pembina') {
+          navigate('/pembina/Dashboard');
+        } else {
+          navigate('/siswa/Dashboard');
+        }
       }, 1000);
 
     } catch (err) {

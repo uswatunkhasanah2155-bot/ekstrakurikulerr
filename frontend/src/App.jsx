@@ -266,16 +266,24 @@ function App() {
 
         <Routes>
 
-          <Route path="/" element={ <Navigate to="/login" replace/>}/>
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
+          {/* Rute Dashboard Spesifik Berdasarkan Role & Cadangan Umum */}
           <Route path="/Dashboard" element={<StudentDashboard />} />
-          <Route path="/admin/kelola-pembina" element={ <AdminRoute><KelolaPembina /></AdminRoute> } />
-          <Route path="/admin/manajemen-kelas" element={ <AdminRoute> <ManajemenKelas /> </AdminRoute> } />
-          <Route path="/admin/pendaftar" element={ <AdminRoute> <PendaftarEskul /> </AdminRoute> } />
-          <Route path="/admin/data-user" element={  <AdminRoute> <DataUser /> </AdminRoute> }/>
-          <Route path="/admin/kelola-eskul" element={ <AdminRoute><KelolaEskul /></AdminRoute> } />
-          <Route path="/admin/*" element={ <Navigate to="/login" replace /> } />
+          <Route path="/admin/Dashboard" element={<AdminRoute><StudentDashboard /></AdminRoute>} />
+          <Route path="/pembina/Dashboard" element={<StudentDashboard />} />
+          <Route path="/siswa/Dashboard" element={<StudentDashboard />} />
+
+          {/* Rute Admin Lainnya */}
+          <Route path="/admin/kelola-pembina" element={<AdminRoute><KelolaPembina /></AdminRoute>} />
+          <Route path="/admin/manajemen-kelas" element={<AdminRoute><ManajemenKelas /></AdminRoute>} />
+          <Route path="/admin/pendaftar" element={<AdminRoute><PendaftarEskul /></AdminRoute>} />
+          <Route path="/admin/data-user" element={<AdminRoute><DataUser /></AdminRoute>} />
+          <Route path="/admin/kelola-eskul" element={<AdminRoute><KelolaEskul /></AdminRoute>} />
+          
+          {/* Rute Ekstrakurikuler Umum */}
           <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
           <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
           <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
@@ -283,6 +291,10 @@ function App() {
           <Route path="/eskul/:namaEskul/galeri/:idGaleri" element={<GaleriFotoDetail />} />
           <Route path="/eskul/:namaEskul/siswa/tambah" element={<TambahSiswaManual />} />
           <Route path="/eskul/:namaEskul/siswa/edit/:idPendaftaran" element={<EditSiswaManual />} />
+
+          {/* Fallback jika rute tidak ditemukan */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+
         </Routes>
 
       </div>
