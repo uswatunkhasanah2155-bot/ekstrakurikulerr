@@ -88,13 +88,7 @@ export default function GaleriUploadFoto() {
 
     setUploading(true);
 
-    const formData =
-      new FormData();
-
-    formData.append(
-      'id_eskul',
-      currentEskulDetail.id_eskul
-    );
+    const formData = new FormData();
 
     if (keterangan) {
       formData.append(
@@ -110,10 +104,12 @@ export default function GaleriUploadFoto() {
       );
     });
 
-    const result =
-      await uploadGaleriEskul(
-        formData
-      );
+    // id_eskul dikirim lewat parameter URL (sesuai route backend
+    // POST /api/galeri/:id_eskul), bukan lagi lewat body FormData.
+    const result = await uploadGaleriEskul(
+      currentEskulDetail.id_eskul,
+      formData
+    );
 
     setUploading(false);
 

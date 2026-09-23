@@ -742,9 +742,13 @@ export async function getGaleriEskul(idEskul) {
 }
 
 
-export async function uploadGaleriEskul(
-  dataGaleri
-) {
+// --------------------------------------------------
+// UPLOAD FOTO GALERI
+// Disesuaikan dengan route backend: POST /api/galeri/:id_eskul
+// id_eskul WAJIB dikirim lewat parameter idEskul (bukan di dalam FormData)
+// --------------------------------------------------
+
+export async function uploadGaleriEskul(idEskul, dataGaleri) {
   try {
     const token =
       localStorage.getItem('token');
