@@ -742,32 +742,22 @@ export async function getGaleriEskul(idEskul) {
 }
 
 
-export async function uploadGaleriEskul(
-  dataGaleri
-) {
+export async function uploadGaleriEskul(dataGaleri) {
   try {
-    const token =
-      localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-    if (
-      !token ||
-      token === 'null' ||
-      token === 'undefined'
-    ) {
-      throw new Error(
-        'Sesi login kedaluwarsa. Silakan login ulang.'
-      );
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
     }
 
     const response = await fetch(
       `${API_URL}/api/galeri`,
       {
         method: 'POST',
-
         headers: {
           'Authorization': `Bearer ${token}`
+          // Jangan set Content-Type secara manual saat menggunakan FormData
         },
-
         body: dataGaleri
       }
     );
@@ -779,13 +769,11 @@ export async function uploadGaleriEskul(
       };
     }
 
-    const result =
-      await response.json();
+    const result = await response.json();
 
     if (!response.ok) {
       throw new Error(
-        result.message ||
-        'Gagal mengupload foto galeri'
+        result.message || 'Gagal mengupload foto galeri'
       );
     }
 
@@ -795,11 +783,7 @@ export async function uploadGaleriEskul(
     };
 
   } catch (error) {
-    console.error(
-      'Error uploading galeri:',
-      error
-    );
-
+    console.error('Error uploading galeri:', error);
     return {
       success: false,
       error: error.message
