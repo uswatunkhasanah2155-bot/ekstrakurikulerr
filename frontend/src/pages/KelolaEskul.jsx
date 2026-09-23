@@ -255,8 +255,8 @@ export default function KelolaEskul() {
           Kelola Data Ekstrakurikuler (Admin Panel)
         </h2>
 
-        {/* FORM */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 max-w-3xl transition-colors duration-300">
+        {/* FORM (max-w-3xl dihapus dan diganti w-full agar melebar penuh) */}
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 w-full transition-colors duration-300">
 
           <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
 
@@ -432,7 +432,7 @@ export default function KelolaEskul() {
         </div>
 
         {/* TABEL */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300 w-full">
 
           {/* HEADER TABEL */}
           <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60">

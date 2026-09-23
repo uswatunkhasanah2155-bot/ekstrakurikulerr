@@ -26,6 +26,7 @@ export default function GaleriUploadFoto() {
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
   const [fileList, setFileList] = useState([]);
   const [keterangan, setKeterangan] = useState('');
+  const [kategori, setKategori] = useState('Kegiatan');
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -45,8 +46,12 @@ export default function GaleriUploadFoto() {
       const matchedEskul = listEskul.find(
         item =>
           item.nama_eskul &&
-          item.nama_eskul.toLowerCase().trim() ===
-            cleanNamaEskul.toLowerCase().trim()
+          item.nama_eskul
+            .toLowerCase()
+            .trim() ===
+            cleanNamaEskul
+              .toLowerCase()
+              .trim()
       );
 
       setCurrentEskulDetail(matchedEskul || null);
@@ -76,17 +81,16 @@ export default function GaleriUploadFoto() {
 
     const formData = new FormData();
 
-
     if (keterangan) {
       formData.append('keterangan', keterangan);
     }
+
+    formData.append('kategori', kategori);
 
     fileList.forEach(file => {
       formData.append('foto', file);
     });
 
-    // id_eskul dikirim lewat parameter URL (sesuai route backend
-    // POST /api/galeri/:id_eskul), bukan lagi lewat body FormData.
     const result = await uploadGaleriEskul(
       currentEskulDetail.id_eskul,
       formData
@@ -139,6 +143,22 @@ export default function GaleriUploadFoto() {
                   {fileList.length} foto dipilih
                 </p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Kategori Foto
+              </label>
+              <select
+                value={kategori}
+                onChange={e => setKategori(e.target.value)}
+                className="w-full border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-emerald-500 focus:border-emerald-500 transition"
+              >
+                <option value="Kegiatan">Kegiatan</option>
+                <option value="Upacara">Upacara</option>
+                <option value="Pelatihan">Pelatihan</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
             </div>
 
             <div>
