@@ -77,7 +77,10 @@ export default function GaleriUploadFoto() {
   const handleUpload = async e => {
     e.preventDefault();
 
-    if (!currentEskulDetail) return;
+    if (!currentEskulDetail) {
+      alert('Data ekstrakurikuler belum dimuat!');
+      return;
+    }
 
     if (fileList.length === 0) {
       alert(
@@ -90,11 +93,6 @@ export default function GaleriUploadFoto() {
 
     const formData =
       new FormData();
-
-    formData.append(
-      'id_eskul',
-      currentEskulDetail.id_eskul
-    );
 
     if (keterangan) {
       formData.append(
@@ -110,8 +108,10 @@ export default function GaleriUploadFoto() {
       );
     });
 
+    // Mengirim id_eskul ke parameter URL fungsi API
     const result =
       await uploadGaleriEskul(
+        currentEskulDetail.id_eskul,
         formData
       );
 

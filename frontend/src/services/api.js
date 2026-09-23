@@ -711,14 +711,23 @@ export async function downloadSemuaPendaftarExcel() {
 
 
 // ==================================================
-// GALERI ESKUL
+// GALERI ESKUL (SUDAH DIPERBAIKI DENGAN TOKEN)
 // ==================================================
 
 export async function getGaleriEskul(idEskul) {
   try {
+    const token = localStorage.getItem('token');
+
     const response = await fetch(
-      `${API_URL}/api/galeri/${idEskul}`
+      `${API_URL}/api/galeri/${idEskul}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
     );
+
+    if (handleUnauthorized(response)) return [];
 
     if (!response.ok) {
       throw new Error(
@@ -742,9 +751,7 @@ export async function getGaleriEskul(idEskul) {
 }
 
 
-export async function uploadGaleriEskul(
-  dataGaleri
-) {
+export async function uploadGaleriEskul(idEskul,dataGaleri   ) {
   try {
     const token =
       localStorage.getItem('token');
@@ -760,7 +767,7 @@ export async function uploadGaleriEskul(
     }
 
     const response = await fetch(
-      `${API_URL}/api/galeri`,
+      `${API_URL}/api/galeri/${idEskul}`,
       {
         method: 'POST',
 
