@@ -7,312 +7,459 @@ import fs from 'fs';
 
 const router = express.Router();
 
-// Pastikan folder uploads/galeri ada
+// ===============================
+// FOLDER UPLOAD GALERI
+// ===============================
 const galeriDir = 'uploads/galeri/';
+
 if (!fs.existsSync(galeriDir)) {
   fs.mkdirSync(galeriDir, { recursive: true });
 }
 
-// Konfigurasi Multer untuk menyimpan foto galeri ke folder 'uploads/galeri'
+// ===============================
+// MULTER STORAGE
+// ===============================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, galeriDir);
   },
+
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'galeri-' + uniqueSuffix + path.extname(file.originalname));
+    const uniqueSuffix =
+      Date.now() + '-' + Math.round(Math.random() * 1E9);
+
+    cb(
+      null,
+      'galeri-' +
+        uniqueSuffix +
+        path.extname(file.originalname)
+    );
   }
 });
 
-const upload = multer({ storage: storage });
+// ===============================
+// VALIDASI FILE
+// ===============================
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ];
 
+  const allowedExtensions = [
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.webp'
+  ];
 
-// ==================================================
-// HELPER: OTORISASI GALERI
-// ==================================================
-// Aturan:
-// - admin   -> boleh akses galeri eskul manapun
-// - pembina -> boleh akses HANYA galeri eskul yang dia bina
-// - role lain -> ditolak
-//
-// idEskulTarget = id_eskul yang mau diakses (dari body saat upload,
-// atau dari data galeri yang sudah ada saat edit/hapus/set featured)
-//
-// Mengembalikan { allowed: boolean, statusCode, message }
-async function cekAksesGaleri(req, idEskulTarget) {
-  const userRole = (req.user.role || '').toLowerCase();
+  const extension = path
+    .extname(file.originalname)
+    .toLowerCase();
 
-  if (userRole === 'admin') {
-    return { allowed: true };
+  if (
+    allowedMimeTypes.includes(file.mimetype) &&
+    allowedExtensions.includes(extension)
+  ) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        'File harus berupa gambar JPG, JPEG, PNG, atau WEBP!'
+      ),
+      false
+    );
   }
+};
 
-  if (userRole === 'pembina') {
-    let idEskulPembina = req.user.id_eskul;
+// ===============================
+// MULTER UPLOAD
+// ===============================
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024 // 2 MB
+  }
+});
 
-    if (!idEskulPembina) {
-      const userId = req.user.id_user || req.user.id;
+// ===============================
+// GET GALERI BERDASARKAN ESKUL
+// ===============================
+router.get('/:id_eskul', verifyToken, async (req, res) => {
+  try {
+    const id_eskul = Number(req.params.id_eskul);
 
-      const userRecord = await prisma.user.findUnique({
-        where: { id_user: Number(userId) },
-        select: { id_eskul: true },
+    if (isNaN(id_eskul)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID ekstrakurikuler tidak valid'
+      });
+    }
+
+    const galeri = await prisma.galeriEskul.findMany({
+      where: {
+        id_eskul
+      },
+      orderBy: [
+        {
+          is_featured: 'desc'
+        },
+        {
+          created_at: 'desc'
+        }
+      ]
+    });
+
+    res.json({
+      success: true,
+      data: galeri
+    });
+
+  } catch (error) {
+    console.error('Error get galeri:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data galeri'
+    });
+  }
+});
+
+// ===============================
+// TAMBAH FOTO GALERI
+// ===============================
+router.post(
+  '/:id_eskul',
+  verifyToken,
+  upload.array('foto', 20),
+  async (req, res) => {
+    try {
+      const id_eskul = Number(req.params.id_eskul);
+
+      if (isNaN(id_eskul)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID ekstrakurikuler tidak valid'
+        });
+      }
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tidak ada foto yang diupload'
+        });
+      }
+
+      // Pastikan eskul ada
+      const eskul = await prisma.ekstrakurikuler.findUnique({
+        where: {
+          id_eskul
+        }
       });
 
-      idEskulPembina = userRecord?.id_eskul;
-    }
+      if (!eskul) {
+        // Hapus file yang sudah terupload jika eskul tidak ditemukan
+        req.files.forEach((file) => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
 
-    if (!idEskulPembina) {
-      return {
-        allowed: false,
-        statusCode: 403,
-        message: 'Akun pembina ini tidak terhubung ke eskul manapun.',
-      };
-    }
-
-    if (Number(idEskulPembina) !== Number(idEskulTarget)) {
-      return {
-        allowed: false,
-        statusCode: 403,
-        message: 'Anda hanya bisa mengelola galeri eskul yang Anda bina.',
-      };
-    }
-
-    return { allowed: true };
-  }
-
-  return {
-    allowed: false,
-    statusCode: 403,
-    message: 'Anda tidak memiliki akses untuk mengelola galeri ini.',
-  };
-}
-
-
-// ==================================================
-// GET: Mengambil semua foto galeri berdasarkan id_eskul
-// ==================================================
-router.get('/:id_eskul', async (req, res) => {
-  try {
-    const { id_eskul } = req.params;
-
-    const listGaleri = await prisma.galeriEskul.findMany({
-      where: { id_eskul: Number(id_eskul) },
-      orderBy: { created_at: 'desc' },
-    });
-
-    res.json({
-      success: true,
-      message: 'Berhasil mengambil data galeri',
-      data: listGaleri,
-    });
-  } catch (error) {
-    console.error("ERROR DETAIL GET GALERI:", error);
-    res.status(500).json({ success: false, message: 'Gagal mengambil data galeri', error: error.message });
-  }
-});
-
-
-// ==================================================
-// POST: Upload banyak foto sekaligus ke galeri
-// admin -> eskul manapun, pembina -> hanya eskul miliknya
-// ==================================================
-router.post('/', verifyToken, upload.array('foto', 20), async (req, res) => {
-  try {
-    const { id_eskul, keterangan } = req.body;
-
-    if (!id_eskul) {
-      return res.status(400).json({ success: false, message: 'ID Ekstrakurikuler wajib diisi!' });
-    }
-
-    // ---------------------------------------------
-    // CEK OTORISASI
-    // ---------------------------------------------
-    const akses = await cekAksesGaleri(req, id_eskul);
-
-    if (!akses.allowed) {
-      return res.status(akses.statusCode).json({ success: false, message: akses.message });
-    }
-
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ success: false, message: 'Minimal upload 1 foto!' });
-    }
-
-    const dataToInsert = req.files.map((file) => ({
-      id_eskul: Number(id_eskul),
-      foto: `uploads/galeri/${file.filename}`,
-      keterangan: keterangan || null,
-    }));
-
-    await prisma.galeriEskul.createMany({
-      data: dataToInsert,
-    });
-
-    const hasilTerbaru = await prisma.galeriEskul.findMany({
-      where: { id_eskul: Number(id_eskul) },
-      orderBy: { created_at: 'desc' },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: `Berhasil upload ${req.files.length} foto ke galeri`,
-      data: hasilTerbaru,
-    });
-  } catch (error) {
-    console.error("ERROR DETAIL POST GALERI:", error);
-    res.status(500).json({ success: false, message: 'Gagal upload foto galeri', error: error.message });
-  }
-});
-
-
-// ==================================================
-// PATCH: Menjadikan satu foto sebagai foto utama/unggulan eskul
-// admin -> eskul manapun, pembina -> hanya eskul miliknya
-// ==================================================
-router.patch('/:id_galeri/featured', verifyToken, async (req, res) => {
-  try {
-    const { id_galeri } = req.params;
-
-    const galeriTarget = await prisma.galeriEskul.findUnique({
-      where: { id_galeri: Number(id_galeri) },
-    });
-
-    if (!galeriTarget) {
-      return res.status(404).json({ success: false, message: 'Foto galeri tidak ditemukan' });
-    }
-
-    // ---------------------------------------------
-    // CEK OTORISASI (berdasarkan id_eskul milik foto ini)
-    // ---------------------------------------------
-    const akses = await cekAksesGaleri(req, galeriTarget.id_eskul);
-
-    if (!akses.allowed) {
-      return res.status(akses.statusCode).json({ success: false, message: akses.message });
-    }
-
-    await prisma.$transaction([
-      prisma.galeriEskul.updateMany({
-        where: { id_eskul: galeriTarget.id_eskul },
-        data: { is_featured: false },
-      }),
-      prisma.galeriEskul.update({
-        where: { id_galeri: Number(id_galeri) },
-        data: { is_featured: true },
-      }),
-    ]);
-
-    res.json({
-      success: true,
-      message: 'Berhasil menjadikan foto ini sebagai foto utama',
-    });
-  } catch (error) {
-    console.error("ERROR DETAIL SET FOTO UTAMA:", error);
-    res.status(500).json({ success: false, message: 'Gagal mengatur foto utama', error: error.message });
-  }
-});
-
-
-// ==================================================
-// PUT: Mengedit foto galeri (ganti gambar dan/atau keterangan)
-// admin -> eskul manapun, pembina -> hanya eskul miliknya
-// ==================================================
-router.put('/:id_galeri', verifyToken, upload.single('foto'), async (req, res) => {
-  try {
-    const { id_galeri } = req.params;
-    const { keterangan } = req.body;
-
-    const galeriCek = await prisma.galeriEskul.findUnique({
-      where: { id_galeri: Number(id_galeri) },
-    });
-
-    if (!galeriCek) {
-      return res.status(404).json({ success: false, message: 'Foto galeri tidak ditemukan' });
-    }
-
-    // ---------------------------------------------
-    // CEK OTORISASI (berdasarkan id_eskul milik foto ini)
-    // ---------------------------------------------
-    const akses = await cekAksesGaleri(req, galeriCek.id_eskul);
-
-    if (!akses.allowed) {
-      return res.status(akses.statusCode).json({ success: false, message: akses.message });
-    }
-
-    const dataUpdate = {
-      keterangan: keterangan !== undefined ? (keterangan || null) : galeriCek.keterangan,
-    };
-
-    // Kalau ada file foto baru, ganti path-nya
-    if (req.file) {
-      dataUpdate.foto = `uploads/galeri/${req.file.filename}`;
-    }
-
-    const hasilUpdate = await prisma.galeriEskul.update({
-      where: { id_galeri: Number(id_galeri) },
-      data: dataUpdate,
-    });
-
-    // Hapus file foto lama dari disk kalau memang diganti dengan yang baru
-    if (req.file) {
-      const filePathLama = path.join(process.cwd(), galeriCek.foto);
-      if (fs.existsSync(filePathLama)) {
-        fs.unlinkSync(filePathLama);
+        return res.status(404).json({
+          success: false,
+          message: 'Ekstrakurikuler tidak ditemukan'
+        });
       }
-    }
 
-    res.json({
-      success: true,
-      message: 'Berhasil mengupdate foto galeri',
-      data: hasilUpdate,
-    });
-  } catch (error) {
-    console.error("ERROR DETAIL PUT GALERI:", error);
-    res.status(500).json({ success: false, message: 'Gagal mengupdate foto galeri', error: error.message });
+      const hasil = [];
+
+      for (const file of req.files) {
+        const data = await prisma.galeriEskul.create({
+          data: {
+            id_eskul,
+            foto: `/uploads/galeri/${file.filename}`,
+            keterangan: req.body.keterangan || null
+          }
+        });
+
+        hasil.push(data);
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Foto berhasil diupload',
+        data: hasil
+      });
+
+    } catch (error) {
+      console.error('Error upload galeri:', error);
+
+      // Hapus file jika database gagal
+      if (req.files) {
+        req.files.forEach((file) => {
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Gagal mengupload foto'
+      });
+    }
   }
-});
+);
 
+// ===============================
+// UPDATE FOTO / KETERANGAN
+// ===============================
+router.put(
+  '/:id',
+  verifyToken,
+  upload.single('foto'),
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
 
-// ==================================================
-// DELETE: Menghapus satu foto galeri
-// admin -> eskul manapun, pembina -> hanya eskul miliknya
-// ==================================================
-router.delete('/:id_galeri', verifyToken, async (req, res) => {
+      if (isNaN(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID galeri tidak valid'
+        });
+      }
+
+      const galeri = await prisma.galeriEskul.findUnique({
+        where: {
+          id_galeri: id
+        }
+      });
+
+      if (!galeri) {
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+
+        return res.status(404).json({
+          success: false,
+          message: 'Data galeri tidak ditemukan'
+        });
+      }
+
+      const dataUpdate = {};
+
+      if (req.body.keterangan !== undefined) {
+        dataUpdate.keterangan =
+          req.body.keterangan || null;
+      }
+
+      // Jika ada foto baru
+      if (req.file) {
+        dataUpdate.foto =
+          `/uploads/galeri/${req.file.filename}`;
+
+        // Hapus foto lama
+        const oldPath = path.join(
+          process.cwd(),
+          galeri.foto.replace(/^\/+/, '')
+        );
+
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+
+      const updated = await prisma.galeriEskul.update({
+        where: {
+          id_galeri: id
+        },
+        data: dataUpdate
+      });
+
+      res.json({
+        success: true,
+        message: 'Data galeri berhasil diperbarui',
+        data: updated
+      });
+
+    } catch (error) {
+      console.error('Error update galeri:', error);
+
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Gagal memperbarui data galeri'
+      });
+    }
+  }
+);
+
+// ===============================
+// HAPUS FOTO GALERI
+// ===============================
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    const { id_galeri } = req.params;
+    const id = Number(req.params.id);
 
-    const galeriCek = await prisma.galeriEskul.findUnique({
-      where: { id_galeri: Number(id_galeri) },
-    });
-
-    if (!galeriCek) {
-      return res.status(404).json({ success: false, message: 'Foto galeri tidak ditemukan' });
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID galeri tidak valid'
+      });
     }
 
-    // ---------------------------------------------
-    // CEK OTORISASI (berdasarkan id_eskul milik foto ini)
-    // ---------------------------------------------
-    const akses = await cekAksesGaleri(req, galeriCek.id_eskul);
-
-    if (!akses.allowed) {
-      return res.status(akses.statusCode).json({ success: false, message: akses.message });
-    }
-
-    await prisma.galeriEskul.delete({
-      where: { id_galeri: Number(id_galeri) },
+    const galeri = await prisma.galeriEskul.findUnique({
+      where: {
+        id_galeri: id
+      }
     });
 
-    // Hapus file fisik dari folder uploads
-    const filePath = path.join(process.cwd(), galeriCek.foto);
+    if (!galeri) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data galeri tidak ditemukan'
+      });
+    }
+
+    // Hapus file foto
+    const filePath = path.join(
+      process.cwd(),
+      galeri.foto.replace(/^\/+/, '')
+    );
+
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
 
+    // Hapus data database
+    await prisma.galeriEskul.delete({
+      where: {
+        id_galeri: id
+      }
+    });
+
     res.json({
       success: true,
-      message: 'Berhasil menghapus foto galeri',
+      message: 'Foto galeri berhasil dihapus'
     });
+
   } catch (error) {
-    console.error("ERROR DETAIL DELETE GALERI:", error);
-    res.status(500).json({ success: false, message: 'Gagal menghapus foto galeri', error: error.message });
+    console.error('Error hapus galeri:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal menghapus foto galeri'
+    });
   }
+});
+
+// ===============================
+// SET FOTO UTAMA
+// ===============================
+router.patch(
+  '/:id/featured',
+  verifyToken,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      if (isNaN(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID galeri tidak valid'
+        });
+      }
+
+      const galeri = await prisma.galeriEskul.findUnique({
+        where: {
+          id_galeri: id
+        }
+      });
+
+      if (!galeri) {
+        return res.status(404).json({
+          success: false,
+          message: 'Data galeri tidak ditemukan'
+        });
+      }
+
+      // Jadikan semua foto dalam eskul ini bukan foto utama
+      await prisma.galeriEskul.updateMany({
+        where: {
+          id_eskul: galeri.id_eskul
+        },
+        data: {
+          is_featured: false
+        }
+      });
+
+      // Jadikan foto yang dipilih sebagai foto utama
+      const updated = await prisma.galeriEskul.update({
+        where: {
+          id_galeri: id
+        },
+        data: {
+          is_featured: true
+        }
+      });
+
+      res.json({
+        success: true,
+        message: 'Foto utama berhasil diubah',
+        data: updated
+      });
+
+    } catch (error) {
+      console.error('Error set foto utama:', error);
+
+      res.status(500).json({
+        success: false,
+        message: 'Gagal mengubah foto utama'
+      });
+    }
+  }
+);
+
+// ===============================
+// ERROR HANDLER MULTER
+// ===============================
+router.use((err, req, res, next) => {
+  console.error('Multer error:', err);
+
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ukuran file maksimal 2 MB!'
+      });
+    }
+
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Jumlah atau nama file tidak sesuai!'
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+
+  if (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+
+  next();
 });
 
 export default router;

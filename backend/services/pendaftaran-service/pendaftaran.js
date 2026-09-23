@@ -30,7 +30,58 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+// ======================================================
+// VALIDASI TIPE FILE
+// HANYA IZINKAN FILE GAMBAR
+// ======================================================
+
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ];
+
+  const allowedExtensions = [
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.webp'
+  ];
+
+  const extension = path
+    .extname(file.originalname)
+    .toLowerCase();
+
+  // File harus memenuhi dua syarat:
+  // 1. MIME type harus gambar
+  // 2. Ekstensi harus gambar
+  if (
+    allowedMimeTypes.includes(file.mimetype) &&
+    allowedExtensions.includes(extension)
+  ) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        'File harus berupa gambar JPG, JPEG, PNG, atau WEBP!'
+      ),
+      false
+    );
+  }
+};
+
+// ======================================================
+// KONFIGURASI UPLOAD
+// ======================================================
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024 // Maksimal 2 MB
+  }
+});
 
 
 // ======================================================
@@ -113,7 +164,6 @@ router.post(
       const isAdmin =
         userRole === 'admin';
 
-      // Admin ATAU Pembina
       const isStaff =
         isAdmin || userRole === 'pembina';
 
@@ -612,6 +662,7 @@ router.put(
         success: false,
         message:
           'Gagal memperbarui pendaftaran',
+
         error:
           error.message
       });

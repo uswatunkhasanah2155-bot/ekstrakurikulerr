@@ -711,14 +711,23 @@ export async function downloadSemuaPendaftarExcel() {
 
 
 // ==================================================
-// GALERI ESKUL
+// GALERI ESKUL (SUDAH DIPERBAIKI DENGAN TOKEN)
 // ==================================================
 
 export async function getGaleriEskul(idEskul) {
   try {
+    const token = localStorage.getItem('token');
+
     const response = await fetch(
-      `${API_URL}/api/galeri/${idEskul}`
+      `${API_URL}/api/galeri/${idEskul}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
     );
+
+    if (handleUnauthorized(response)) return [];
 
     if (!response.ok) {
       throw new Error(
@@ -750,28 +759,20 @@ export async function getGaleriEskul(idEskul) {
 
 export async function uploadGaleriEskul(idEskul, dataGaleri) {
   try {
-    const token =
-      localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-    if (
-      !token ||
-      token === 'null' ||
-      token === 'undefined'
-    ) {
-      throw new Error(
-        'Sesi login kedaluwarsa. Silakan login ulang.'
-      );
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
     }
 
     const response = await fetch(
-      `${API_URL}/api/galeri`,
+      `${API_URL}/api/galeri/${idEskul}`,
       {
         method: 'POST',
-
         headers: {
           'Authorization': `Bearer ${token}`
+          // Jangan set Content-Type secara manual saat menggunakan FormData
         },
-
         body: dataGaleri
       }
     );
@@ -783,13 +784,11 @@ export async function uploadGaleriEskul(idEskul, dataGaleri) {
       };
     }
 
-    const result =
-      await response.json();
+    const result = await response.json();
 
     if (!response.ok) {
       throw new Error(
-        result.message ||
-        'Gagal mengupload foto galeri'
+        result.message || 'Gagal mengupload foto galeri'
       );
     }
 
@@ -799,11 +798,7 @@ export async function uploadGaleriEskul(idEskul, dataGaleri) {
     };
 
   } catch (error) {
-    console.error(
-      'Error uploading galeri:',
-      error
-    );
-
+    console.error('Error uploading galeri:', error);
     return {
       success: false,
       error: error.message
