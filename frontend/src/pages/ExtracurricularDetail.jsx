@@ -16,7 +16,9 @@ import {
   Pencil,
   Trash2,
   Plus,
-  Images
+  Images,
+  Calendar,
+  UserRound
 } from 'lucide-react';
 
 export default function ExtracurricularDetail() {
@@ -271,6 +273,26 @@ export default function ExtracurricularDetail() {
       );
     });
 
+  const fotoCoverUrl = fotoUtamaGaleri
+    ? fotoUtamaGaleri.foto.startsWith('http')
+      ? fotoUtamaGaleri.foto
+      : `http://localhost:5000/${
+          fotoUtamaGaleri.foto.startsWith('/')
+            ? fotoUtamaGaleri.foto.slice(1)
+            : fotoUtamaGaleri.foto
+        }`
+    : null;
+
+  const fotoLogoUrl = currentEskulDetail?.foto
+    ? currentEskulDetail.foto.startsWith('http')
+      ? currentEskulDetail.foto
+      : `http://localhost:5000/${
+          currentEskulDetail.foto.startsWith('/')
+            ? currentEskulDetail.foto.slice(1)
+            : currentEskulDetail.foto
+        }`
+    : null;
+
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 relative transition-colors duration-300">
 
@@ -311,137 +333,118 @@ export default function ExtracurricularDetail() {
         </div>
 
         {/* ==============================
-            DETAIL ESKUL (FOTO DI BELAKANG DENGAN TOMBOL LIHAT GALERI)
+            DETAIL ESKUL — POLA COVER + AVATAR (ALA PROFIL FACEBOOK)
         ============================== */}
-        <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 overflow-hidden transition-colors">
-          
-          {/* FOTO GALERI SEBAGAI BACKGROUND UTAMA */}
-          {fotoUtamaGaleri && (
-            <div className="absolute inset-0 z-0">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 mb-8 overflow-hidden transition-colors">
+
+          {/* COVER: foto polos, tanpa teks di atasnya */}
+          <div className="relative h-48 sm:h-64 bg-gray-100 dark:bg-gray-800">
+
+            {fotoCoverUrl ? (
               <img
-                src={
-                  fotoUtamaGaleri.foto.startsWith('http')
-                    ? fotoUtamaGaleri.foto
-                    : `http://localhost:5000/${
-                        fotoUtamaGaleri.foto.startsWith('/')
-                          ? fotoUtamaGaleri.foto.slice(1)
-                          : fotoUtamaGaleri.foto
-                      }`
-                }
+                src={fotoCoverUrl}
                 alt=""
                 className="w-full h-full object-cover"
                 onError={e => {
                   e.target.style.display = 'none';
                 }}
               />
-              <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-[1px]" />
-            </div>
-          )}
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950/60 dark:to-gray-900" />
+            )}
 
-          {/* KONTEN UTAMA DI ATAS BACKGROUND */}
-          <div className="relative z-10 p-6 flex flex-col md:flex-row gap-6">
+            {/* Gradasi tipis biar tombol & avatar tetap kebaca di foto apapun */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
 
-            {/* FOTO LOGO / BANNER KIRI */}
-            <div className="w-full md:w-1/3 aspect-square max-w-[220px] max-h-[220px] mx-auto md:mx-0 bg-white dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 font-medium shrink-0 border border-gray-100 dark:border-gray-700 shadow-sm">
+            {/* Tombol Lihat Galeri — pill solid, lebih besar & jelas */}
+            <button
+              type="button"
+              onClick={handleLihatGaleri}
+              className="absolute top-4 right-4 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-colors"
+            >
+              <Images className="w-4 h-4" />
+              Lihat Galeri
+            </button>
 
-              {currentEskulDetail?.foto ? (
+            {/* LOGO / AVATAR ESKUL — overlap di pojok bawah cover */}
+            <div className="absolute -bottom-12 left-6 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] font-medium text-center p-1">
+
+              {fotoLogoUrl ? (
                 <img
-                  src={
-                    currentEskulDetail.foto.startsWith(
-                      'http'
-                    )
-                      ? currentEskulDetail.foto
-                      : `http://localhost:5000/${
-                          currentEskulDetail.foto.startsWith(
-                            '/'
-                          )
-                            ? currentEskulDetail.foto.slice(
-                                1
-                              )
-                            : currentEskulDetail.foto
-                        }`
-                  }
+                  src={fotoLogoUrl}
                   alt={formatNamaEskul}
                   className="w-full h-full object-contain"
                   onError={e => {
-                    e.target.style.display =
-                      'none';
+                    e.target.style.display = 'none';
                   }}
                 />
               ) : (
-                <span>
-                  Foto / Banner {formatNamaEskul}
-                </span>
+                <span>{formatNamaEskul}</span>
               )}
 
             </div>
 
-            {/* INFORMASI ESKUL */}
-            <div className="flex-1 flex flex-col justify-between">
+          </div>
 
-              <div>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 drop-shadow-sm">
-                    {currentEskulDetail?.nama_eskul ||
-                      `Eskul ${formatNamaEskul}`}
-                  </h3>
+          {/* KONTEN: teks di card solid, bukan di atas foto */}
+          <div className="pt-16 px-6 pb-6">
 
-                  {/* Tombol Lihat Galeri */}
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h3 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                {currentEskulDetail?.nama_eskul ||
+                  `Eskul ${formatNamaEskul}`}
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">
+              <UserRound className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              Pembina:
+              <span className="text-gray-900 dark:text-white">
+                {currentEskulDetail?.pembina ||
+                  'Belum ditentukan'}
+              </span>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-5 leading-relaxed">
+              {currentEskulDetail?.deskripsi ||
+                `Program latihan untuk pengembangan skill ${formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.`}
+            </p>
+
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900 px-4 py-3 rounded-xl mb-5">
+              <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              Jadwal:
+              {currentEskulDetail?.jadwal ||
+                'Belum diatur'}
+            </div>
+
+            {/* TOMBOL SESUAI ROLE */}
+            <div>
+
+              {isAdmin && (
+                <span className="bg-emerald-600 text-white text-sm font-bold px-4 py-2.5 rounded-full inline-flex items-center gap-2 shadow-sm">
+                  <ClipboardList className="w-4 h-4" />
+                  Mode Admin: Hak Akses CRUD Aktif
+                </span>
+              )}
+
+              {isPembina && (
+                <span className="bg-cyan-600 text-white text-sm font-bold px-4 py-2.5 rounded-full inline-flex items-center gap-2 shadow-sm">
+                  <ClipboardList className="w-4 h-4" />
+                  Mode Pembina: Hak Akses CRUD Aktif
+                </span>
+              )}
+
+              {!isAdmin &&
+                !isPembina && (
                   <button
-                    type="button"
-                    onClick={handleLihatGaleri}
-                    className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-1 bg-white/80 dark:bg-gray-900/80 px-2.5 py-1 rounded-md shadow-sm transition-colors"
+                    onClick={handleDaftarSiswa}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-5 py-2.5 rounded-full transition-colors shadow-md flex items-center gap-2"
                   >
-                    <Images className="w-3.5 h-3.5" />
-                    Lihat Galeri →
+                    <Plus className="w-4 h-4" />
+                    Daftar Eskul Ini
                   </button>
-                </div>
-
-                <p className="text-xs text-gray-700 dark:text-gray-200 mb-3 font-medium drop-shadow-sm">
-                  Pembina:{' '}
-                  {currentEskulDetail?.pembina ||
-                    'Belum ditentukan'}
-                </p>
-
-                <p className="text-sm text-gray-800 dark:text-gray-100 mb-4 leading-relaxed font-medium drop-shadow-sm">
-                  {currentEskulDetail?.deskripsi ||
-                    `Program latihan untuk pengembangan skill ${formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.`}
-                </p>
-
-                <div className="text-xs text-gray-900 dark:text-gray-100 font-semibold bg-white/80 dark:bg-gray-900/80 p-3 rounded-lg border border-gray-200 dark:border-gray-700 mb-4 shadow-sm">
-                  <span>Jadwal:</span>{' '}
-                  {currentEskulDetail?.jadwal ||
-                    'Belum diatur'}
-                </div>
-              </div>
-
-              {/* TOMBOL SESUAI ROLE */}
-              <div>
-
-                {isAdmin && (
-                  <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-700 inline-flex items-center shadow-sm">
-                    Mode Admin: Hak Akses CRUD Aktif
-                  </span>
                 )}
 
-                {isPembina && (
-                  <span className="bg-cyan-100 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 text-xs font-semibold px-3 py-2 rounded-lg border border-cyan-300 dark:border-cyan-700 inline-flex items-center shadow-sm">
-                    Mode Pembina: Hak Akses CRUD Aktif
-                  </span>
-                )}
-
-                {!isAdmin &&
-                  !isPembina && (
-                    <button
-                      onClick={handleDaftarSiswa}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Daftar Eskul Ini
-                    </button>
-                  )}
-
-              </div>
             </div>
 
           </div>
