@@ -47,6 +47,7 @@ export default function GaleriEskul() {
   const [editTarget, setEditTarget] = useState(null);
   const [editFile, setEditFile] = useState(null);
   const [editKeterangan, setEditKeterangan] = useState('');
+  const [editKategori, setEditKategori] = useState('Kegiatan');
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function GaleriEskul() {
 
         setCurrentEskulDetail(matchedEskul || null);
 
-        // Fungsi pendeteksi kategori otomatis dari teks keterangan
+        // Fungsi pendeteksi kategori otomatis (hanya dipakai untuk data dummy)
         const deteksiKategori = (teks) => {
           if (!teks) return 'Lainnya';
           const t = teks.toLowerCase();
@@ -149,10 +150,10 @@ export default function GaleriEskul() {
           }));
           setDaftarFoto(formattedDummy);
         } else {
-          // Jika backend sudah ada isinya
+          // Jika backend sudah ada isinya, ambil langsung dari kolom kategori Supabase
           const formattedData = fotoData.map(item => ({
             ...item,
-            kategori: deteksiKategori(item.keterangan),
+            kategori: item.kategori || 'Lainnya',
             tanggal: item.created_at 
               ? new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) 
               : 'Baru'
@@ -203,6 +204,7 @@ export default function GaleriEskul() {
   const handleBukaEdit = item => {
     setEditTarget(item);
     setEditKeterangan(item.keterangan || '');
+    setEditKategori(item.kategori || 'Kegiatan');
     setEditFile(null);
   };
 
@@ -221,7 +223,7 @@ export default function GaleriEskul() {
       setDaftarFoto(prev =>
         prev.map(f =>
           f.id_galeri === editTarget.id_galeri
-            ? { ...f, keterangan: editKeterangan }
+            ? { ...f, keterangan: editKeterangan, kategori: editKategori }
             : f
         )
       );
@@ -378,7 +380,7 @@ export default function GaleriEskul() {
 
                         <button
                           onClick={() => handleBukaEdit(item)}
-                          title="Edit keterangan"
+                          title="Edit keterangan & kategori"
                           className="bg-white/95 dark:bg-gray-900/95 hover:bg-white text-blue-600 w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition"
                         >
                           <Pencil className="w-4 h-4" />
@@ -424,7 +426,7 @@ export default function GaleriEskul() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 dark:border-gray-800">
             <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
               <h3 className="font-bold text-gray-900 dark:text-white text-base">
-                Edit Keterangan Foto
+                Edit Informasi Foto
               </h3>
               <button
                 onClick={handleTutupEdit}
@@ -457,6 +459,23 @@ export default function GaleriEskul() {
                   placeholder="Contoh: Upacara bendera hari senin"
                   className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3.5 py-2.5 text-sm outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 transition"
                 />
+              </div>
+
+              {/* Elemen Pilihan Kategori Ditambahkan di Sini */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                  Kategori Foto
+                </label>
+                <select
+                  value={editKategori}
+                  onChange={e => setEditKategori(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-700 rounded-xl px-3.5 py-2.5 text-sm outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 transition"
+                >
+                  <option value="Kegiatan">Kegiatan</option>
+                  <option value="Upacara">Upacara</option>
+                  <option value="Pelatihan">Pelatihan</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
               </div>
 
               <div className="pt-3 flex gap-3 justify-end">

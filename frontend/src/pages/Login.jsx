@@ -1,11 +1,29 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InputField from '../components/InputField';
 import { useNavigate } from 'react-router-dom';
 import logoSekolah from '../assets/logosmkc.jpeg';
 
 export default function Login() {
   const navigate = useNavigate();
+
+  // TAMBAHKAN INI: Cek status login saat halaman pertama kali dibuka
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const role = (localStorage.getItem('role') || '').toLowerCase();
+
+    if (token) {
+      // Jika sudah punya token, jangan biarkan akses halaman login, 
+      // langsung lempar ke dashboard sesuai rolenya
+      if (role === 'admin') {
+        navigate('/admin/Dashboard', { replace: true });
+      } else if (role === 'pembina') {
+        navigate('/pembina/Dashboard', { replace: true });
+      } else {
+        navigate('/siswa/Dashboard', { replace: true });
+      }
+    }
+  }, [navigate]);
 
   const [formData, setFormData] = useState({
     username: '',
