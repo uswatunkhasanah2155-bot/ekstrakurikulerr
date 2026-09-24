@@ -180,7 +180,8 @@ router.post(
           data: {
             id_eskul,
             foto: `/uploads/galeri/${file.filename}`,
-            keterangan: req.body.keterangan || null
+            keterangan: req.body.keterangan || null,
+            kategori: req.body.kategori || 'Kegiatan'
           }
         });
 
