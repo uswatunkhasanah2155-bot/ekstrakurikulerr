@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getDaftarEskul } from '../services/api';
+import { getDaftarEskul } from '../services/api'; // (Sesuaikan typo jika ada di file asli: getDaftarEskul)
 import logoSekolah from '../assets/logosmkc.jpeg';
 
 import {
   LayoutDashboard,
-  Settings,
+  Settings,  
   Users,
   List,
   ChevronDown,
@@ -19,7 +19,8 @@ import {
   School,
   Moon,
   Sun,
-  Contact
+  Contact,
+  Database // Ditambahkan untuk ikon Manajemen Master
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -27,6 +28,9 @@ export default function Sidebar() {
   const navigate = useNavigate();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(true);
+  // State baru khusus untuk dropdown Manajemen Master
+  const [isMasterDropdownOpen, setIsMasterDropdownOpen] = useState(true);
+  
   const [daftarEskulSidebar, setDaftarEskulSidebar] = useState([]);
 
   // ======================================================
@@ -61,6 +65,7 @@ export default function Sidebar() {
 
     if (isCollapsed) {
       setIsDropdownOpen(false);
+      setIsMasterDropdownOpen(false); // Tutup juga master dropdown jika sidebar diperkecil
     }
   }, [isCollapsed]);
 
@@ -336,7 +341,7 @@ export default function Sidebar() {
         </div>
 
 
-        {/* NAVIGATION (Dibuat satu tema warna abu-abu gelap / netral yang konsisten) */}
+        {/* NAVIGATION */}
         <nav className="space-y-1">
 
           {/* DASHBOARD */}
@@ -363,133 +368,179 @@ export default function Sidebar() {
           </Link>
 
 
-          {/* KELOLA DATA ESKUL - ADMIN */}
+          {/* ====================================================== */}
+          {/* DROPDOWN MANAJEMEN MASTER (KHUSUS ADMIN)                */}
+          {/* ====================================================== */}
           {isAdmin && (
-            <Link
-              to="/admin/kelola-eskul"
-              title="Kelola Data Eskul"
-              className={`
-                flex items-center gap-3
-                px-3 py-2.5
-                rounded-lg
-                text-sm font-medium
-                text-gray-700 dark:text-gray-200
-                hover:bg-gray-100 dark:hover:bg-gray-800
-                transition-colors mt-1
-                ${isCollapsed ? 'justify-center' : ''}
-              `}
-            >
-              <Settings className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400" />
-              {!isCollapsed && (
-                <span className="whitespace-nowrap">
-                  Kelola Data Eskul
-                </span>
+            <div className="mt-1">
+              <button
+                onClick={() => {
+                  if (isCollapsed) {
+                    setIsCollapsed(false);
+                    setIsMasterDropdownOpen(true);
+                  } else {
+                    setIsMasterDropdownOpen(!isMasterDropdownOpen);
+                  }
+                }}
+                title="Manajemen Master"
+                className={`
+                  w-full
+                  flex items-center justify-between
+                  px-3 py-2.5
+                  rounded-lg
+                  text-sm font-medium
+                  text-gray-700 dark:text-gray-200
+                  hover:bg-gray-100 dark:hover:bg-gray-800
+                  transition-colors
+                  ${isCollapsed ? 'justify-center' : ''}
+                `}
+              >
+                <div
+                  className={`
+                    flex items-center gap-3
+                    ${isCollapsed ? 'justify-center' : ''}
+                  `}
+                >
+                  <Database className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400" />
+                  {!isCollapsed && (
+                    <span className="whitespace-nowrap">
+                      Manajemen Master
+                    </span>
+                  )}
+                </div>
+
+                {!isCollapsed && (
+                  <ChevronDown
+                    className={`
+                      w-4 h-4
+                      transition-transform
+                      shrink-0
+                      text-gray-500
+                      ${
+                        isMasterDropdownOpen
+                          ? 'rotate-180'
+                          : ''
+                      }
+                    `}
+                  />
+                )}
+              </button>
+
+              {/* ISI SUB-MENU MANAJEMEN MASTER */}
+              {!isCollapsed &&
+                isMasterDropdownOpen && (
+                <div
+                  className="
+                    pl-9 pr-2 py-1
+                    space-y-1 mt-1
+                    border-l-2
+                    border-gray-200
+                    dark:border-gray-700
+                    ml-4
+                  "
+                >
+                  {/* Kelola Data Eskul */}
+                  <Link
+                    to="/admin/kelola-eskul"
+                    className="
+                      block
+                      py-1.5 px-2
+                      rounded-md
+                      text-xs font-medium
+                      text-gray-600 dark:text-gray-400
+                      hover:text-gray-900
+                      dark:hover:text-white
+                      hover:bg-gray-100
+                      dark:hover:bg-gray-800
+                      transition-colors
+                      truncate
+                    "
+                  >
+                    • Kelola Data Eskul
+                  </Link>
+
+                  {/* Data Pendaftar */}
+                  <Link
+                    to="/admin/pendaftar"
+                    className="
+                      block
+                      py-1.5 px-2
+                      rounded-md
+                      text-xs font-medium
+                      text-gray-600 dark:text-gray-400
+                      hover:text-gray-900
+                      dark:hover:text-white
+                      hover:bg-gray-100
+                      dark:hover:bg-gray-800
+                      transition-colors
+                      truncate
+                    "
+                  >
+                    • Data Pendaftar
+                  </Link>
+
+                  {/* Kelola Pembina */}
+                  <Link
+                    to="/admin/kelola-pembina"
+                    className="
+                      block
+                      py-1.5 px-2
+                      rounded-md
+                      text-xs font-medium
+                      text-gray-600 dark:text-gray-400
+                      hover:text-gray-900
+                      dark:hover:text-white
+                      hover:bg-gray-100
+                      dark:hover:bg-gray-800
+                      transition-colors
+                      truncate
+                    "
+                  >
+                    • Kelola Pembina
+                  </Link>
+
+                  {/* Manajemen Kelas */}
+                  <Link
+                    to="/admin/manajemen-kelas"
+                    className="
+                      block
+                      py-1.5 px-2
+                      rounded-md
+                      text-xs font-medium
+                      text-gray-600 dark:text-gray-400
+                      hover:text-gray-900
+                      dark:hover:text-white
+                      hover:bg-gray-100
+                      dark:hover:bg-gray-800
+                      transition-colors
+                      truncate
+                    "
+                  >
+                    • Manajemen Kelas
+                  </Link>
+
+                  {/* Data User */}
+                  <Link
+                    to="/admin/data-user"
+                    className="
+                      block
+                      py-1.5 px-2
+                      rounded-md
+                      text-xs font-medium
+                      text-gray-600 dark:text-gray-400
+                      hover:text-gray-900
+                      dark:hover:text-white
+                      hover:bg-gray-100
+                      dark:hover:bg-gray-800
+                      transition-colors
+                      truncate
+                    "
+                  >
+                    • Data User
+                  </Link>
+                </div>
               )}
-            </Link>
-          )}
-
-
-          {/* DATA PENDAFTAR - ADMIN */}
-          {isAdmin && (
-            <Link
-              to="/admin/pendaftar"
-              title="Data Pendaftar"
-              className={`
-                flex items-center gap-3
-                px-3 py-2.5
-                rounded-lg
-                text-sm font-medium
-                text-gray-700 dark:text-gray-200
-                hover:bg-gray-100 dark:hover:bg-gray-800
-                transition-colors mt-1
-                ${isCollapsed ? 'justify-center' : ''}
-              `}
-            >
-              <Users className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400" />
-              {!isCollapsed && (
-                <span className="whitespace-nowrap">
-                  Data Pendaftar
-                </span>
-              )}
-            </Link>
-          )}
-
-
-          {/* KELOLA PEMBINA - ADMIN */}
-          {isAdmin && (
-            <Link
-              to="/admin/kelola-pembina"
-              title="Kelola Pembina"
-              className={`
-                flex items-center gap-3
-                px-3 py-2.5
-                rounded-lg
-                text-sm font-medium
-                text-gray-700 dark:text-gray-200
-                hover:bg-gray-100 dark:hover:bg-gray-800
-                transition-colors mt-1
-                ${isCollapsed ? 'justify-center' : ''}
-              `}
-            >
-              <UserCog className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400" />
-              {!isCollapsed && (
-                <span className="whitespace-nowrap">
-                  Kelola Pembina
-                </span>
-              )}
-            </Link>
-          )}
-
-
-          {/* MANAJEMEN KELAS - ADMIN */}
-          {isAdmin && (
-            <Link
-              to="/admin/manajemen-kelas"
-              title="Manajemen Kelas"
-              className={`
-                flex items-center gap-3
-                px-3 py-2.5
-                rounded-lg
-                text-sm font-medium
-                text-gray-700 dark:text-gray-200
-                hover:bg-gray-100 dark:hover:bg-gray-800
-                transition-colors mt-1
-                ${isCollapsed ? 'justify-center' : ''}
-              `}
-            >
-              <School className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400" />
-              {!isCollapsed && (
-                <span className="whitespace-nowrap">
-                  Manajemen Kelas
-                </span>
-              )}
-            </Link>
-          )}
-
-
-          {/* DATA USER - ADMIN */}
-          {isAdmin && (
-            <Link
-              to="/admin/data-user"
-              title="Data User"
-              className={`
-                flex items-center gap-3
-                px-3 py-2.5
-                rounded-lg
-                text-sm font-medium
-                text-gray-700 dark:text-gray-200
-                hover:bg-gray-100 dark:hover:bg-gray-800
-                transition-colors mt-1
-                ${isCollapsed ? 'justify-center' : ''}
-              `}
-            >
-              <Contact className="w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400" />
-              {!isCollapsed && (
-                <span className="whitespace-nowrap">
-                  Data User
-                </span>
-              )}
-            </Link>
+            </div>
           )}
 
 
