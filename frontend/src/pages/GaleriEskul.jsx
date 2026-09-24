@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import {
   getDaftarEskul,
   getGaleriEskul,
+  hapusGaleriEskul,
 } from '../services/api';
 import {
   Award,
@@ -172,7 +173,18 @@ export default function GaleriEskul() {
 
   const handleHapusFoto = async (idGaleri) => {
     if (window.confirm('Yakin ingin menghapus foto ini dari galeri?')) {
-      setDaftarFoto(prev => prev.filter(f => f.id_galeri !== idGaleri));
+      try {
+        const result = await hapusGaleriEskul(idGaleri);
+        if (result.success) {
+          setDaftarFoto(prev => prev.filter(f => f.id_galeri !== idGaleri));
+          alert('Foto berhasil dihapus!');
+        } else {
+          alert('Gagal menghapus foto: ' + (result.error || 'Terjadi kesalahan'));
+        }
+      } catch (error) {
+        console.error('Error saat menghapus foto:', error);
+        alert('Terjadi kesalahan saat menghapus foto.');
+      }
     }
   };
 
