@@ -89,6 +89,63 @@ function AdminRoute({ children }) {
 
 
 // ======================================================
+// PROTEKSI HALAMAN ADMIN / PEMBINA
+// ======================================================
+
+function AdminOrPembinaRoute({ children }) {
+
+  const location = useLocation();
+
+  const token =
+    localStorage.getItem('token');
+
+  const role =
+    (localStorage.getItem('role') || '')
+      .toUpperCase();
+
+
+  // Tidak punya token
+  if (!token) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location.pathname
+        }}
+      />
+    );
+  }
+
+
+  // Bukan ADMIN dan bukan PEMBINA
+  if (role !== 'ADMIN' && role !== 'PEMBINA') {
+
+    // Hapus sesi
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('id_user');
+    localStorage.removeItem('id_eskul');
+
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location.pathname
+        }}
+      />
+    );
+
+  }
+
+
+  // ADMIN atau PEMBINA boleh masuk
+  return children;
+}
+
+
+// ======================================================
 // APP
 // ======================================================
 
@@ -281,7 +338,9 @@ function App() {
           <Route path="/admin/manajemen-kelas" element={<AdminRoute><ManajemenKelas /></AdminRoute>} />
           <Route path="/admin/pendaftar" element={<AdminRoute><PendaftarEskul /></AdminRoute>} />
           <Route path="/admin/data-user" element={<AdminRoute><DataUser /></AdminRoute>} />
-          <Route path="/admin/kelola-eskul" element={<AdminRoute><KelolaEskul /></AdminRoute>} />
+          
+          {/* Rute Kelola Eskul (Bisa diakses Admin & Pembina) */}
+          <Route path="/admin/kelola-eskul" element={<AdminOrPembinaRoute><KelolaEskul /></AdminOrPembinaRoute>} />
           
           {/* Rute Ekstrakurikuler Umum */}
           <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />

@@ -115,6 +115,12 @@ router.put('/:id', verifyToken, upload.single('foto'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'ID ekstrakurikuler tidak valid' });
     }
 
+    // BARU: Validasi kepemilikan untuk role Pembina
+    const userRole = (req.user.role || '').toLowerCase();
+    if (userRole === 'pembina' && Number(req.user.id_eskul) !== idEskul) {
+      return res.status(403).json({ success: false, message: 'Anda hanya boleh mengedit ekstrakurikuler yang Anda bina.' });
+    }
+
     const { nama_eskul, deskripsi, pembina, jadwal } = req.body;
     const slug = nama_eskul ? nama_eskul.trim().toLowerCase().replace(/[\s%20]+/g, '-') : undefined;
 
@@ -167,6 +173,12 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
     if (isNaN(idEskul)) {
       return res.status(400).json({ success: false, message: 'ID ekstrakurikuler tidak valid' });
+    }
+
+    // BARU: Pembina sama sekali tidak boleh menghapus eskul
+    const userRole = (req.user.role || '').toLowerCase();
+    if (userRole === 'pembina') {
+      return res.status(403).json({ success: false, message: 'Pembina tidak memiliki akses untuk menghapus ekstrakurikuler.' });
     }
 
     // Ambil data dulu untuk tahu path foto sebelum record-nya dihapus
