@@ -77,8 +77,14 @@ export default function GaleriEskul() {
         setCurrentEskulDetail(matchedEskul || null);
 
         let fotoData = [];
+
         if (matchedEskul) {
-          fotoData = await getGaleriEskul(matchedEskul.id_eskul);
+          try {
+            fotoData = await getGaleriEskul(matchedEskul.id_eskul);
+          } catch (err) {
+            console.error('Gagal mengambil data galeri dari server:', err);
+            fotoData = [];
+          }
         }
 
         const formattedData = (fotoData || []).map(item => ({
@@ -100,33 +106,48 @@ export default function GaleriEskul() {
   }, [namaEskul, cleanNamaEskul]);
 
   const handleHapusFoto = async idGaleri => {
-    if (!window.confirm('Yakin ingin menghapus foto ini dari galeri?')) return;
+    if (!window.confirm('Yakin ingin menghapus foto ini dari galeri?')) {
+      return;
+    }
 
-    const result = await hapusGaleriEskul(idGaleri);
+    try {
+      const result = await hapusGaleriEskul(idGaleri);
 
-    if (result.success) {
-      setDaftarFoto(prev => prev.filter(f => f.id_galeri !== idGaleri));
-    } else {
-      alert('Gagal menghapus foto: ' + result.error);
+      if (result.success) {
+        setDaftarFoto(prev => prev.filter(f => f.id_galeri !== idGaleri));
+        alert('Foto berhasil dihapus!');
+      } else {
+        alert('Gagal menghapus foto: ' + (result.error || 'Terjadi kesalahan'));
+      }
+    } catch (error) {
+      console.error('Error saat menghapus foto:', error);
+      alert('Terjadi kesalahan saat menghapus foto.');
     }
   };
 
   const handleJadikanUtama = async idGaleri => {
-    setSettingUtama(idGaleri);
+    try {
+      setSettingUtama(idGaleri);
+      
+      // Panggil API ke backend untuk mengubah foto utama di database
+      const result = await setFotoUtamaGaleri(idGaleri);
 
-    const result = await setFotoUtamaGaleri(idGaleri);
-
-    setSettingUtama(null);
-
-    if (result.success) {
-      setDaftarFoto(prev =>
-        prev.map(f => ({
-          ...f,
-          is_featured: f.id_galeri === idGaleri
-        }))
-      );
-    } else {
-      alert('Gagal mengatur foto utama: ' + result.error);
+      if (result.success) {
+        setDaftarFoto(prev =>
+          prev.map(f => ({
+            ...f,
+            is_featured: f.id_galeri === idGaleri
+          }))
+        );
+        alert('Foto utama berhasil diubah!');
+      } else {
+        alert('Gagal mengubah foto utama: ' + (result.error || 'Terjadi kesalahan'));
+      }
+    } catch (error) {
+      console.error('Error saat mengubah foto utama:', error);
+      alert('Terjadi kesalahan pada server.');
+    } finally {
+      setSettingUtama(null);
     }
   };
 
@@ -281,7 +302,9 @@ export default function GaleriEskul() {
                 <ImageIcon className="w-8 h-8 text-gray-400" />
               </div>
               <p className="text-sm font-medium">
-                Tidak ada foto dalam kategori "{activeTab}".
+                {daftarFoto.length === 0
+                  ? 'Belum ada foto di galeri ini.'
+                  : `Tidak ada foto dalam kategori "${activeTab}".`}
               </p>
             </div>
           ) : (

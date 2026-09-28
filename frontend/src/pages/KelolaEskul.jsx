@@ -11,6 +11,8 @@ import {
 
 export default function KelolaEskul() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState('');
+  const [userEskulId, setUserEskulId] = useState(null);
   const [daftarEskul, setDaftarEskul] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -25,27 +27,42 @@ export default function KelolaEskul() {
   const [editId, setEditId] = useState(null);
 
   useEffect(() => {
-    const roleUser =
-      localStorage.getItem('role');
+    const roleUser = localStorage.getItem('role') || '';
+    const eskulId = localStorage.getItem('id_eskul'); // Pastikan id_eskul disimpan saat login
 
-    if (
-      roleUser &&
-      roleUser.toUpperCase() === 'ADMIN'
-    ) {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
+    setUserRole(roleUser.toUpperCase());
+
+    const statusAdmin = roleUser.toUpperCase() === 'ADMIN';
+    setIsAdmin(statusAdmin);
+
+    if (eskulId) {
+      setUserEskulId(Number(eskulId));
     }
 
-    fetchDataEskul();
+    fetchDataEskul(statusAdmin, eskulId);
   }, []);
 
-  const fetchDataEskul = async () => {
-    const data = await getDaftarEskul();
+  const fetchDataEskul = async (statusAdmin, eskulId) => {
+    try {
+      const data = await getDaftarEskul();
+      const semuaData = data.data || data || [];
 
-    setDaftarEskul(
-      data.data || data || []
-    );
+      // Jika role adalah Pembina dan memiliki id_eskul, filter hanya 1 eskul yang dia bina
+      const role = localStorage.getItem('role') || '';
+      const activeEskulId = eskulId || localStorage.getItem('id_eskul');
+
+      if (role.toUpperCase() === 'PEMBINA' && activeEskulId) {
+        const eskulPembinaSaja = semuaData.filter(
+          (item) => String(item.id_eskul || item.id) === String(activeEskulId)
+        );
+        setDaftarEskul(eskulPembinaSaja);
+      } else {
+        // Jika Admin, tampilkan semuanya
+        setDaftarEskul(semuaData);
+      }
+    } catch (error) {
+      console.error('Gagal memuat data eskul:', error);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -158,7 +175,7 @@ export default function KelolaEskul() {
         foto: null
       });
 
-      fetchDataEskul();
+      fetchDataEskul(isAdmin, userEskulId);
 
     } catch (error) {
       console.error(
@@ -176,6 +193,11 @@ export default function KelolaEskul() {
   const handleEditClick = (item) => {
     const uniqueId =
       item.id_eskul || item.id;
+
+    if (userRole === 'PEMBINA' && userEskulId && uniqueId !== userEskulId) {
+      alert('Anda hanya dapat mengedit ekstrakurikuler yang Anda bina.');
+      return;
+    }
 
     setIsEditing(true);
     setEditId(uniqueId);
@@ -218,13 +240,15 @@ export default function KelolaEskul() {
 
         if (handleUnauthorized(response)) return;
 
+        const result = await response.json();
+
         if (!response.ok) {
           throw new Error(
-            'Gagal menghapus data'
+            result.message || 'Gagal menghapus data'
           );
         }
 
-        fetchDataEskul();
+        fetchDataEskul(isAdmin, userEskulId);
 
         alert(
           'Data berhasil dihapus!'
@@ -237,7 +261,7 @@ export default function KelolaEskul() {
         );
 
         alert(
-          'Gagal menghapus data dari server.'
+          error.message || 'Gagal menghapus data dari server.'
         );
       }
     }
@@ -252,10 +276,11 @@ export default function KelolaEskul() {
 
         {/* JUDUL */}
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">
-          Kelola Data Ekstrakurikuler (Admin Panel)
+          Kelola Data Ekstrakurikuler ({isAdmin ? 'Admin Panel' : 'Pembina Panel'})
         </h2>
 
-        {/* FORM (max-w-3xl dihapus dan diganti w-full agar melebar penuh) */}
+        {/* FORM (Hanya muncul jika Admin ATAU Pembina sedang melakukan Edit) */}
+        {(isAdmin || isEditing) && (
         <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-8 w-full transition-colors duration-300">
 
           <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -430,6 +455,7 @@ export default function KelolaEskul() {
 
           </form>
         </div>
+        )}
 
         {/* TABEL */}
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300 w-full">
@@ -491,6 +517,8 @@ export default function KelolaEskul() {
                         item.id_eskul ||
                         item.id;
 
+                    const canEditRow = isAdmin || (userRole === 'PEMBINA' && userEskulId === rowId);
+
                       return (
                         <tr
                           key={
@@ -523,29 +551,33 @@ export default function KelolaEskul() {
 
                           <td className="py-3 px-4 text-center space-x-2">
 
-                            <button
-                              onClick={() =>
-                                handleEditClick(
-                                  item
-                                )
-                              }
-                              className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-md font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 inline-flex items-center gap-1 transition-colors"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                              Edit
-                            </button>
+                            {canEditRow && (
+                              <button
+                                onClick={() =>
+                                  handleEditClick(
+                                    item
+                                  )
+                                }
+                                className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-md font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 inline-flex items-center gap-1 transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                Edit
+                              </button>
+                            )}
 
-                            <button
-                              onClick={() =>
-                                handleDelete(
-                                  rowId
-                                )
-                              }
-                              className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center gap-1 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              Hapus
-                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() =>
+                                  handleDelete(
+                                    rowId
+                                  )
+                                }
+                                className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center gap-1 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Hapus
+                              </button>
+                            )}
 
                           </td>
 

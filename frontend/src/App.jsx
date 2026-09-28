@@ -31,6 +31,18 @@ import LaporanEskul from './pages/LaporanEskul';
 
 
 // ======================================================
+// HELPER: HAPUS SESI
+// ======================================================
+
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('id_user');
+  localStorage.removeItem('id_eskul');
+}
+
+
+// ======================================================
 // PROTEKSI HALAMAN ADMIN
 // ======================================================
 
@@ -38,53 +50,84 @@ function AdminRoute({ children }) {
 
   const location = useLocation();
 
-  const token =
-    localStorage.getItem('token');
+  const token = localStorage.getItem('token');
 
-  const role =
-    (localStorage.getItem('role') || '')
-      .toUpperCase();
+  const role = (localStorage.getItem('role') || '').toUpperCase();
 
 
   // Tidak punya token
   if (!token) {
-
     return (
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname
-        }}
+        state={{ from: location.pathname }}
       />
     );
-
   }
 
 
   // Bukan ADMIN
   if (role !== 'ADMIN') {
 
-    // Hapus sesi
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('id_user');
-    localStorage.removeItem('id_eskul');
+    clearSession();
 
     return (
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname
-        }}
+        state={{ from: location.pathname }}
       />
     );
-
   }
 
 
   // ADMIN boleh masuk
+  return children;
+}
+
+
+// ======================================================
+// PROTEKSI HALAMAN ADMIN / PEMBINA
+// ======================================================
+
+function AdminOrPembinaRoute({ children }) {
+
+  const location = useLocation();
+
+  const token = localStorage.getItem('token');
+
+  const role = (localStorage.getItem('role') || '').toUpperCase();
+
+
+  // Tidak punya token
+  if (!token) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+
+
+  // Bukan ADMIN dan bukan PEMBINA
+  if (role !== 'ADMIN' && role !== 'PEMBINA') {
+
+    clearSession();
+
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+
+
+  // ADMIN atau PEMBINA boleh masuk
   return children;
 }
 
@@ -102,21 +145,12 @@ function App() {
 
   useEffect(() => {
 
-    const savedTheme =
-      localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem('theme');
 
     if (savedTheme === 'dark') {
-
-      document.documentElement.classList.add(
-        'dark'
-      );
-
+      document.documentElement.classList.add('dark');
     } else {
-
-      document.documentElement.classList.remove(
-        'dark'
-      );
-
+      document.documentElement.classList.remove('dark');
     }
 
   }, []);
@@ -130,8 +164,7 @@ function App() {
 
     const cekToken = async () => {
 
-      const token =
-        localStorage.getItem('token');
+      const token = localStorage.getItem('token');
 
 
       // Kalau belum login
@@ -142,98 +175,43 @@ function App() {
 
       try {
 
-        const result =
-          await verifyToken();
+        const result = await verifyToken();
 
 
-        // ==================================================
         // TOKEN TIDAK VALID / EXPIRED
-        // ==================================================
-
         if (!result.valid) {
-
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
-
-          window.location.href =
-            '/login';
-
+          clearSession();
+          window.location.href = '/login';
           return;
-
         }
 
 
-        // ==================================================
         // ROLE DARI JWT
-        // ==================================================
+        const tokenRole = result.data?.role;
 
-        const tokenRole =
-          result.data?.role;
-
-
-        // ==================================================
         // ROLE DARI LOCAL STORAGE
-        // ==================================================
-
-        const storedRole =
-          localStorage.getItem('role');
+        const storedRole = localStorage.getItem('role');
 
 
-        // ==================================================
         // ROLE TIDAK ADA
-        // ==================================================
-
-        if (
-          !tokenRole ||
-          !storedRole
-        ) {
-
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
-
-          window.location.href =
-            '/login';
-
+        if (!tokenRole || !storedRole) {
+          clearSession();
+          window.location.href = '/login';
           return;
-
         }
 
 
-        // ==================================================
         // ROLE JWT ≠ ROLE LOCAL STORAGE
-        // ==================================================
-
-        if (
-          tokenRole.toLowerCase() !==
-          storedRole.toLowerCase()
-        ) {
-
-          console.log(
-            'Role tidak sesuai dengan JWT'
-          );
-
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
-
-          window.location.href =
-            '/login';
-
+        if (tokenRole.toLowerCase() !== storedRole.toLowerCase()) {
+          console.log('Role tidak sesuai dengan JWT');
+          clearSession();
+          window.location.href = '/login';
           return;
-
         }
 
       } catch (error) {
 
-        console.error(
-          'Gagal memverifikasi token:',
-          error
-        );
+        console.error('Gagal memverifikasi token:', error);
 
       }
 
@@ -270,7 +248,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+
           {/* Rute Dashboard Spesifik Berdasarkan Role & Cadangan Umum */}
           <Route path="/Dashboard" element={<StudentDashboard />} />
           <Route path="/admin/Dashboard" element={<AdminRoute><StudentDashboard /></AdminRoute>} />
@@ -282,9 +260,11 @@ function App() {
           <Route path="/admin/manajemen-kelas" element={<AdminRoute><ManajemenKelas /></AdminRoute>} />
           <Route path="/admin/pendaftar" element={<AdminRoute><PendaftarEskul /></AdminRoute>} />
           <Route path="/admin/data-user" element={<AdminRoute><DataUser /></AdminRoute>} />
-          <Route path="/admin/kelola-eskul" element={<AdminRoute><KelolaEskul /></AdminRoute>} />
           <Route path="/admin/laporan-eskul/:id" element={<AdminRoute><LaporanEskul /></AdminRoute>} />
-          
+
+          {/* Rute Kelola Eskul (Bisa diakses Admin & Pembina) */}
+          <Route path="/admin/kelola-eskul" element={<AdminOrPembinaRoute><KelolaEskul /></AdminOrPembinaRoute>} />
+
           {/* Rute Ekstrakurikuler Umum */}
           <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
           <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
