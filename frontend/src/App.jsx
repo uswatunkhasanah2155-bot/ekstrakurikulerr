@@ -27,6 +27,7 @@ import TambahSiswaManual from './pages/TambahSiswaManual';
 import EditSiswaManual from './pages/EditSiswaManual';
 import ManajemenKelas from './pages/ManajemenKelas';
 import DataUser from './pages/DataUser';
+import LaporanEskul from './pages/LaporanEskul';
 
 
 // ======================================================
@@ -282,6 +283,7 @@ function App() {
           <Route path="/admin/pendaftar" element={<AdminRoute><PendaftarEskul /></AdminRoute>} />
           <Route path="/admin/data-user" element={<AdminRoute><DataUser /></AdminRoute>} />
           <Route path="/admin/kelola-eskul" element={<AdminRoute><KelolaEskul /></AdminRoute>} />
+          <Route path="/admin/laporan-eskul/:id" element={<AdminRoute><LaporanEskul /></AdminRoute>} />
           
           {/* Rute Ekstrakurikuler Umum */}
           <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />

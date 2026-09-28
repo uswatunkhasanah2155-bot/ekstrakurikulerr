@@ -1,10 +1,12 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { getDaftarEskul, getPendaftarEskul } from '../services/api';
 import { UserRound } from 'lucide-react';
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [roleUser, setRoleUser] = useState('');
   const [daftarEskul, setDaftarEskul] = useState([]);
@@ -107,6 +109,14 @@ export default function StudentDashboard() {
     );
   }
 
+  // Gabungkan data eskul + jumlah siswa jadi satu array,
+  // supaya id_eskul ikut terbawa untuk keperluan navigasi ke LaporanEskul
+  const chartData = daftarEskul.map((eskul) => ({
+    id_eskul: eskul.id_eskul,
+    nama_eskul: eskul.nama_eskul,
+    count: eskulCounts[eskul.nama_eskul] || 0,
+  }));
+
   const countValues = Object.values(eskulCounts);
   const rawMax = Math.max(1, ...countValues);
   const chartMax =
@@ -180,58 +190,54 @@ export default function StudentDashboard() {
 
                   </div>
 
-                  {/* BATANG CHART */}
+                  {/* BATANG CHART - klik untuk lihat laporan detail eskul */}
                   <div className="relative flex items-end justify-between gap-2 h-56">
 
-                    {Object.entries(eskulCounts).map(
-                      ([nama, count]) => (
+                    {chartData.map((item) => (
+                      <div
+                        key={item.id_eskul}
+                        onClick={() =>
+                          navigate(`/admin/laporan-eskul/${item.id_eskul}`)
+                        }
+                        className="flex-1 flex flex-col items-center justify-end h-full cursor-pointer group"
+                        title={`Lihat laporan ${item.nama_eskul}`}
+                      >
+
+                        {item.count > 0 && (
+                          <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                            {item.count}
+                          </span>
+                        )}
 
                         <div
-                          key={nama}
-                          className="flex-1 flex flex-col items-center justify-end h-full"
-                        >
+                          className="w-full max-w-[36px] rounded-t-[3px] transition-all group-hover:opacity-80"
+                          style={{
+                            height: `${(item.count / chartMax) * 100}%`,
+                            minHeight:
+                              item.count > 0
+                                ? '4px'
+                                : '0px',
+                            backgroundColor:
+                              '#4f7fa8',
+                          }}
+                        />
 
-                          {count > 0 && (
-                            <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                              {count}
-                            </span>
-                          )}
-
-                          <div
-                            className="w-full max-w-[36px] rounded-t-[3px] transition-all"
-                            style={{
-                              height: `${(count / chartMax) * 100}%`,
-                              minHeight:
-                                count > 0
-                                  ? '4px'
-                                  : '0px',
-                              backgroundColor:
-                                '#4f7fa8',
-                            }}
-                          />
-
-                        </div>
-
-                      )
-                    )}
+                      </div>
+                    ))}
 
                   </div>
 
                   {/* NAMA ESKUL */}
                   <div className="flex items-start justify-between gap-2 mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
 
-                    {Object.keys(eskulCounts).map(
-                      (nama) => (
-
-                        <span
-                          key={nama}
-                          className="flex-1 text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight truncate"
-                        >
-                          {nama}
-                        </span>
-
-                      )
-                    )}
+                    {chartData.map((item) => (
+                      <span
+                        key={item.id_eskul}
+                        className="flex-1 text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight truncate"
+                      >
+                        {item.nama_eskul}
+                      </span>
+                    ))}
 
                   </div>
 

@@ -5,6 +5,9 @@ import Sidebar from '../components/Sidebar';
 import {
   getDaftarEskul,
   getGaleriEskul,
+  hapusGaleriEskul,
+  setFotoUtamaGaleri,
+  updateGaleriEskul
 } from '../services/api';
 import {
   Award,
@@ -20,17 +23,11 @@ export default function GaleriEskul() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
 
-  const cleanNamaEskul = namaEskul
-    ? namaEskul.replace(/-/g, ' ')
-    : '';
+  const cleanNamaEskul = namaEskul ? namaEskul.replace(/-/g, ' ') : '';
 
   const formatNamaEskul = cleanNamaEskul
     .split(' ')
-    .map(
-      word =>
-        word.charAt(0).toUpperCase() +
-        word.slice(1)
-    )
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -38,8 +35,7 @@ export default function GaleriEskul() {
   const [loading, setLoading] = useState(true);
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
   const [daftarFoto, setDaftarFoto] = useState([]);
-  
-  // State untuk filter kategori aktif
+
   const [activeTab, setActiveTab] = useState('Semua');
 
   const [settingUtama, setSettingUtama] = useState(null);
@@ -49,20 +45,24 @@ export default function GaleriEskul() {
   const [editKategori, setEditKategori] = useState('Kegiatan');
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const formatTanggal = tgl => {
+    if (!tgl) return 'Baru';
+    return new Date(tgl).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   useEffect(() => {
-    const roleUser = (
-      localStorage.getItem('role') || ''
-    ).toUpperCase();
+    const roleUser = (localStorage.getItem('role') || '').toUpperCase();
 
     setIsAdmin(roleUser === 'ADMIN');
-    setIsStaff(
-      roleUser === 'ADMIN' ||
-      roleUser === 'PEMBINA'
-    );
+    setIsStaff(roleUser === 'ADMIN' || roleUser === 'PEMBINA');
 
     async function fetchData() {
       setLoading(true);
-      
+
       try {
         const eskulData = await getDaftarEskul();
         const listEskul = eskulData.data || eskulData || [];
@@ -76,117 +76,58 @@ export default function GaleriEskul() {
 
         setCurrentEskulDetail(matchedEskul || null);
 
-        // Fungsi pendeteksi kategori otomatis (hanya dipakai untuk data dummy)
-        const deteksiKategori = (teks) => {
-          if (!teks) return 'Lainnya';
-          const t = teks.toLowerCase();
-          if (t.includes('upacara') || t.includes('bendera')) return 'Upacara';
-          if (t.includes('latih') || t.includes('pbb') || t.includes('pelantikan') || t.includes('baris')) return 'Pelatihan';
-          if (t.includes('kegiatan') || t.includes('perkemahan') || t.includes('bersama') || t.includes('jelajah') || t.includes('alam')) return 'Kegiatan';
-          return 'Lainnya';
-        };
-
         let fotoData = [];
         if (matchedEskul) {
-          try {
-            fotoData = await getGaleriEskul(matchedEskul.id_eskul);
-          } catch (err) {
-            console.log("Belum ada data dari API, menggunakan data dummy.");
-          }
+          fotoData = await getGaleriEskul(matchedEskul.id_eskul);
         }
 
-        // Jika data dari backend kosong, kita gunakan data dummy lengkap
-        if (!fotoData || fotoData.length === 0) {
-          const dummyData = [
-            {
-              id_galeri: 1,
-              foto: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&q=80&w=600',
-              keterangan: 'Foto Bersama Peserta Kegiatan',
-              created_at: '2025-08-12',
-              is_featured: true
-            },
-            {
-              id_galeri: 2,
-              foto: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&q=80&w=600',
-              keterangan: 'Upacara Pembukaan Ekstrakurikuler',
-              created_at: '2025-08-10',
-              is_featured: false
-            },
-            {
-              id_galeri: 3,
-              foto: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=600',
-              keterangan: 'Kegiatan Perkemahan Akhir Tahun',
-              created_at: '2025-08-08',
-              is_featured: false
-            },
-            {
-              id_galeri: 4,
-              foto: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=600',
-              keterangan: 'Pelantikan Anggota Baru',
-              created_at: '2025-08-05',
-              is_featured: false
-            },
-            {
-              id_galeri: 5,
-              foto: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=600',
-              keterangan: 'Outbound & Games Pelatihan',
-              created_at: '2025-08-03',
-              is_featured: false
-            },
-            {
-              id_galeri: 6,
-              foto: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=600',
-              keterangan: 'Api Unggun Malam Kekrabatan',
-              created_at: '2025-08-01',
-              is_featured: false
-            }
-          ];
+        const formattedData = (fotoData || []).map(item => ({
+          ...item,
+          kategori: item.kategori || 'Lainnya',
+          tanggal: formatTanggal(item.created_at)
+        }));
 
-          const formattedDummy = dummyData.map(item => ({
-            ...item,
-            kategori: deteksiKategori(item.keterangan),
-            tanggal: '12 Agu 2025'
-          }));
-          setDaftarFoto(formattedDummy);
-        } else {
-          // Jika backend sudah ada isinya, ambil langsung dari kolom kategori Supabase
-          const formattedData = fotoData.map(item => ({
-            ...item,
-            kategori: item.kategori || 'Lainnya',
-            tanggal: item.created_at 
-              ? new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) 
-              : 'Baru'
-          }));
-          setDaftarFoto(formattedData);
-        }
+        setDaftarFoto(formattedData);
       } catch (error) {
-        console.error("Gagal memuat data:", error);
+        console.error('Gagal memuat data:', error);
         setDaftarFoto([]);
       }
-      
+
       setLoading(false);
     }
 
     fetchData();
   }, [namaEskul, cleanNamaEskul]);
 
-  const handleHapusFoto = async (idGaleri) => {
-    if (window.confirm('Yakin ingin menghapus foto ini dari galeri?')) {
+  const handleHapusFoto = async idGaleri => {
+    if (!window.confirm('Yakin ingin menghapus foto ini dari galeri?')) return;
+
+    const result = await hapusGaleriEskul(idGaleri);
+
+    if (result.success) {
       setDaftarFoto(prev => prev.filter(f => f.id_galeri !== idGaleri));
+    } else {
+      alert('Gagal menghapus foto: ' + result.error);
     }
   };
 
-  const handleJadikanUtama = async (idGaleri) => {
+  const handleJadikanUtama = async idGaleri => {
     setSettingUtama(idGaleri);
-    setTimeout(() => {
-      setSettingUtama(null);
+
+    const result = await setFotoUtamaGaleri(idGaleri);
+
+    setSettingUtama(null);
+
+    if (result.success) {
       setDaftarFoto(prev =>
         prev.map(f => ({
           ...f,
           is_featured: f.id_galeri === idGaleri
         }))
       );
-    }, 300);
+    } else {
+      alert('Gagal mengatur foto utama: ' + result.error);
+    }
   };
 
   const handleBukaEdit = item => {
@@ -207,17 +148,36 @@ export default function GaleriEskul() {
     if (!editTarget) return;
 
     setSavingEdit(true);
-    setTimeout(() => {
+
+    const formData = new FormData();
+    formData.append('keterangan', editKeterangan);
+    formData.append('kategori', editKategori);
+
+    if (editFile) {
+      formData.append('foto', editFile);
+    }
+
+    const result = await updateGaleriEskul(editTarget.id_galeri, formData);
+
+    setSavingEdit(false);
+
+    if (result.success) {
       setDaftarFoto(prev =>
         prev.map(f =>
           f.id_galeri === editTarget.id_galeri
-            ? { ...f, keterangan: editKeterangan, kategori: editKategori }
+            ? {
+                ...f,
+                keterangan: editKeterangan,
+                kategori: editKategori,
+                foto: result.data?.data?.foto || f.foto
+              }
             : f
         )
       );
-      setSavingEdit(false);
       handleTutupEdit();
-    }, 500);
+    } else {
+      alert('Gagal menyimpan perubahan: ' + result.error);
+    }
   };
 
   const handleLihatFoto = idGaleri => {
@@ -228,12 +188,9 @@ export default function GaleriEskul() {
     if (!foto) return null;
     return foto.startsWith('http')
       ? foto
-      : `http://localhost:5000/${
-          foto.startsWith('/') ? foto.slice(1) : foto
-        }`;
+      : `http://localhost:5000/${foto.startsWith('/') ? foto.slice(1) : foto}`;
   };
 
-  // Logika Filter berdasarkan Kategori Tab yang Aktif
   const daftarFotoFiltered = daftarFoto.filter(item => {
     if (activeTab === 'Semua') return true;
     return item.kategori?.toLowerCase() === activeTab.toLowerCase();
@@ -247,7 +204,7 @@ export default function GaleriEskul() {
         {/* BREADCRUMB */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
-            <span 
+            <span
               onClick={() => navigate(`/eskul/${namaEskul}`)}
               className="hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition"
             >
@@ -283,7 +240,6 @@ export default function GaleriEskul() {
             </div>
           </div>
 
-          {/* KOTAK TOTAL FOTO */}
           <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50 px-5 py-3 rounded-2xl flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-start">
             <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
               <Layers className="w-5 h-5" />
@@ -297,7 +253,7 @@ export default function GaleriEskul() {
 
         {/* TAB FILTER KATEGORI */}
         <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none">
-          {['Semua', 'Kegiatan', 'Upacara', 'Pelatihan', 'Lainnya'].map((tab) => (
+          {['Semua', 'Kegiatan', 'Upacara', 'Pelatihan', 'Lainnya'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -324,7 +280,9 @@ export default function GaleriEskul() {
               <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
                 <ImageIcon className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-sm font-medium">Tidak ada foto dalam kategori "{activeTab}".</p>
+              <p className="text-sm font-medium">
+                Tidak ada foto dalam kategori "{activeTab}".
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
@@ -337,7 +295,6 @@ export default function GaleriEskul() {
                       : 'border-gray-200/80 dark:border-gray-800'
                   }`}
                 >
-                  {/* WRAPPER GAMBAR */}
                   <div className="relative w-full aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-gray-800">
                     <img
                       src={getFotoUrl(item.foto)}
@@ -346,7 +303,6 @@ export default function GaleriEskul() {
                       onClick={() => handleLihatFoto(item.id_galeri)}
                     />
 
-                    {/* BADGE UTAMA */}
                     {item.is_featured && (
                       <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md backdrop-blur-md bg-opacity-90">
                         <Award className="w-3.5 h-3.5" />
@@ -354,7 +310,6 @@ export default function GaleriEskul() {
                       </div>
                     )}
 
-                    {/* TOMBOL AKSI HOVER */}
                     {isStaff && (
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
@@ -385,7 +340,6 @@ export default function GaleriEskul() {
                     )}
                   </div>
 
-                  {/* KARTU FOOTER */}
                   <div className="p-4 flex items-center justify-between gap-2 bg-white dark:bg-gray-900 mt-auto border-t border-gray-100 dark:border-gray-800/80">
                     <div className="flex items-center gap-2 overflow-hidden">
                       <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
@@ -438,6 +392,18 @@ export default function GaleriEskul() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                  Ganti Foto (opsional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setEditFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/30 file:text-emerald-700 dark:file:text-emerald-300 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/50 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                   Keterangan Foto
                 </label>
                 <input
@@ -449,7 +415,6 @@ export default function GaleriEskul() {
                 />
               </div>
 
-              {/* Elemen Pilihan Kategori Ditambahkan di Sini */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                   Kategori Foto
