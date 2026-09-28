@@ -4,7 +4,7 @@ import Sidebar from '../components/Sidebar';
 import { getDaftarEskul, getPendaftarEskul } from '../services/api';
 import { UserRound } from 'lucide-react';
 
-export default function StudentDashboard() {
+export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [roleUser, setRoleUser] = useState('');
   const [daftarEskul, setDaftarEskul] = useState([]);
@@ -12,17 +12,14 @@ export default function StudentDashboard() {
   const [totalSiswa, setTotalSiswa] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const BACKEND_URL = 'http://localhost:5000';
+
   useEffect(() => {
     const role = localStorage.getItem('role') || '';
     const idEskul = localStorage.getItem('id_eskul');
 
     setRoleUser(role);
-
-    if (role.toUpperCase() === 'ADMIN') {
-      setIsAdmin(true);
-    } else {
-      setIsAdmin(false);
-    }
+    setIsAdmin(role.toUpperCase() === 'ADMIN');
 
     async function fetchData() {
       try {
@@ -36,8 +33,7 @@ export default function StudentDashboard() {
         // PEMBINA HANYA BOLEH MELIHAT ESKUL MILIKNYA
         if (role.toLowerCase() === 'pembina') {
           listEskul = listEskul.filter(
-            (eskul) =>
-              String(eskul.id_eskul) === String(idEskul)
+            (eskul) => String(eskul.id_eskul) === String(idEskul)
           );
         }
 
@@ -45,31 +41,20 @@ export default function StudentDashboard() {
 
         // Hitung jumlah siswa per eskul
         const counts = {};
-
         listEskul.forEach((eskul) => {
           counts[eskul.nama_eskul] = 0;
         });
 
         const uniqueSiswaIds = new Set();
 
-        (pendaftarData || []).forEach((item) => {
-          const namaEskul =
-            item.ekstrakurikuler?.nama_eskul;
+        (pendaftarData.data || pendaftarData || []).forEach((item) => {
+          const namaEskul = item.ekstrakurikuler?.nama_eskul;
+          const idSiswa = item.siswa?.id_siswa || item.id_siswa;
 
-          const idSiswa =
-            item.siswa?.id_siswa || item.id_siswa;
-
-          if (
-            namaEskul &&
-            Object.prototype.hasOwnProperty.call(
-              counts,
-              namaEskul
-            )
-          ) {
+          if (namaEskul && Object.prototype.hasOwnProperty.call(counts, namaEskul)) {
             counts[namaEskul] += 1;
           }
 
-          // Untuk Pembina, hanya hitung siswa dari eskul miliknya
           if (
             role.toLowerCase() === 'pembina' &&
             String(item.id_eskul) !== String(idEskul)
@@ -85,10 +70,7 @@ export default function StudentDashboard() {
         setEskulCounts(counts);
         setTotalSiswa(uniqueSiswaIds.size);
       } catch (error) {
-        console.error(
-          'Gagal mengambil data dashboard:',
-          error
-        );
+        console.error('Gagal mengambil data dashboard:', error);
       } finally {
         setLoading(false);
       }
@@ -101,299 +83,154 @@ export default function StudentDashboard() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
         <p className="text-gray-600 dark:text-gray-300 font-medium">
-          Memuat data ekstrakurikuler dari backend...
+          Memuat data dashboard...
         </p>
       </div>
     );
   }
 
+  const role = roleUser.toLowerCase();
   const countValues = Object.values(eskulCounts);
   const rawMax = Math.max(1, ...countValues);
-  const chartMax =
-    Math.ceil(rawMax / 10) * 10 || 10;
-
+  const chartMax = Math.ceil(rawMax / 10) * 10 || 10;
   const ySteps = 5;
-
-  const yLabels = Array.from(
-    { length: ySteps + 1 },
-    (_, i) =>
-      chartMax -
-      (chartMax / ySteps) * i
-  );
+  const yLabels = Array.from({ length: ySteps + 1 }, (_, i) => chartMax - (chartMax / ySteps) * i);
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-
       <Sidebar isAdmin={isAdmin} />
-
+      
       <main className="flex-1 p-6 overflow-y-auto">
-
-        {/* JUDUL */}
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">
           Sistem Pendaftaran Ekstrakurikuler
         </h2>
 
-        {/* =====================================================
-            CHART + REKAPITULASI
-        ====================================================== */}
+        {/* CHART & REKAPITULASI */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-
-          {/* CHART */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
-
+          <div className="lg:col-span-2 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 mb-6">
               Jumlah Siswa per Eskul
             </h3>
 
             {countValues.length === 0 ? (
-
-              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-10">
-                Belum ada data ekstrakurikuler.
-              </p>
-
+              <p className="text-sm text-gray-400 text-center py-10">Belum ada data ekstrakurikuler.</p>
             ) : (
-
               <div className="flex gap-3">
-
-                {/* LABEL Y */}
-                <div className="flex flex-col justify-between h-56 pb-6 text-[11px] text-gray-400 dark:text-gray-500 font-medium">
-
+                <div className="flex flex-col justify-between h-56 pb-6 text-[11px] text-gray-400 font-medium">
                   {yLabels.map((val) => (
-                    <span key={val}>
-                      {Math.round(val)}
-                    </span>
+                    <span key={val}>{Math.round(val)}</span>
                   ))}
-
                 </div>
 
                 <div className="flex-1 relative">
-
-                  {/* GARIS CHART */}
                   <div className="absolute inset-0 flex flex-col justify-between h-56 pointer-events-none">
-
                     {yLabels.map((val, i) => (
-                      <div
-                        key={i}
-                        className="border-t border-gray-100 dark:border-gray-800 w-full"
-                      />
+                      <div key={i} className="border-t border-gray-100 dark:border-gray-800 w-full" />
                     ))}
-
                   </div>
 
-                  {/* BATANG CHART */}
                   <div className="relative flex items-end justify-between gap-2 h-56">
-
-                    {Object.entries(eskulCounts).map(
-                      ([nama, count]) => (
-
+                    {Object.entries(eskulCounts).map(([nama, count]) => (
+                      <div key={nama} className="flex-1 flex flex-col items-center justify-end h-full">
+                        {count > 0 && (
+                          <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                            {count}
+                          </span>
+                        )}
                         <div
-                          key={nama}
-                          className="flex-1 flex flex-col items-center justify-end h-full"
-                        >
-
-                          {count > 0 && (
-                            <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
-                              {count}
-                            </span>
-                          )}
-
-                          <div
-                            className="w-full max-w-[36px] rounded-t-[3px] transition-all"
-                            style={{
-                              height: `${(count / chartMax) * 100}%`,
-                              minHeight:
-                                count > 0
-                                  ? '4px'
-                                  : '0px',
-                              backgroundColor:
-                                '#4f7fa8',
-                            }}
-                          />
-
-                        </div>
-
-                      )
-                    )}
-
+                          className="w-full max-w-[36px] rounded-t-[3px] transition-all"
+                          style={{
+                            height: `${(count / chartMax) * 100}%`,
+                            minHeight: count > 0 ? '4px' : '0px',
+                            backgroundColor: '#4f7fa8',
+                          }}
+                        />
+                      </div>
+                    ))}
                   </div>
 
-                  {/* NAMA ESKUL */}
                   <div className="flex items-start justify-between gap-2 mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
-
-                    {Object.keys(eskulCounts).map(
-                      (nama) => (
-
-                        <span
-                          key={nama}
-                          className="flex-1 text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight truncate"
-                        >
-                          {nama}
-                        </span>
-
-                      )
-                    )}
-
+                    {Object.keys(eskulCounts).map((nama) => (
+                      <span key={nama} className="flex-1 text-[10px] text-gray-500 text-center leading-tight truncate">
+                        {nama}
+                      </span>
+                    ))}
                   </div>
-
                 </div>
               </div>
             )}
-
           </div>
 
-          {/* REKAPITULASI */}
-          <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-center transition-colors duration-300">
-
+          <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-center">
             <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-8 text-center">
               Rekapitulasi Total Pendaftaran
             </h3>
-
             <div className="flex items-center justify-center gap-4 mb-3">
-
-              <span className="text-6xl font-extrabold text-gray-800 dark:text-gray-100">
-                {totalSiswa}
-              </span>
-
-              <UserRound
-                className="w-14 h-14 text-cyan-700 dark:text-cyan-400"
-                strokeWidth={1.5}
-              />
-
+              <span className="text-6xl font-extrabold text-gray-800 dark:text-gray-100">{totalSiswa}</span>
+              <UserRound className="w-14 h-14 text-cyan-700 dark:text-cyan-400" strokeWidth={1.5} />
             </div>
-
             <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 text-center mb-8">
               Total Siswa Terdaftar
             </p>
-
             <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg px-4 py-3.5 text-sm font-medium text-gray-600 dark:text-gray-300 text-center">
               dari {daftarEskul.length} Ekstrakurikuler
             </div>
-
           </div>
-
         </div>
 
-        {/* =====================================================
-            DAFTAR EKSTRAKURIKULER
-        ====================================================== */}
-
+        {/* DAFTAR ESKUL */}
         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">
-          {roleUser.toLowerCase() === 'pembina'
-            ? 'Ekstrakurikuler yang Dibina'
-            : 'Daftar Ekstrakurikuler'}
+          {role === 'pembina' ? 'Ekstrakurikuler yang Dibina' : 'Daftar Ekstrakurikuler'}
         </h3>
 
         {daftarEskul.length === 0 ? (
-
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-10 text-center transition-colors duration-300">
-
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              {roleUser.toLowerCase() === 'pembina'
-                ? 'Akun pembina belum memiliki ekstrakurikuler.'
-                : 'Belum ada ekstrakurikuler.'}
-            </p>
-
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-10 text-center">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Belum ada ekstrakurikuler.</p>
           </div>
-
         ) : (
-
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-
             {daftarEskul.map((eskul) => {
-
               const fotoSrc = eskul.foto
-                ? (
-                    eskul.foto.startsWith('http')
-                      ? eskul.foto
-                      : `http://localhost:5000/${
-                          eskul.foto.startsWith('/')
-                            ? eskul.foto.slice(1)
-                            : eskul.foto
-                        }`
-                  )
+                ? eskul.foto.startsWith('http')
+                  ? eskul.foto
+                  : `${BACKEND_URL}/${eskul.foto.startsWith('/') ? eskul.foto.slice(1) : eskul.foto}`
                 : null;
 
               return (
-                <div
-                  key={eskul.id_eskul}
-                  className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md dark:hover:shadow-gray-950/40 transition flex flex-col justify-between"
-                >
-
+                <div key={eskul.id_eskul} className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-between">
                   <div>
-
-                    {/* FOTO ESKUL */}
-                    {fotoSrc ? (
-
+                    {fotoSrc && (
                       <img
                         src={fotoSrc}
                         alt={eskul.nama_eskul}
-                        className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                        className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700 mb-2"
                         onError={(e) => {
                           e.target.style.display = 'none';
-
-                          if (e.target.nextSibling) {
-                            e.target.nextSibling.style.display =
-                              'flex';
-                          }
+                          if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                         }}
                       />
-
-                    ) : null}
-
-                    {/* INISIAL JIKA TIDAK ADA FOTO */}
+                    )}
                     <div
-                      className="w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300 flex items-center justify-center font-bold"
-                      style={{
-                        display: fotoSrc
-                          ? 'none'
-                          : 'flex',
-                      }}
+                      className="w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300 flex items-center justify-center font-bold mb-2"
+                      style={{ display: fotoSrc ? 'none' : 'flex' }}
                     >
                       {(eskul.nama_eskul || 'E').charAt(0)}
                     </div>
-
-                    <div className="mt-2">
-
-                      <h4 className="font-bold text-gray-800 dark:text-gray-100 text-base">
-                        {eskul.nama_eskul}
-                      </h4>
-
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                        {eskul.deskripsi ||
-                          'Tidak ada deskripsi'}
-                      </p>
-
-                    </div>
-
+                    <h4 className="font-bold text-gray-800 dark:text-gray-100 text-base">{eskul.nama_eskul}</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                      {eskul.deskripsi || 'Tidak ada deskripsi'}
+                    </p>
                   </div>
 
-                  {/* INFO ESKUL */}
                   <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400 space-y-1">
-
-                    <div>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">
-                        Pembina:
-                      </span>{' '}
-                      {eskul.pembina || 'Belum ada'}
-                    </div>
-
-                    <div>
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">
-                        Jadwal:
-                      </span>{' '}
-                      {eskul.jadwal || 'Belum ada'}
-                    </div>
-
+                    <div><span className="font-semibold text-gray-700 dark:text-gray-300">Pembina:</span> {eskul.pembina || 'Belum ada'}</div>
+                    <div><span className="font-semibold text-gray-700 dark:text-gray-300">Jadwal:</span> {eskul.jadwal || 'Belum ada'}</div>
                   </div>
-
                 </div>
               );
             })}
-
           </div>
-
         )}
-
       </main>
     </div>
   );

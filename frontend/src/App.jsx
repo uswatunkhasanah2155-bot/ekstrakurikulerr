@@ -14,7 +14,8 @@ import { verifyToken } from './services/api';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
-import StudentDashboard from './pages/Dashboard';
+import Dashboard from './pages/Dashboard';
+import DashboardSiswa from './pages/DashboardSiswa';
 import ExtracurricularDetail from './pages/ExtracurricularDetail';
 import RegistrationForm from './pages/RegistrationForm';
 import KelolaEskul from './pages/KelolaEskul';
@@ -27,6 +28,7 @@ import TambahSiswaManual from './pages/TambahSiswaManual';
 import EditSiswaManual from './pages/EditSiswaManual';
 import ManajemenKelas from './pages/ManajemenKelas';
 import DataUser from './pages/DataUser';
+import JadwalEskul from './pages/JadwalEskul';
 
 
 // ======================================================
@@ -34,37 +36,21 @@ import DataUser from './pages/DataUser';
 // ======================================================
 
 function AdminRoute({ children }) {
-
   const location = useLocation();
+  const token = localStorage.getItem('token');
+  const role = (localStorage.getItem('role') || '').toUpperCase();
 
-  const token =
-    localStorage.getItem('token');
-
-  const role =
-    (localStorage.getItem('role') || '')
-      .toUpperCase();
-
-
-  // Tidak punya token
   if (!token) {
-
     return (
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname
-        }}
+        state={{ from: location.pathname }}
       />
     );
-
   }
 
-
-  // Bukan ADMIN
   if (role !== 'ADMIN') {
-
-    // Hapus sesi
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('id_user');
@@ -74,16 +60,11 @@ function AdminRoute({ children }) {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname
-        }}
+        state={{ from: location.pathname }}
       />
     );
-
   }
 
-
-  // ADMIN boleh masuk
   return children;
 }
 
@@ -93,35 +74,21 @@ function AdminRoute({ children }) {
 // ======================================================
 
 function AdminOrPembinaRoute({ children }) {
-
   const location = useLocation();
+  const token = localStorage.getItem('token');
+  const role = (localStorage.getItem('role') || '').toUpperCase();
 
-  const token =
-    localStorage.getItem('token');
-
-  const role =
-    (localStorage.getItem('role') || '')
-      .toUpperCase();
-
-
-  // Tidak punya token
   if (!token) {
     return (
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname
-        }}
+        state={{ from: location.pathname }}
       />
     );
   }
 
-
-  // Bukan ADMIN dan bukan PEMBINA
   if (role !== 'ADMIN' && role !== 'PEMBINA') {
-
-    // Hapus sesi
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('id_user');
@@ -131,16 +98,42 @@ function AdminOrPembinaRoute({ children }) {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname
-        }}
+        state={{ from: location.pathname }}
       />
     );
-
   }
 
+  return children;
+}
 
-  // ADMIN atau PEMBINA boleh masuk
+
+// ======================================================
+// PROTEKSI HALAMAN SISWA
+// ======================================================
+
+function StudentRoute({ children }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const role = (localStorage.getItem('role') || '').toUpperCase();
+
+  if (!token) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+
+  // Jika admin/pembina mencoba masuk ke halaman siswa murni, bisa diarahkan ke dashboard mereka
+  if (role === 'ADMIN') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  if (role === 'PEMBINA') {
+    return <Navigate to="/pembina/dashboard" replace />;
+  }
+
   return children;
 }
 
@@ -151,187 +144,82 @@ function AdminOrPembinaRoute({ children }) {
 
 function App() {
 
-
-  // ======================================================
   // TERAPKAN TEMA YANG TERSIMPAN
-  // ======================================================
-
   useEffect(() => {
-
-    const savedTheme =
-      localStorage.getItem('theme');
-
+    const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
-
-      document.documentElement.classList.add(
-        'dark'
-      );
-
+      document.documentElement.classList.add('dark');
     } else {
-
-      document.documentElement.classList.remove(
-        'dark'
-      );
-
+      document.documentElement.classList.remove('dark');
     }
-
   }, []);
 
-
-  // ======================================================
   // CEK TOKEN & ROLE
-  // ======================================================
-
   useEffect(() => {
-
     const cekToken = async () => {
-
-      const token =
-        localStorage.getItem('token');
-
-
-      // Kalau belum login
-      if (!token) {
-        return;
-      }
-
+      const token = localStorage.getItem('token');
+      if (!token) return;
 
       try {
-
-        const result =
-          await verifyToken();
-
-
-        // ==================================================
-        // TOKEN TIDAK VALID / EXPIRED
-        // ==================================================
+        const result = await verifyToken();
 
         if (!result.valid) {
-
           localStorage.removeItem('token');
           localStorage.removeItem('role');
           localStorage.removeItem('id_user');
           localStorage.removeItem('id_eskul');
-
-          window.location.href =
-            '/login';
-
+          window.location.href = '/login';
           return;
-
         }
 
+        const tokenRole = result.data?.role;
+        const storedRole = localStorage.getItem('role');
 
-        // ==================================================
-        // ROLE DARI JWT
-        // ==================================================
-
-        const tokenRole =
-          result.data?.role;
-
-
-        // ==================================================
-        // ROLE DARI LOCAL STORAGE
-        // ==================================================
-
-        const storedRole =
-          localStorage.getItem('role');
-
-
-        // ==================================================
-        // ROLE TIDAK ADA
-        // ==================================================
-
-        if (
-          !tokenRole ||
-          !storedRole
-        ) {
-
+        if (!tokenRole || !storedRole) {
           localStorage.removeItem('token');
           localStorage.removeItem('role');
           localStorage.removeItem('id_user');
           localStorage.removeItem('id_eskul');
-
-          window.location.href =
-            '/login';
-
+          window.location.href = '/login';
           return;
-
         }
 
-
-        // ==================================================
-        // ROLE JWT ≠ ROLE LOCAL STORAGE
-        // ==================================================
-
-        if (
-          tokenRole.toLowerCase() !==
-          storedRole.toLowerCase()
-        ) {
-
-          console.log(
-            'Role tidak sesuai dengan JWT'
-          );
-
+        if (tokenRole.toLowerCase() !== storedRole.toLowerCase()) {
           localStorage.removeItem('token');
           localStorage.removeItem('role');
           localStorage.removeItem('id_user');
           localStorage.removeItem('id_eskul');
-
-          window.location.href =
-            '/login';
-
+          window.location.href = '/login';
           return;
-
         }
-
       } catch (error) {
-
-        console.error(
-          'Gagal memverifikasi token:',
-          error
-        );
-
+        console.error('Gagal memverifikasi token:', error);
       }
-
     };
 
-
     cekToken();
-
   }, []);
 
-
-  // ======================================================
-  // ROUTES
-  // ======================================================
-
   return (
-
     <Router>
-
-      <div
-        className="
-          min-h-screen
-          bg-gray-50
-          dark:bg-gray-950
-          text-gray-800
-          dark:text-gray-100
-          transition-colors
-          duration-300
-        "
-      >
-
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
         <Routes>
 
+          {/* Rute Umum & Autentikasi */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
-          {/* Rute Dashboard Spesifik Berdasarkan Role & Cadangan Umum */}
-          <Route path="/Dashboard" element={<StudentDashboard />} />
-          <Route path="/admin/Dashboard" element={<AdminRoute><StudentDashboard /></AdminRoute>} />
-          <Route path="/pembina/Dashboard" element={<StudentDashboard />} />
-          <Route path="/siswa/Dashboard" element={<StudentDashboard />} />
+          {/* Rute Dashboard Berdasarkan Role */}
+          <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
+          <Route path="/pembina/dashboard" element={<AdminOrPembinaRoute><Dashboard /></AdminOrPembinaRoute>} />
+          <Route path="/siswa/dashboard" element={<StudentRoute><DashboardSiswa /></StudentRoute>} />
+
+          {/* Rute Cadangan/Universal Dashboard (Dialihkan otomatis jika diakses langsung) */}
+          <Route path="/dashboard" element={<Navigate to="/login" replace />} />
+
+          {/* Rute Halaman Jadwal Eskul */}
+          <Route path="/jadwal" element={<JadwalEskul />} />
 
           {/* Rute Admin Lainnya */}
           <Route path="/admin/kelola-pembina" element={<AdminRoute><KelolaPembina /></AdminRoute>} />
@@ -348,18 +236,15 @@ function App() {
           <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
           <Route path="/eskul/:namaEskul/galeri/upload" element={<GaleriUploadFoto />} />
           <Route path="/eskul/:namaEskul/galeri/:idGaleri" element={<GaleriFotoDetail />} />
-          <Route path="/eskul/:namaEskul/siswa/tambah" element={<TambahSiswaManual />} />
-          <Route path="/eskul/:namaEskul/siswa/edit/:idPendaftaran" element={<EditSiswaManual />} />
+          <Route path="/eskul/:namaEskul/siswa/tambah" element={<AdminOrPembinaRoute><TambahSiswaManual /></AdminOrPembinaRoute>} />
+          <Route path="/eskul/:namaEskul/siswa/edit/:idPendaftaran" element={<AdminOrPembinaRoute><EditSiswaManual /></AdminOrPembinaRoute>} />
 
           {/* Fallback jika rute tidak ditemukan */}
           <Route path="*" element={<Navigate to="/login" replace />} />
 
         </Routes>
-
       </div>
-
     </Router>
-
   );
 }
 
