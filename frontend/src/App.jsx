@@ -29,6 +29,31 @@ import EditSiswaManual from './pages/EditSiswaManual';
 import ManajemenKelas from './pages/ManajemenKelas';
 import DataUser from './pages/DataUser';
 import JadwalEskul from './pages/JadwalEskul';
+import LaporanEskul from './pages/LaporanEskul'; // nama file harus: LaporanEskul.jsx
+
+
+// ======================================================
+// HELPER: HAPUS SESI
+// ======================================================
+
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('id_user');
+  localStorage.removeItem('id_eskul');
+}
+
+
+// ======================================================
+// HELPER: DASHBOARD SESUAI ROLE
+// ======================================================
+
+function getDashboardPath(role) {
+  if (role === 'ADMIN') return '/admin/dashboard';
+  if (role === 'PEMBINA') return '/pembina/dashboard';
+  if (role === 'SISWA') return '/siswa/dashboard';
+  return null;
+}
 
 
 // ======================================================
@@ -51,11 +76,15 @@ function AdminRoute({ children }) {
   }
 
   if (role !== 'ADMIN') {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('id_user');
-    localStorage.removeItem('id_eskul');
+    // Role valid tapi salah halaman -> arahkan ke dashboard miliknya, tanpa logout
+    const ownDashboard = getDashboardPath(role);
 
+    if (ownDashboard) {
+      return <Navigate to={ownDashboard} replace />;
+    }
+
+    // Role tidak dikenal -> sesi tidak valid
+    clearSession();
     return (
       <Navigate
         to="/login"
@@ -89,11 +118,15 @@ function AdminOrPembinaRoute({ children }) {
   }
 
   if (role !== 'ADMIN' && role !== 'PEMBINA') {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('id_user');
-    localStorage.removeItem('id_eskul');
+    // Role valid tapi salah halaman -> arahkan ke dashboard miliknya, tanpa logout
+    const ownDashboard = getDashboardPath(role);
 
+    if (ownDashboard) {
+      return <Navigate to={ownDashboard} replace />;
+    }
+
+    // Role tidak dikenal -> sesi tidak valid
+    clearSession();
     return (
       <Navigate
         to="/login"
@@ -126,7 +159,7 @@ function StudentRoute({ children }) {
     );
   }
 
-  // Jika admin/pembina mencoba masuk ke halaman siswa murni, bisa diarahkan ke dashboard mereka
+  // Jika admin/pembina mencoba masuk ke halaman siswa, arahkan ke dashboard mereka
   if (role === 'ADMIN') {
     return <Navigate to="/admin/dashboard" replace />;
   }
@@ -147,6 +180,7 @@ function App() {
   // TERAPKAN TEMA YANG TERSIMPAN
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
+
     if (savedTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -163,11 +197,9 @@ function App() {
       try {
         const result = await verifyToken();
 
-        if (!result.valid) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
+        // Token tidak valid
+        if (!result?.valid) {
+          clearSession();
           window.location.href = '/login';
           return;
         }
@@ -175,20 +207,16 @@ function App() {
         const tokenRole = result.data?.role;
         const storedRole = localStorage.getItem('role');
 
+        // Role tidak lengkap
         if (!tokenRole || !storedRole) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
+          clearSession();
           window.location.href = '/login';
           return;
         }
 
+        // Role di token berbeda dengan role di localStorage
         if (tokenRole.toLowerCase() !== storedRole.toLowerCase()) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
+          clearSession();
           window.location.href = '/login';
           return;
         }
@@ -209,7 +237,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          
+
           {/* Rute Dashboard Berdasarkan Role */}
           <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
           <Route path="/pembina/dashboard" element={<AdminOrPembinaRoute><Dashboard /></AdminOrPembinaRoute>} />
@@ -226,15 +254,16 @@ function App() {
           <Route path="/admin/manajemen-kelas" element={<AdminRoute><ManajemenKelas /></AdminRoute>} />
           <Route path="/admin/pendaftar" element={<AdminRoute><PendaftarEskul /></AdminRoute>} />
           <Route path="/admin/data-user" element={<AdminRoute><DataUser /></AdminRoute>} />
-          
-          {/* Rute Kelola Eskul (Bisa diakses Admin & Pembina) */}
+
+          {/* Rute Admin & Pembina */}
           <Route path="/admin/kelola-eskul" element={<AdminOrPembinaRoute><KelolaEskul /></AdminOrPembinaRoute>} />
-          
+          <Route path="/admin/laporan-eskul/:id" element={<AdminOrPembinaRoute><LaporanEskul /></AdminOrPembinaRoute>} />
+
           {/* Rute Ekstrakurikuler Umum */}
           <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
           <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
           <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
-          <Route path="/eskul/:namaEskul/galeri/upload" element={<GaleriUploadFoto />} />
+          <Route path="/eskul/:namaEskul/galeri/upload" element={<AdminOrPembinaRoute><GaleriUploadFoto /></AdminOrPembinaRoute>} />
           <Route path="/eskul/:namaEskul/galeri/:idGaleri" element={<GaleriFotoDetail />} />
           <Route path="/eskul/:namaEskul/siswa/tambah" element={<AdminOrPembinaRoute><TambahSiswaManual /></AdminOrPembinaRoute>} />
           <Route path="/eskul/:namaEskul/siswa/edit/:idPendaftaran" element={<AdminOrPembinaRoute><EditSiswaManual /></AdminOrPembinaRoute>} />

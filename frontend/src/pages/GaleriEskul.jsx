@@ -7,6 +7,7 @@ import {
   getGaleriEskul,
   hapusGaleriEskul,
   setFotoUtamaGaleri,
+  updateGaleriEskul
 } from '../services/api';
 import {
   Award,
@@ -22,17 +23,11 @@ export default function GaleriEskul() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
 
-  const cleanNamaEskul = namaEskul
-    ? namaEskul.replace(/-/g, ' ')
-    : '';
+  const cleanNamaEskul = namaEskul ? namaEskul.replace(/-/g, ' ') : '';
 
   const formatNamaEskul = cleanNamaEskul
     .split(' ')
-    .map(
-      word =>
-        word.charAt(0).toUpperCase() +
-        word.slice(1)
-    )
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
   const [isAdmin, setIsAdmin] = useState(false);
@@ -41,7 +36,6 @@ export default function GaleriEskul() {
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
   const [daftarFoto, setDaftarFoto] = useState([]);
 
-  // State untuk filter kategori aktif
   const [activeTab, setActiveTab] = useState('Semua');
 
   const [settingUtama, setSettingUtama] = useState(null);
@@ -51,16 +45,20 @@ export default function GaleriEskul() {
   const [editKategori, setEditKategori] = useState('Kegiatan');
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const formatTanggal = tgl => {
+    if (!tgl) return 'Baru';
+    return new Date(tgl).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   useEffect(() => {
-    const roleUser = (
-      localStorage.getItem('role') || ''
-    ).toUpperCase();
+    const roleUser = (localStorage.getItem('role') || '').toUpperCase();
 
     setIsAdmin(roleUser === 'ADMIN');
-    setIsStaff(
-      roleUser === 'ADMIN' ||
-      roleUser === 'PEMBINA'
-    );
+    setIsStaff(roleUser === 'ADMIN' || roleUser === 'PEMBINA');
 
     async function fetchData() {
       setLoading(true);
@@ -92,13 +90,7 @@ export default function GaleriEskul() {
         const formattedData = (fotoData || []).map(item => ({
           ...item,
           kategori: item.kategori || 'Lainnya',
-          tanggal: item.created_at
-            ? new Date(item.created_at).toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              })
-            : 'Baru'
+          tanggal: formatTanggal(item.created_at)
         }));
 
         setDaftarFoto(formattedData);
@@ -177,17 +169,36 @@ export default function GaleriEskul() {
     if (!editTarget) return;
 
     setSavingEdit(true);
-    setTimeout(() => {
+
+    const formData = new FormData();
+    formData.append('keterangan', editKeterangan);
+    formData.append('kategori', editKategori);
+
+    if (editFile) {
+      formData.append('foto', editFile);
+    }
+
+    const result = await updateGaleriEskul(editTarget.id_galeri, formData);
+
+    setSavingEdit(false);
+
+    if (result.success) {
       setDaftarFoto(prev =>
         prev.map(f =>
           f.id_galeri === editTarget.id_galeri
-            ? { ...f, keterangan: editKeterangan, kategori: editKategori }
+            ? {
+                ...f,
+                keterangan: editKeterangan,
+                kategori: editKategori,
+                foto: result.data?.data?.foto || f.foto
+              }
             : f
         )
       );
-      setSavingEdit(false);
       handleTutupEdit();
-    }, 500);
+    } else {
+      alert('Gagal menyimpan perubahan: ' + result.error);
+    }
   };
 
   const handleLihatFoto = idGaleri => {
@@ -198,9 +209,7 @@ export default function GaleriEskul() {
     if (!foto) return null;
     return foto.startsWith('http')
       ? foto
-      : `http://localhost:5000/${
-          foto.startsWith('/') ? foto.slice(1) : foto
-        }`;
+      : `http://localhost:5000/${foto.startsWith('/') ? foto.slice(1) : foto}`;
   };
 
   const daftarFotoFiltered = daftarFoto.filter(item => {
@@ -265,7 +274,7 @@ export default function GaleriEskul() {
 
         {/* TAB FILTER KATEGORI */}
         <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none">
-          {['Semua', 'Kegiatan', 'Upacara', 'Pelatihan', 'Lainnya'].map((tab) => (
+          {['Semua', 'Kegiatan', 'Upacara', 'Pelatihan', 'Lainnya'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -401,6 +410,18 @@ export default function GaleriEskul() {
                   src={getFotoUrl(editTarget.foto)}
                   alt="Foto saat ini"
                   className="w-full h-44 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
+                  Ganti Foto (opsional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setEditFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/30 file:text-emerald-700 dark:file:text-emerald-300 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/50 cursor-pointer"
                 />
               </div>
 
