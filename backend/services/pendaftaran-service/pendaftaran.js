@@ -124,6 +124,52 @@ router.get('/', verifyToken, async (req, res) => {
 
 
 // ======================================================
+// GET: PENDAFTARAN MILIK SISWA YANG SEDANG LOGIN
+// (dipakai halaman "Pendaftaran Saya")
+// ======================================================
+
+router.get('/saya', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id_user || req.user.id;
+
+    const pendaftaran = await prisma.pendaftaran.findMany({
+      where: {
+        siswa: {
+          id_user: Number(userId)
+        }
+      },
+      include: {
+        ekstrakurikuler: true,
+        siswa: {
+          include: {
+            kelasData: true
+          }
+        }
+      },
+      orderBy: {
+        tanggal: 'desc'
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Berhasil mengambil pendaftaran saya',
+      data: pendaftaran
+    });
+
+  } catch (error) {
+    console.error('ERROR GET PENDAFTARAN SAYA:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data pendaftaran',
+      error: error.message
+    });
+  }
+});
+
+
+// ======================================================
 // GET: DOWNLOAD EXCEL
 // ======================================================
 

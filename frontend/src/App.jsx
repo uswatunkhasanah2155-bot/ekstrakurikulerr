@@ -34,6 +34,11 @@ import LaporanEskul from './pages/LaporanEskul';
 
 // ======================================================
 // HELPER: HAPUS SESI
+import PendaftaranSaya from './pages/PendaftaranSaya';
+
+
+// ======================================================
+// HELPER: HAPUS DATA SESI LOGIN
 // ======================================================
 
 function clearSession() {
@@ -239,8 +244,7 @@ function App() {
       try {
         const result = await verifyToken();
 
-        // Token tidak valid
-        if (!result?.valid) {
+        if (!result.valid) {
           clearSession();
           window.location.href = '/login';
           return;
@@ -290,6 +294,9 @@ function App() {
 
           {/* Rute Halaman Jadwal Eskul */}
           <Route path="/jadwal" element={<JadwalEskul />} />
+
+          {/* Rute Halaman Pendaftaran Saya (khusus siswa) */}
+          <Route path="/pendaftaran-saya" element={<StudentRoute><PendaftaranSaya /></StudentRoute>} />
 
           {/* Rute Admin Lainnya */}
           <Route path="/admin/kelola-pembina" element={<AdminRoute><KelolaPembina /></AdminRoute>} />

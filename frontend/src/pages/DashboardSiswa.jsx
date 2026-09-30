@@ -2,25 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { getDaftarEskul } from '../services/api';
-import { BookOpen, Search, Clock, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, Clock, User, AlertCircle, Loader2 } from 'lucide-react';
+import logoSekolah from '../assets/sesco logo.png';
 
 export default function DashboardSiswa() {
   const [daftarEskul, setDaftarEskul] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [username, setUsername] = useState('Uswa'); // Default diset 'Uswa' sesuai akunmu
+  // Nama diambil dari user yang sedang login (disimpan di localStorage saat login)
+  const [username, setUsername] = useState(localStorage.getItem('username') || 'Siswa');
 
   const BACKEND_URL = 'http://localhost:5000';
 
   useEffect(() => {
-    // Cek jika username tersimpan di localStorage
     const storedUsername = localStorage.getItem('username');
     if (storedUsername) {
       setUsername(storedUsername);
-    } else {
-      // Jika belum ada di localStorage, simpan default 'uswa' agar konsisten
-      localStorage.setItem('username', 'uswa');
     }
 
     async function fetchData() {
@@ -51,20 +49,33 @@ export default function DashboardSiswa() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        
+      <main className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
+
         {/* Banner Sapaan dengan Username */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 sm:p-8 shadow-lg">
-          <div className="relative z-10 max-w-2xl space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2 capitalize">
-              Halo, {username}! <span className="text-2xl">👋</span>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400 dark:from-blue-800 dark:via-blue-700 dark:to-sky-600 text-white p-6 sm:p-8 md:min-h-[250px] flex items-center shadow-md">
+          <div className="relative z-10 max-w-2xl md:max-w-[46%] space-y-3">
+            <h1 className="text-3xl sm:text-4xl font-extrabold flex items-center gap-2 capitalize drop-shadow-md">
+              Halo, {username}! <span className="text-3xl">👋</span>
             </h1>
-            <p className="text-blue-100 text-sm sm:text-base">
-              Selamat datang di dashboard siswa. Temukan ekstrakurikuler yang sesuai dengan minat dan bakatmu.
+            <p className="text-white text-sm sm:text-base font-semibold leading-relaxed drop-shadow">
+              Jelajahi berbagai ekstrakurikuler, temukan minat dan bakatmu, asah kemampuanmu, dan jadikan setiap kegiatan sebagai langkah untuk meraih prestasi dan pengalaman yang membanggakan!
             </p>
           </div>
-          <div className="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4 pointer-events-none">
-            <BookOpen className="w-64 h-64" />
+
+          {/* Gambar landscape memenuhi sisi kanan banner (87% lebar banner, penuh atas-bawah sampai tepi kanan), sisi kiri memudar transparan */}
+          <div
+            className="hidden md:block absolute inset-y-0 right-0 w-[87%] pointer-events-none select-none"
+            style={{
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 28%, rgba(0,0,0,0.6) 52%, black 78%)',
+              maskImage: 'linear-gradient(to right, transparent 0%, transparent 28%, rgba(0,0,0,0.6) 52%, black 78%)',
+            }}
+          >
+            <div className="absolute inset-0 bg-blue-50/95" />
+            <img
+              src={logoSekolah}
+              alt="Logo SMK Negeri Compreng"
+              className="absolute inset-0 w-full h-full object-contain p-1 pl-[28%]"
+            />
           </div>
         </div>
 
@@ -145,7 +156,7 @@ export default function DashboardSiswa() {
                       </div>
 
                       {/* Bagian Tengah: Jadwal & Pembina */}
-                      <div className="w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-3 md:pt-0 md:px-6 space-y-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                      <div className="w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-3 md:pt-0 md:px-6 md:min-w-[260px] space-y-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-blue-500 shrink-0" />
                           <span className="font-medium text-gray-700 dark:text-gray-200">
@@ -156,16 +167,6 @@ export default function DashboardSiswa() {
                           <User className="w-4 h-4 text-gray-400 shrink-0" />
                           <span>Pembina: {item.pembina || '-'}</span>
                         </div>
-                      </div>
-
-                      {/* Sisi Kanan: Tombol Aksi */}
-                      <div className="w-full md:w-auto flex items-center gap-2 pt-2 md:pt-0 justify-end">
-                        <button className="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all">
-                          Lihat Detail
-                        </button>
-                        <button className="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20 transition-all">
-                          Daftar
-                        </button>
                       </div>
                     </div>
                   );

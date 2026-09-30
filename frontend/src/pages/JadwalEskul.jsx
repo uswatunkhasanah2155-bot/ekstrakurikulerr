@@ -1,8 +1,42 @@
 // src/pages/JadwalEskul.jsx
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, Clock, User, AlertCircle, Loader2, ChevronRight } from 'lucide-react';
+import {
+  CalendarDays,
+  Clock,
+  User,
+  AlertCircle,
+  Loader2,
+  Tent,
+  Flag,
+  Shield,
+  Music,
+  Swords,
+  Sparkles,
+  Goal,
+  Trophy,
+} from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { getDaftarEskul } from '../services/api';
+
+// Peta ikon untuk setiap ekstrakurikuler, disamakan dengan dropdown di Navbar
+const ICON_MAP = {
+  pramuka: Tent,
+  paskibra: Flag,
+  pasustar: Shield,
+  'marching band': Music,
+  'marching-band': Music,
+  silat: Swords,
+  'seni tari': Sparkles,
+  'seni-tari': Sparkles,
+  futsal: Goal,
+};
+
+// Ambil ikon berdasarkan nama eskul, fallback ke ikon Trophy jika tidak ditemukan
+function getIconEskul(namaEskul) {
+  if (!namaEskul) return Trophy;
+  const key = namaEskul.toLowerCase().trim();
+  return ICON_MAP[key] || Trophy;
+}
 
 export default function JadwalEskul() {
   const [dataJadwal, setDataJadwal] = useState([]);
@@ -44,7 +78,8 @@ export default function JadwalEskul() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      {/* Lebar penuh layar (sebelumnya max-w-7xl mx-auto) */}
+      <main className="w-full px-4 sm:px-6 lg:px-10 py-8">
         {/* Header Section */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1">
@@ -108,6 +143,8 @@ export default function JadwalEskul() {
                     : `${BACKEND_URL}${fotoPath}`
                   : null;
 
+                const IconEskul = getIconEskul(item.nama_eskul);
+
                 return (
                   <div
                     key={item.id_eskul || item.nama_eskul}
@@ -131,17 +168,18 @@ export default function JadwalEskul() {
                         ) : null}
 
                         <div
-                          className={`w-full h-full absolute inset-0 items-center justify-center bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold text-lg ${
+                          className={`w-full h-full absolute inset-0 items-center justify-center bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 ${
                             imageSrc ? 'hidden' : 'flex'
                           }`}
                           style={{ display: imageSrc ? 'none' : 'flex' }}
                         >
-                          {item.nama_eskul ? item.nama_eskul.charAt(0) : 'E'}
+                          <IconEskul className="w-8 h-8 sm:w-10 sm:h-10" />
                         </div>
                       </div>
 
                       <div className="space-y-1.5 flex-1">
-                        <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+                        <h3 className="flex items-center gap-2 font-bold text-base sm:text-lg text-gray-900 dark:text-white">
+                          <IconEskul className="w-4 h-4 text-blue-500 shrink-0" />
                           {item.nama_eskul}
                         </h3>
                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
@@ -156,7 +194,7 @@ export default function JadwalEskul() {
                     </div>
 
                     {/* Sisi Kanan: Jadwal dan Pembina */}
-                    <div className="w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-3 md:pt-0 md:pl-6 flex flex-col sm:flex-row md:flex-col gap-2 sm:gap-4 md:gap-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300 justify-between items-start md:items-end">
+                    <div className="w-full md:w-auto md:min-w-[260px] border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-3 md:pt-0 md:pl-6 flex flex-col sm:flex-row md:flex-col gap-2 sm:gap-4 md:gap-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300 justify-between items-start md:items-end">
                       <div className="space-y-1.5 w-full">
                         {/* Jadwal */}
                         <div className="flex items-center gap-2">
@@ -172,8 +210,8 @@ export default function JadwalEskul() {
                           <span>Pembina: {item.pembina || '-'}</span>
                         </div>
                       </div>
-                      </div>
                     </div>
+                  </div>
                 );
               })
             ) : (
