@@ -29,6 +29,20 @@ import EditSiswaManual from './pages/EditSiswaManual';
 import ManajemenKelas from './pages/ManajemenKelas';
 import DataUser from './pages/DataUser';
 import JadwalEskul from './pages/JadwalEskul';
+import PendaftaranSaya from './pages/PendaftaranSaya';
+
+
+// ======================================================
+// HELPER: HAPUS DATA SESI LOGIN
+// ======================================================
+
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('id_user');
+  localStorage.removeItem('id_eskul');
+  localStorage.removeItem('username');
+}
 
 
 // ======================================================
@@ -51,10 +65,7 @@ function AdminRoute({ children }) {
   }
 
   if (role !== 'ADMIN') {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('id_user');
-    localStorage.removeItem('id_eskul');
+    clearSession();
 
     return (
       <Navigate
@@ -89,10 +100,7 @@ function AdminOrPembinaRoute({ children }) {
   }
 
   if (role !== 'ADMIN' && role !== 'PEMBINA') {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('id_user');
-    localStorage.removeItem('id_eskul');
+    clearSession();
 
     return (
       <Navigate
@@ -164,10 +172,7 @@ function App() {
         const result = await verifyToken();
 
         if (!result.valid) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
+          clearSession();
           window.location.href = '/login';
           return;
         }
@@ -176,19 +181,13 @@ function App() {
         const storedRole = localStorage.getItem('role');
 
         if (!tokenRole || !storedRole) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
+          clearSession();
           window.location.href = '/login';
           return;
         }
 
         if (tokenRole.toLowerCase() !== storedRole.toLowerCase()) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('id_user');
-          localStorage.removeItem('id_eskul');
+          clearSession();
           window.location.href = '/login';
           return;
         }
@@ -220,6 +219,9 @@ function App() {
 
           {/* Rute Halaman Jadwal Eskul */}
           <Route path="/jadwal" element={<JadwalEskul />} />
+
+          {/* Rute Halaman Pendaftaran Saya (khusus siswa) */}
+          <Route path="/pendaftaran-saya" element={<StudentRoute><PendaftaranSaya /></StudentRoute>} />
 
           {/* Rute Admin Lainnya */}
           <Route path="/admin/kelola-pembina" element={<AdminRoute><KelolaPembina /></AdminRoute>} />

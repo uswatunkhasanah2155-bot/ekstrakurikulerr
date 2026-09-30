@@ -72,6 +72,7 @@ export default function Login() {
       localStorage.setItem('role', data.role);
       localStorage.setItem('id_user', data.id_user || '');
       localStorage.setItem('id_eskul', data.id_eskul || '');
+      localStorage.setItem('username', data.username || formData.username);
 
       setSuccessMessage('Login berhasil! Mengalihkan...');
 

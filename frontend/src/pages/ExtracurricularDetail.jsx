@@ -269,7 +269,8 @@ export default function ExtracurricularDetail() {
         {/* Sidebar HANYA dirender jika user adalah Admin atau Pembina */}
         {canManage && <Sidebar />}
 
-        <main className="flex-1 max-w-7xl mx-auto p-6 overflow-y-auto">
+        {/* Lebar penuh layar (sebelumnya max-w-7xl mx-auto) */}
+        <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-10 py-6 overflow-y-auto">
 
           {/* ==============================
               HEADER (KEMBALI, JUDUL, & DOWNLOAD)
