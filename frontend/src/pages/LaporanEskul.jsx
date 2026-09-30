@@ -1,5 +1,6 @@
 // src/pages/LaporanEskul.jsx
 import React, { useState, useEffect } from 'react';
+import { fotoUrl } from '../utils/fotoUrl';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, ImageIcon, X } from 'lucide-react';
 import {
@@ -51,10 +52,7 @@ function formatJam(d) {
 }
 
 function getFotoUrl(foto) {
-  if (!foto) return null;
-  return foto.startsWith('http')
-    ? foto
-    : `http://localhost:5000/${foto.startsWith('/') ? foto.slice(1) : foto}`;
+  return fotoUrl(foto);
 }
 
 // Mengembalikan 'Hari ini' / 'Kemarin' / null

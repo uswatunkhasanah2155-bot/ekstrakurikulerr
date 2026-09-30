@@ -1,5 +1,6 @@
 // src/pages/GaleriFotoDetail.jsx
 import React, { useState, useEffect } from 'react';
+import { fotoUrl } from '../utils/fotoUrl';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { getDaftarEskul, getGaleriEskul } from '../services/api';
@@ -73,12 +74,7 @@ export default function GaleriFotoDetail() {
     }
   }, [daftarFoto, idGaleri]);
 
-  const getFotoUrl = foto => {
-    if (!foto) return null;
-    return foto.startsWith('http')
-      ? foto
-      : `http://localhost:5000/${foto.startsWith('/') ? foto.slice(1) : foto}`;
-  };
+  const getFotoUrl = foto => fotoUrl(foto);
 
   const indexAktif = daftarFoto.findIndex(
     f => String(f.id_galeri) === String(idGaleri)

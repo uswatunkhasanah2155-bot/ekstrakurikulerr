@@ -1,5 +1,6 @@
 // src/pages/ExtracurricularDetail.jsx
 import React, { useState, useEffect } from 'react';
+import { fotoUrl } from '../utils/fotoUrl';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getSiswaByEskul,
@@ -360,25 +361,9 @@ export default function ExtracurricularDetail() {
     o => o.value === genderFilter
   )?.label;
 
-  const fotoCoverUrl = fotoUtamaGaleri
-    ? fotoUtamaGaleri.foto.startsWith('http')
-      ? fotoUtamaGaleri.foto
-      : `http://localhost:5000/${
-          fotoUtamaGaleri.foto.startsWith('/')
-            ? fotoUtamaGaleri.foto.slice(1)
-            : fotoUtamaGaleri.foto
-        }`
-    : null;
+  const fotoCoverUrl = fotoUrl(fotoUtamaGaleri?.foto);
 
-  const fotoLogoUrl = currentEskulDetail?.foto
-    ? currentEskulDetail.foto.startsWith('http')
-      ? currentEskulDetail.foto
-      : `http://localhost:5000/${
-          currentEskulDetail.foto.startsWith('/')
-            ? currentEskulDetail.foto.slice(1)
-            : currentEskulDetail.foto
-        }`
-    : null;
+  const fotoLogoUrl = fotoUrl(currentEskulDetail?.foto);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 flex flex-col relative transition-colors duration-300">
@@ -683,21 +668,7 @@ export default function ExtracurricularDetail() {
                             <td className="py-3 px-4">
                               {siswa.foto ? (
                                 <img
-                                  src={
-                                    siswa.foto.startsWith(
-                                      'http'
-                                    )
-                                      ? siswa.foto
-                                      : `http://localhost:5000/${
-                                          siswa.foto.startsWith(
-                                            '/'
-                                          )
-                                            ? siswa.foto.slice(
-                                                1
-                                              )
-                                            : siswa.foto
-                                        }`
-                                  }
+                                  src={fotoUrl(siswa.foto)}
                                   alt={siswa.nama}
                                   className="w-20 h-20 object-cover rounded-full border-2 border-gray-200 dark:border-gray-700 shadow-sm"
                                   onError={e => {

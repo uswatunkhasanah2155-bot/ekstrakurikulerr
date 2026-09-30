@@ -1,5 +1,6 @@
 // src/pages/PendaftaranSaya.jsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { fotoUrl } from '../utils/fotoUrl';
 import { Link } from 'react-router-dom';
 import {
   ClipboardList,
@@ -50,11 +51,7 @@ const LANGKAH = [
 // Ubah nama eskul jadi slug URL, contoh: "Marching Band" -> "marching-band"
 const toSlug = (nama = '') => nama.toLowerCase().trim().replace(/\s+/g, '-');
 
-const buildImageUrl = (foto) => {
-  if (!foto) return null;
-  if (foto.startsWith('http')) return foto;
-  return `${BACKEND_URL}/${foto.startsWith('/') ? foto.slice(1) : foto}`;
-};
+const buildImageUrl = (foto) => fotoUrl(foto);
 
 const formatTanggal = (tanggal) => {
   if (!tanggal) return '-';

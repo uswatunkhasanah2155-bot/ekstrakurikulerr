@@ -4,7 +4,7 @@ import { verifyToken } from '../../middleware/authMiddleware.js';
 import { handleDownloadExcelPendaftar } from './DownloadExcelPendaftar.js';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 
 const router = express.Router();
 
@@ -12,23 +12,8 @@ const router = express.Router();
 // KONFIGURASI MULTER
 // ======================================================
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/siswa/');
-  },
-
-  filename: (req, file, cb) => {
-    const uniqueSuffix =
-      Date.now() + '-' + Math.round(Math.random() * 1E9);
-
-    cb(
-      null,
-      'siswa-' +
-        uniqueSuffix +
-        path.extname(file.originalname)
-    );
-  }
-});
+// File ditahan di memori lalu dikirim ke Cloudinary
+const storage = multer.memoryStorage();
 
 // ======================================================
 // VALIDASI TIPE FILE
@@ -222,9 +207,7 @@ router.post(
       }
 
 
-      const fotoPath = req.file
-        ? `uploads/siswa/${req.file.filename}`
-        : null;
+      let fotoPath = null;
 
 
       // ==================================================
@@ -388,6 +371,16 @@ router.post(
               'Siswa sudah terdaftar di ekstrakurikuler ini!'
           });
         }
+      }
+
+
+      // ==================================================
+      // UPLOAD FOTO KE CLOUDINARY
+      // (dilakukan setelah semua validasi lolos)
+      // ==================================================
+
+      if (req.file) {
+        fotoPath = await uploadFoto(req.file, 'siswa');
       }
 
 
@@ -563,9 +556,7 @@ router.put(
       }
 
 
-      const fotoPath = req.file
-        ? `uploads/siswa/${req.file.filename}`
-        : null;
+      const adaFotoBaru = Boolean(req.file);
 
 
       if (
@@ -574,7 +565,7 @@ router.put(
           nama_siswa ||
           id_kelas ||
           jenis_kelamin ||
-          fotoPath
+          adaFotoBaru
         )
       ) {
 
@@ -600,41 +591,12 @@ router.put(
         }
 
 
-        // Kalau mengganti foto,
-        // foto lama juga dihapus dari folder.
+        // Upload foto baru ke Cloudinary
+        // (setelah validasi kelas lolos)
 
-        if (
-          fotoPath &&
-          pendaftaranCek.siswa?.foto
-        ) {
-
-          const fotoLama =
-            path.basename(
-              pendaftaranCek.siswa.foto
-            );
-
-          const filePathLama =
-            path.join(
-              process.cwd(),
-              'uploads',
-              'siswa',
-              fotoLama
-            );
-
-          if (
-            fs.existsSync(filePathLama)
-          ) {
-
-            fs.unlinkSync(
-              filePathLama
-            );
-
-            console.log(
-              'Foto lama berhasil dihapus:',
-              filePathLama
-            );
-          }
-        }
+        const fotoPath = adaFotoBaru
+          ? await uploadFoto(req.file, 'siswa')
+          : null;
 
 
         await prisma.siswa.update({
@@ -665,6 +627,11 @@ router.put(
             })
           }
         });
+
+        // Foto lama dihapus setelah database berhasil diperbarui
+        if (fotoPath && pendaftaranCek.siswa?.foto) {
+          await hapusFoto(pendaftaranCek.siswa.foto);
+        }
       }
 
 
@@ -765,6 +732,8 @@ router.delete(
       const fotoSiswa =
         pendaftaranCek.siswa?.foto;
 
+      let siswaDihapus = false;
+
 
       await prisma.$transaction(
         async tx => {
@@ -808,6 +777,8 @@ router.delete(
                     idSiswa
                 }
               });
+
+              siswaDihapus = true;
             }
           }
         }
@@ -815,44 +786,13 @@ router.delete(
 
 
       // ==================================================
-      // HAPUS FOTO DARI FOLDER uploads/siswa
+      // HAPUS FOTO SISWA
+      // Hanya jika data siswa ikut terhapus
+      // (siswa tidak punya pendaftaran lain)
       // ==================================================
 
-      if (
-        idSiswa &&
-        fotoSiswa
-      ) {
-
-        const namaFile =
-          path.basename(fotoSiswa);
-
-        const filePath =
-          path.join(
-            process.cwd(),
-            'uploads',
-            'siswa',
-            namaFile
-          );
-
-
-        if (
-          fs.existsSync(filePath)
-        ) {
-
-          fs.unlinkSync(filePath);
-
-          console.log(
-            'Foto siswa berhasil dihapus:',
-            filePath
-          );
-
-        } else {
-
-          console.log(
-            'File foto tidak ditemukan:',
-            filePath
-          );
-        }
+      if (siswaDihapus && fotoSiswa) {
+        await hapusFoto(fotoSiswa);
       }
 
 

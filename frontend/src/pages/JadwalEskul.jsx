@@ -1,5 +1,6 @@
 // src/pages/JadwalEskul.jsx
 import React, { useState, useEffect } from 'react';
+import { fotoUrl } from '../utils/fotoUrl';
 import {
   CalendarDays,
   Clock,
@@ -47,7 +48,6 @@ export default function JadwalEskul() {
   const daysList = ['Semua', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
   // Ganti URL ini sesuai dengan alamat server backend kamu jika portnya berbeda
-  const BACKEND_URL = 'http://localhost:5000';
 
   useEffect(() => {
     fetchJadwalEskul();
@@ -137,11 +137,7 @@ export default function JadwalEskul() {
             {filteredData.length > 0 ? (
               filteredData.map((item) => {
                 const fotoPath = item.foto || item.logo || item.image || item.gambar;
-                const imageSrc = fotoPath
-                  ? fotoPath.startsWith('http')
-                    ? fotoPath
-                    : `${BACKEND_URL}${fotoPath}`
-                  : null;
+                const imageSrc = fotoUrl(fotoPath);
 
                 const IconEskul = getIconEskul(item.nama_eskul);
 

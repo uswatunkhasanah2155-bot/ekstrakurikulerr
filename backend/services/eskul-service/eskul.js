@@ -1,21 +1,11 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import { handleDownloadExcel } from './DownloadExcel.js';
 import upload from '../../middleware/upload.js'; // Middleware multer untuk upload file
+import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 
 const router = express.Router();
-
-// Helper: hapus file foto dari disk berdasarkan path relatif (misal /uploads/nama.jpeg)
-function hapusFileFoto(fotoPath) {
-  if (!fotoPath) return;
-  const fullPath = path.join(process.cwd(), fotoPath);
-  fs.unlink(fullPath, (err) => {
-    if (err) console.error("Gagal menghapus file foto:", err.message);
-  });
-}
 
 // GET: Mengambil semua data ekstrakurikuler
 router.get('/', async (req, res) => {
@@ -76,8 +66,8 @@ router.post('/', verifyToken, upload.single('foto'), async (req, res) => {
     }
     const slug = nama_eskul.trim().toLowerCase().replace(/[\s%20]+/g, '-');
 
-    // Jika ada file yang di-upload, simpan path relatifnya
-    const fotoPath = req.file ? `/uploads/${req.file.filename}` : null;
+    // Jika ada file, upload ke Cloudinary dan simpan path-nya (contoh: eskul/eskul-123.png)
+    const fotoPath = req.file ? await uploadFoto(req.file, 'eskul') : null;
 
     const eskulBaru = await prisma.ekstrakurikuler.create({
       data: {
@@ -132,23 +122,25 @@ router.put('/:id', verifyToken, upload.single('foto'), async (req, res) => {
       ...(jadwal !== undefined && { jadwal }),
     };
 
-    // Jika user mengupload file foto baru saat update, hapus foto lama dari disk agar tidak numpuk
+    // Jika ada foto baru: upload dulu, foto lama dihapus setelah database berhasil diperbarui
+    let fotoLama = null;
     if (req.file) {
       const eskulLama = await prisma.ekstrakurikuler.findUnique({
         where: { id_eskul: idEskul },
       });
 
-      if (eskulLama?.foto) {
-        hapusFileFoto(eskulLama.foto);
-      }
-
-      updateData.foto = `/uploads/${req.file.filename}`;
+      fotoLama = eskulLama?.foto || null;
+      updateData.foto = await uploadFoto(req.file, 'eskul');
     }
 
     const eskulUpdate = await prisma.ekstrakurikuler.update({
       where: { id_eskul: idEskul },
       data: updateData,
     });
+
+    if (fotoLama) {
+      await hapusFoto(fotoLama);
+    }
 
     res.json({
       success: true,
@@ -186,14 +178,21 @@ router.delete('/:id', verifyToken, async (req, res) => {
       where: { id_eskul: idEskul },
     });
 
+    // Foto galeri ikut terhapus di database (cascade), jadi catat pathnya dulu
+    const galeriEskul = await prisma.galeriEskul.findMany({
+      where: { id_eskul: idEskul },
+      select: { foto: true },
+    });
+
     await prisma.ekstrakurikuler.delete({
       where: { id_eskul: idEskul },
     });
 
-    // Hapus juga file foto dari disk kalau ada
+    // Hapus juga file foto (logo + galeri) kalau ada
     if (eskulCek?.foto) {
-      hapusFileFoto(eskulCek.foto);
+      await hapusFoto(eskulCek.foto);
     }
+    await Promise.all(galeriEskul.map((g) => hapusFoto(g.foto)));
 
     res.json({
       success: true,

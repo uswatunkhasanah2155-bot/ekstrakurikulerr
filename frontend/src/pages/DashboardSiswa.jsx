@@ -1,5 +1,6 @@
 // src/pages/DashboardSiswa.jsx
 import React, { useState, useEffect } from 'react';
+import { fotoUrl } from '../utils/fotoUrl';
 import Navbar from '../components/Navbar';
 import { getDaftarEskul } from '../services/api';
 import { Search, Clock, User, AlertCircle, Loader2 } from 'lucide-react';
@@ -12,8 +13,6 @@ export default function DashboardSiswa() {
   const [searchTerm, setSearchTerm] = useState('');
   // Nama diambil dari user yang sedang login (disimpan di localStorage saat login)
   const [username, setUsername] = useState(localStorage.getItem('username') || 'Siswa');
-
-  const BACKEND_URL = 'http://localhost:5000';
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
@@ -123,11 +122,7 @@ export default function DashboardSiswa() {
             <div className="space-y-3">
               {filteredEskul.length > 0 ? (
                 filteredEskul.map((item) => {
-                  const fotoSrc = item.foto
-                    ? item.foto.startsWith('http')
-                      ? item.foto
-                      : `${BACKEND_URL}/${item.foto.startsWith('/') ? item.foto.slice(1) : item.foto}`
-                    : null;
+                  const fotoSrc = fotoUrl(item.foto);
 
                   return (
                     <div

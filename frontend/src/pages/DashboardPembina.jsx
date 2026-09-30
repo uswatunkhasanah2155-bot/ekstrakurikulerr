@@ -35,6 +35,9 @@ const formatTanggal = (d) =>
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
+const keyTanggal = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 const normalStatus = (s) => {
   const v = String(s ?? '').toLowerCase();
   if (v.includes('tunggu') || v.includes('pending')) return 'menunggu';
@@ -73,6 +76,13 @@ const normalisasi = (item) => {
 
 const cardClass =
   'rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900';
+
+// Pilihan rentang waktu grafik (tombol, sama seperti halaman admin)
+const OPSI_RENTANG = [
+  { label: 'Hari Ini', value: 1 },
+  { label: '1 Minggu', value: 7 },
+  { label: '1 Bulan', value: 30 },
+];
 
 // ===============================
 // KOMPONEN
@@ -206,6 +216,22 @@ export default function DashboardPembina() {
 
   const grafikData = useMemo(() => {
     const hariIni = startOfDay(new Date());
+
+    // Hari Ini: dipecah per jam
+    if (rentang === 1) {
+      const keyHariIni = keyTanggal(hariIni);
+      return Array.from({ length: 24 }, (_, h) => ({
+        key: keyHariIni,
+        label: `${String(h).padStart(2, '0')}:00`,
+        jumlah: pendaftar.filter(
+          (p) =>
+            startOfDay(p.tanggal).getTime() === hariIni.getTime() &&
+            p.tanggal.getHours() === h
+        ).length,
+      }));
+    }
+
+    // 1 Minggu / 1 Bulan: per hari
     const hasil = [];
     for (let i = rentang - 1; i >= 0; i--) {
       const d = new Date(hariIni);
@@ -214,8 +240,11 @@ export default function DashboardPembina() {
         (p) => startOfDay(p.tanggal).getTime() === d.getTime()
       ).length;
       hasil.push({
-        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-        label: rentang <= 7 ? `${HARI[d.getDay()]} ${d.getDate()}` : `${d.getDate()}/${d.getMonth() + 1}`,
+        key: keyTanggal(d),
+        label:
+          rentang <= 7
+            ? `${HARI[d.getDay()]} ${d.getDate()}`
+            : `${d.getDate()}/${d.getMonth() + 1}`,
         jumlah,
       });
     }
@@ -434,21 +463,29 @@ export default function DashboardPembina() {
 
         {/* PERKEMBANGAN PENDAFTARAN */}
         <div className={`${cardClass} mb-6`}>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <TrendingUp className="h-4 w-4 text-blue-500" />
               Perkembangan Pendaftaran
             </div>
 
-            <select
-              value={rentang}
-              onChange={(e) => setRentang(Number(e.target.value))}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-            >
-              <option value={7}>7 Hari Terakhir</option>
-              <option value={14}>14 Hari Terakhir</option>
-              <option value={30}>30 Hari Terakhir</option>
-            </select>
+            {/* Tombol rentang waktu */}
+            <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+              {OPSI_RENTANG.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setRentang(o.value)}
+                  className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+                    rentang === o.value
+                      ? 'bg-cyan-500 text-white shadow'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="h-64 w-full [&_.recharts-wrapper]:outline-none [&_svg]:outline-none [&_*:focus]:outline-none">
@@ -484,7 +521,7 @@ export default function DashboardPembina() {
                   tick={{ fontSize: 11, fill: '#9ca3af' }}
                   axisLine={false}
                   tickLine={false}
-                  interval="preserveStartEnd"
+                  interval={rentang === 1 ? 2 : 'preserveStartEnd'}
                 />
                 <YAxis
                   allowDecimals={false}

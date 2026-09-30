@@ -1,11 +1,10 @@
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
+import { fotoUrl } from '../utils/fotoUrl';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { getDaftarEskul, getPendaftarEskul, getGaleriEskul } from '../services/api';
 import { UserRound } from 'lucide-react';
-
-const BACKEND_URL = 'http://localhost:5000'; // idealnya dari environment variable
 
 // Pastikan hasil API selalu berupa array
 const toArray = (res) => {
@@ -13,12 +12,7 @@ const toArray = (res) => {
   return Array.isArray(data) ? data : [];
 };
 
-const buildSrc = (path) => {
-  if (!path) return null;
-  return path.startsWith('http')
-    ? path
-    : `${BACKEND_URL}/${path.startsWith('/') ? path.slice(1) : path}`;
-};
+const buildSrc = (path) => fotoUrl(path);
 
 function EskulCardHeader({ cover, logo, nama }) {
   const [coverError, setCoverError] = useState(false);
