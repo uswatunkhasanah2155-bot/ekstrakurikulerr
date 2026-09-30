@@ -7,14 +7,14 @@ generator client {
 }
 
 model User {
-  id_user  Int              @id @default(autoincrement())
-  username String           @unique
-  password String
-  email    String?
-  role     String           // 'admin', 'siswa', atau 'pembina'
-  id_eskul Int?
-  eskul    Ekstrakurikuler? @relation(fields: [id_eskul], references: [id_eskul])
-  siswa    Siswa?
+  id_user    Int              @id @default(autoincrement())
+  username   String           @unique
+  password   String
+  email      String?
+  role       String           // 'admin', 'siswa', atau 'pembina'
+  id_eskul   Int?
+  eskul      Ekstrakurikuler? @relation(fields: [id_eskul], references: [id_eskul])
+  siswa      Siswa?
 }
 
 model Siswa {
@@ -37,24 +37,24 @@ model Kelas {
 }
 
 model Ekstrakurikuler {
-  id_eskul    Int           @id @default(autoincrement())
-  nama_eskul  String
-  slug        String?       @unique
-  deskripsi   String?
-  pembina     String?
-  jadwal      String?
-  foto        String?
-  pendaftaran Pendaftaran[]
-  galeri      GaleriEskul[]
-  pembina_akun User[]       
+  id_eskul      Int           @id @default(autoincrement())
+  nama_eskul    String
+  slug          String?       @unique
+  deskripsi     String?
+  pembina       String?
+  jadwal        String?
+  foto          String?
+  pendaftaran   Pendaftaran[]
+  galeri        GaleriEskul[]
+  pembina_akun  User[]       
 }
 
 model Pendaftaran {
-  id_pendaftaran  Int           @id @default(autoincrement())
+  id_pendaftaran  Int             @id @default(autoincrement())
   id_siswa        Int             
-  id_eskul        Int 
-  tanggal         DateTime?   @default(now()) @db.Date            
-  siswa           Siswa         @relation(fields: [id_siswa], references: [id_siswa], onDelete: Cascade)
+  id_eskul        Int
+  tanggal         DateTime?       @default(now()) @db.Timestamptz(3)        
+  siswa           Siswa           @relation(fields: [id_siswa], references: [id_siswa], onDelete: Cascade)
   ekstrakurikuler Ekstrakurikuler @relation(fields: [id_eskul], references: [id_eskul], onDelete: Cascade)
 }
 

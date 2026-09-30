@@ -1,6 +1,6 @@
 // src/pages/ExtracurricularDetail.jsx
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getSiswaByEskul,
   getDaftarEskul,
@@ -21,11 +21,112 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar'; 
+import Navbar from '../components/Navbar';
+
+// Dashboard tujuan sesuai role
+const getDashboardPath = (role) => {
+  const r = (role || '').toUpperCase();
+  if (r === 'ADMIN') return '/admin/dashboard';
+  if (r === 'PEMBINA') return '/pembina/dashboard';
+  return '/siswa/dashboard';
+};
+
+// Pilihan filter jenis kelamin
+const GENDER_OPTIONS = [
+  { value: '', label: 'Semua' },
+  { value: 'L', label: 'Laki-laki' },
+  { value: 'P', label: 'Perempuan' }
+];
+
+// ------------------------------------------------------
+// Helper tanggal: ubah berbagai format menjadi "YYYY-MM-DD"
+// ------------------------------------------------------
+const BULAN_ID = {
+  jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, may: 5, jun: 6, jul: 7,
+  agu: 8, agt: 8, ags: 8, aug: 8, sep: 9, okt: 10, oct: 10,
+  nov: 11, des: 12, dec: 12
+};
+const BULAN_LABEL = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+];
+const pad2 = n => String(n).padStart(2, '0');
+
+const toDateKey = value => {
+  if (!value) return '';
+
+  if (value instanceof Date) {
+    return isNaN(value)
+      ? ''
+      : `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`;
+  }
+
+  const s = String(value).trim();
+
+  // ISO dengan jam: 2026-09-29T10:00:00Z
+  if (/^\d{4}-\d{2}-\d{2}[T ]/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d)) return toDateKey(d);
+  }
+
+  // 2026-09-29
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+
+  // 29/09/2026, 29-09-2026, 29.09.2026
+  m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+  if (m) return `${m[3]}-${pad2(m[2])}-${pad2(m[1])}`;
+
+  // 29 Sep 2026 / 29 September 2026
+  m = s.match(/^(\d{1,2})\s+([A-Za-z]+)\.?\s+(\d{4})/);
+  if (m) {
+    const bln = BULAN_ID[m[2].slice(0, 3).toLowerCase()];
+    if (bln) return `${m[3]}-${pad2(bln)}-${pad2(m[1])}`;
+  }
+
+  const d = new Date(s);
+  return isNaN(d) ? '' : toDateKey(d);
+};
+
+const formatDateKey = key => {
+  const [y, mo, d] = key.split('-');
+  return `${Number(d)} ${BULAN_LABEL[Number(mo) - 1]} ${y}`;
+};
 
 export default function ExtracurricularDetail() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Filter jenis kelamin dari URL: ?gender=L atau ?gender=P
+  const genderParam = (searchParams.get('gender') || '').toUpperCase();
+  const genderFilter =
+    genderParam === 'L' || genderParam === 'P' ? genderParam : '';
+
+  const handleGenderFilter = value => {
+    const next = new URLSearchParams(searchParams);
+    if (value) {
+      next.set('gender', value);
+    } else {
+      next.delete('gender');
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  // Filter tanggal daftar dari URL: ?tanggal=2026-09-29
+  const tanggalParam = searchParams.get('tanggal') || '';
+  const tanggalFilter = /^\d{4}-\d{2}-\d{2}$/.test(tanggalParam)
+    ? tanggalParam
+    : '';
+  const tanggalLabel = tanggalFilter
+    ? formatDateKey(tanggalFilter)
+    : '';
+
+  const handleHapusFilterTanggal = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('tanggal');
+    setSearchParams(next, { replace: true });
+  };
 
   const cleanNamaEskul = namaEskul
     ? namaEskul.replace(/-/g, ' ')
@@ -112,7 +213,7 @@ export default function ExtracurricularDetail() {
             'Anda hanya dapat mengakses ekstrakurikuler yang Anda bina.'
           );
 
-          navigate('/Dashboard');
+          navigate(getDashboardPath(roleUser));
           return;
         }
 
@@ -220,6 +321,24 @@ export default function ExtracurricularDetail() {
 
   const filteredSiswa =
     siswaTerdaftar.filter(siswa => {
+      // Filter jenis kelamin (sama dengan cara tabel menampilkannya)
+      if (genderFilter) {
+        const g =
+          siswa.jenisKelamin === 'P' ? 'P' : 'L';
+        if (g !== genderFilter) return false;
+      }
+
+      // Filter tanggal daftar
+      if (tanggalFilter) {
+        const key = toDateKey(
+          siswa.tanggal_daftar ??
+            siswa.created_at ??
+            siswa.createdAt ??
+            siswa.tanggal
+        );
+        if (key !== tanggalFilter) return false;
+      }
+
       const keyword =
         searchQuery
           .toLowerCase()
@@ -236,6 +355,10 @@ export default function ExtracurricularDetail() {
           .includes(keyword)
       );
     });
+
+  const genderLabel = GENDER_OPTIONS.find(
+    o => o.value === genderFilter
+  )?.label;
 
   const fotoCoverUrl = fotoUtamaGaleri
     ? fotoUtamaGaleri.foto.startsWith('http')
@@ -259,13 +382,13 @@ export default function ExtracurricularDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 flex flex-col relative transition-colors duration-300">
-      
+
       {/* Navbar HANYA dirender jika Bukan Admin/Pembina (untuk Siswa / Public) */}
       {!canManage && <Navbar />}
 
       {/* Kontainer bagian bawah (Sidebar untuk Admin/Pembina dan Konten Utama) */}
       <div className="flex flex-1 relative">
-        
+
         {/* Sidebar HANYA dirender jika user adalah Admin atau Pembina */}
         {canManage && <Sidebar />}
 
@@ -278,7 +401,13 @@ export default function ExtracurricularDetail() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/Dashboard')}
+                onClick={() =>
+                  navigate(
+                    getDashboardPath(
+                      localStorage.getItem('role')
+                    )
+                  )
+                }
                 className="p-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-sm flex items-center gap-2 text-sm font-semibold"
                 title="Kembali ke Dashboard"
               >
@@ -381,9 +510,11 @@ export default function ExtracurricularDetail() {
 
               <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900 px-4 py-3 rounded-xl mb-5">
                 <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                Jadwal:
-                {currentEskulDetail?.jadwal ||
-                  'Belum diatur'}
+                <span>Jadwal:</span>
+                <span>
+                  {currentEskulDetail?.jadwal ||
+                    'Belum diatur'}
+                </span>
               </div>
 
               <div>
@@ -422,10 +553,54 @@ export default function ExtracurricularDetail() {
             <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 shrink-0">
                 <ClipboardList className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                Daftar Siswa Terdaftar ({filteredSiswa.length} Siswa)
+                Daftar Siswa Terdaftar
+                {genderFilter ? ` - ${genderLabel}` : ''}
+                {tanggalFilter ? ` - ${tanggalLabel}` : ''} (
+                {filteredSiswa.length} Siswa)
               </h3>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                {/* Chip filter tanggal (dari klik diagram dashboard) */}
+                {tanggalFilter && (
+                  <button
+                    type="button"
+                    onClick={handleHapusFilterTanggal}
+                    title="Hapus filter tanggal"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    {tanggalLabel}
+                    <span aria-hidden="true">✕</span>
+                  </button>
+                )}
+
+                {/* Filter jenis kelamin */}
+                <div
+                  className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                  role="group"
+                  aria-label="Filter jenis kelamin"
+                >
+                  {GENDER_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value || 'semua'}
+                      type="button"
+                      onClick={() =>
+                        handleGenderFilter(opt.value)
+                      }
+                      aria-pressed={
+                        genderFilter === opt.value
+                      }
+                      className={`px-3 py-2 text-xs font-semibold transition-colors ${
+                        genderFilter === opt.value
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
                 <div className="relative flex-1 sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                   <input
@@ -487,7 +662,11 @@ export default function ExtracurricularDetail() {
                         >
                           {searchQuery
                             ? `Tidak ditemukan siswa dengan kata kunci "${searchQuery}".`
-                            : 'Belum ada siswa yang terdaftar di ekstrakurikuler ini.'}
+                            : tanggalFilter
+                              ? `Tidak ada pendaftar pada ${tanggalLabel}.`
+                              : genderFilter
+                              ? `Belum ada siswa ${genderLabel.toLowerCase()} di ekstrakurikuler ini.`
+                              : 'Belum ada siswa yang terdaftar di ekstrakurikuler ini.'}
                         </td>
                       </tr>
                     ) : (
