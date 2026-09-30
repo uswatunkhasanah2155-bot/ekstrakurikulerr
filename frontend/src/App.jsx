@@ -15,6 +15,7 @@ import { verifyToken } from './services/api';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import DashboardPembina from './pages/DashboardPembina';
 import DashboardSiswa from './pages/DashboardSiswa';
 import ExtracurricularDetail from './pages/ExtracurricularDetail';
 import RegistrationForm from './pages/RegistrationForm';
@@ -29,8 +30,7 @@ import EditSiswaManual from './pages/EditSiswaManual';
 import ManajemenKelas from './pages/ManajemenKelas';
 import DataUser from './pages/DataUser';
 import JadwalEskul from './pages/JadwalEskul';
-import LaporanEskul from './pages/LaporanEskul'; // nama file harus: LaporanEskul.jsx
-
+import LaporanEskul from './pages/LaporanEskul';
 
 // ======================================================
 // HELPER: HAPUS SESI
@@ -76,6 +76,48 @@ function AdminRoute({ children }) {
   }
 
   if (role !== 'ADMIN') {
+    // Role valid tapi salah halaman -> arahkan ke dashboard miliknya, tanpa logout
+    const ownDashboard = getDashboardPath(role);
+
+    if (ownDashboard) {
+      return <Navigate to={ownDashboard} replace />;
+    }
+
+    // Role tidak dikenal -> sesi tidak valid
+    clearSession();
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+
+  return children;
+}
+
+
+// ======================================================
+// PROTEKSI HALAMAN PEMBINA
+// ======================================================
+
+function PembinaRoute({ children }) {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const role = (localStorage.getItem('role') || '').toUpperCase();
+
+  if (!token) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+
+  if (role !== 'PEMBINA') {
     // Role valid tapi salah halaman -> arahkan ke dashboard miliknya, tanpa logout
     const ownDashboard = getDashboardPath(role);
 
@@ -240,7 +282,7 @@ function App() {
 
           {/* Rute Dashboard Berdasarkan Role */}
           <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
-          <Route path="/pembina/dashboard" element={<AdminOrPembinaRoute><Dashboard /></AdminOrPembinaRoute>} />
+          <Route path="/pembina/dashboard" element={<PembinaRoute><DashboardPembina /></PembinaRoute>} />
           <Route path="/siswa/dashboard" element={<StudentRoute><DashboardSiswa /></StudentRoute>} />
 
           {/* Rute Cadangan/Universal Dashboard (Dialihkan otomatis jika diakses langsung) */}

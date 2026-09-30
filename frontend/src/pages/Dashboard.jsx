@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { getDaftarEskul, getPendaftarEskul } from '../services/api';
+import { getDaftarEskul, getPendaftarEskul, getGaleriEskul } from '../services/api';
 import { UserRound } from 'lucide-react';
 
 const BACKEND_URL = 'http://localhost:5000'; // idealnya dari environment variable
@@ -13,29 +13,49 @@ const toArray = (res) => {
   return Array.isArray(data) ? data : [];
 };
 
-function EskulAvatar({ foto, nama }) {
-  const [imgError, setImgError] = useState(false);
+const buildSrc = (path) => {
+  if (!path) return null;
+  return path.startsWith('http')
+    ? path
+    : `${BACKEND_URL}/${path.startsWith('/') ? path.slice(1) : path}`;
+};
 
-  const src = foto
-    ? foto.startsWith('http')
-      ? foto
-      : `${BACKEND_URL}/${foto.startsWith('/') ? foto.slice(1) : foto}`
-    : null;
+function EskulCardHeader({ cover, logo, nama }) {
+  const [coverError, setCoverError] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
-  if (src && !imgError) {
-    return (
-      <img
-        src={src}
-        alt={nama}
-        className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700 mb-2"
-        onError={() => setImgError(true)}
-      />
-    );
-  }
+  const coverSrc = buildSrc(cover);
+  const logoSrc = buildSrc(logo);
 
   return (
-    <div className="w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300 flex items-center justify-center font-bold mb-2">
-      {(nama || 'E').charAt(0)}
+    <div className="relative">
+      {/* Foto sampul (foto utama galeri) */}
+      <div className="h-32 w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-slate-800">
+        {coverSrc && !coverError && (
+          <img
+            src={coverSrc}
+            alt={`Sampul ${nama}`}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setCoverError(true)}
+          />
+        )}
+      </div>
+
+      {/* Logo menumpang di pojok kiri bawah sampul */}
+      <div className="absolute -bottom-7 left-4 h-14 w-14 overflow-hidden rounded-xl border-2 border-white bg-white shadow-md dark:border-gray-900 dark:bg-gray-900">
+        {logoSrc && !logoError ? (
+          <img
+            src={logoSrc}
+            alt={nama}
+            className="h-full w-full object-cover"
+            onError={() => setLogoError(true)}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-cyan-100 text-lg font-bold text-cyan-800 dark:bg-cyan-900/60 dark:text-cyan-300">
+            {(nama || 'E').charAt(0)}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -45,6 +65,7 @@ export default function Dashboard() {
   const [roleUser, setRoleUser] = useState('');
   const [daftarEskul, setDaftarEskul] = useState([]);
   const [eskulCounts, setEskulCounts] = useState({}); // key: id_eskul
+  const [coverMap, setCoverMap] = useState({}); // key: id_eskul, value: path foto sampul
   const [totalSiswa, setTotalSiswa] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -90,8 +111,22 @@ export default function Dashboard() {
           if (idSiswa) uniqueSiswaIds.add(idSiswa);
         });
 
+        // Ambil foto utama (is_featured) dari galeri tiap eskul, paralel
+        const coverEntries = await Promise.all(
+          listEskul.map(async (eskul) => {
+            try {
+              const galeri = toArray(await getGaleriEskul(eskul.id_eskul));
+              const utama = galeri.find((g) => g.is_featured);
+              return [String(eskul.id_eskul), utama?.foto || null];
+            } catch {
+              return [String(eskul.id_eskul), null];
+            }
+          })
+        );
+
         if (cancelled) return;
         setDaftarEskul(listEskul);
+        setCoverMap(Object.fromEntries(coverEntries));
         setEskulCounts(counts);
         setTotalSiswa(uniqueSiswaIds.size);
       } catch (err) {
@@ -255,26 +290,34 @@ export default function Dashboard() {
             {daftarEskul.map((eskul) => (
               <div
                 key={eskul.id_eskul}
-                className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-between"
+                className="group flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
               >
-                <div>
-                  <EskulAvatar foto={eskul.foto} nama={eskul.nama_eskul} />
-                  <h4 className="font-bold text-gray-800 dark:text-gray-100 text-base">
-                    {eskul.nama_eskul}
-                  </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                    {eskul.deskripsi || 'Tidak ada deskripsi'}
-                  </p>
-                </div>
+                <EskulCardHeader
+                  cover={coverMap[String(eskul.id_eskul)]}
+                  logo={eskul.foto}
+                  nama={eskul.nama_eskul}
+                />
 
-                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                {/* pt-9 memberi ruang untuk logo yang menumpang */}
+                <div className="flex flex-1 flex-col justify-between p-4 pt-9">
                   <div>
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">Pembina:</span>{' '}
-                    {eskul.pembina || 'Belum ada'}
+                    <h4 className="text-base font-bold text-gray-800 dark:text-gray-100">
+                      {eskul.nama_eskul}
+                    </h4>
+                    <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                      {eskul.deskripsi || 'Tidak ada deskripsi'}
+                    </p>
                   </div>
-                  <div>
-                    <span className="font-semibold text-gray-700 dark:text-gray-300">Jadwal:</span>{' '}
-                    {eskul.jadwal || 'Belum ada'}
+
+                  <div className="mt-4 space-y-1 border-t border-gray-100 pt-3 text-xs text-gray-600 dark:border-gray-800 dark:text-gray-400">
+                    <div>
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">Pembina:</span>{' '}
+                      {eskul.pembina || 'Belum ada'}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">Jadwal:</span>{' '}
+                      {eskul.jadwal || 'Belum ada'}
+                    </div>
                   </div>
                 </div>
               </div>
