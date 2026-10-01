@@ -432,6 +432,9 @@ router.patch('/users/:id', verifyToken, async (req, res) => {
 
 // =====================================================
 // 6. HAPUS USER
+// Akun dihapus permanen, tetapi profil siswa & riwayat
+// pendaftarannya TIDAK ikut terhapus (soft delete), supaya
+// grafik riwayat tetap utuh.
 // =====================================================
 
 router.delete('/users/:id', verifyToken, async (req, res) => {
@@ -442,6 +445,9 @@ router.delete('/users/:id', verifyToken, async (req, res) => {
     const userExist = await prisma.user.findUnique({
       where: {
         id_user: id
+      },
+      include: {
+        siswa: true
       }
     });
 
@@ -452,11 +458,43 @@ router.delete('/users/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Hapus user
-    await prisma.user.delete({
-      where: {
-        id_user: id
+    await prisma.$transaction(async (tx) => {
+      const siswa = userExist.siswa;
+
+      if (siswa) {
+        const sekarang = new Date();
+
+        // 1. Tandai semua pendaftaran aktif siswa ini sebagai dihapus
+        await tx.pendaftaran.updateMany({
+          where: {
+            id_siswa: siswa.id_siswa,
+            dihapus_pada: null
+          },
+          data: {
+            dihapus_pada: sekarang
+          }
+        });
+
+        // 2. Tandai siswa sebagai dihapus dan LEPASKAN dari akun,
+        //    supaya cascade (User -> Siswa -> Pendaftaran) tidak
+        //    menghapus datanya saat akun dihapus.
+        await tx.siswa.update({
+          where: {
+            id_siswa: siswa.id_siswa
+          },
+          data: {
+            dihapus_pada: siswa.dihapus_pada ?? sekarang,
+            id_user: null
+          }
+        });
       }
+
+      // 3. Baru hapus akun user
+      await tx.user.delete({
+        where: {
+          id_user: id
+        }
+      });
     });
 
     res.status(200).json({

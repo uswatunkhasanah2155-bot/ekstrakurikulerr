@@ -17,7 +17,8 @@ import { Users, BookOpen, UserPlus, TrendingUp, ArrowRight } from 'lucide-react'
 import Sidebar from '../components/Sidebar';
 import * as api from '../services/api';
 
-const { getDaftarEskul, getPendaftarEskul } = api;
+// getRiwayatPendaftarEskul = semua pendaftaran termasuk yang sudah dihapus
+const { getDaftarEskul, getRiwayatPendaftarEskul } = api;
 
 // ===============================
 // HELPER
@@ -71,6 +72,7 @@ const normalisasi = (item) => {
     gender: normalGender(siswa.jenis_kelamin ?? item.jenis_kelamin ?? item.jenisKelamin),
     tanggal: isNaN(tgl) ? new Date() : tgl,
     status: normalStatus(item.status ?? item.status_pendaftaran),
+    dihapus: Boolean(item.dihapus_pada), // penanda soft delete
   };
 };
 
@@ -91,7 +93,7 @@ export default function DashboardPembina() {
   const navigate = useNavigate();
 
   const [eskul, setEskul] = useState(null);
-  const [pendaftar, setPendaftar] = useState([]);
+  const [pendaftar, setPendaftar] = useState([]); // SEMUA data (termasuk yang dihapus)
   const [rentang, setRentang] = useState(7);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -113,7 +115,7 @@ export default function DashboardPembina() {
       try {
         const [eskulRes, pendaftarRes] = await Promise.all([
           getDaftarEskul(),
-          getPendaftarEskul(),
+          getRiwayatPendaftarEskul(),
         ]);
 
         const eskulSaya = toArray(eskulRes).find(
@@ -176,30 +178,37 @@ export default function DashboardPembina() {
   // Sama dengan label di Sidebar: "Pembina Paskibra"
   const namaSapaan = eskul?.nama_eskul ? `Pembina ${eskul.nama_eskul}` : 'Pembina';
 
+  // Hanya siswa yang masih aktif -> untuk kartu, donut, dan tabel.
+  // Grafik riwayat TIDAK memakai ini, jadi tidak ikut berkurang saat siswa dihapus.
+  const pendaftarAktif = useMemo(
+    () => pendaftar.filter((p) => !p.dihapus),
+    [pendaftar]
+  );
+
   const siswaTerdaftar = useMemo(() => {
     const ids = new Set(
-      pendaftar.filter((p) => p.status === 'diterima').map((p) => p.idSiswa ?? p.id)
+      pendaftarAktif.filter((p) => p.status === 'diterima').map((p) => p.idSiswa ?? p.id)
     );
     return ids.size;
-  }, [pendaftar]);
+  }, [pendaftarAktif]);
 
   const pendaftarBulanIni = useMemo(() => {
     const now = new Date();
-    return pendaftar.filter(
+    return pendaftarAktif.filter(
       (p) =>
         p.tanggal.getMonth() === now.getMonth() &&
         p.tanggal.getFullYear() === now.getFullYear()
     ).length;
-  }, [pendaftar]);
+  }, [pendaftarAktif]);
 
   // Siswa yang sudah diterima (unik per siswa), dihitung per jenis kelamin
   const siswaDiterima = useMemo(() => {
     const unik = new Map();
-    pendaftar
+    pendaftarAktif
       .filter((p) => p.status === 'diterima')
       .forEach((p) => unik.set(p.idSiswa ?? p.id, p));
     return [...unik.values()];
-  }, [pendaftar]);
+  }, [pendaftarAktif]);
 
   const jumlahL = siswaDiterima.filter((p) => p.gender === 'L').length;
   const jumlahP = siswaDiterima.filter((p) => p.gender === 'P').length;
@@ -214,6 +223,7 @@ export default function DashboardPembina() {
           { name: 'Perempuan', value: jumlahP, color: '#ec4899' },
         ];
 
+  // GRAFIK RIWAYAT: memakai SEMUA data (termasuk siswa yang sudah dihapus)
   const grafikData = useMemo(() => {
     const hariIni = startOfDay(new Date());
 
@@ -252,8 +262,8 @@ export default function DashboardPembina() {
   }, [pendaftar, rentang]);
 
   const terbaru = useMemo(
-    () => [...pendaftar].sort((a, b) => b.tanggal - a.tanggal).slice(0, 5),
-    [pendaftar]
+    () => [...pendaftarAktif].sort((a, b) => b.tanggal - a.tanggal).slice(0, 5),
+    [pendaftarAktif]
   );
 
   // ===============================
@@ -461,7 +471,7 @@ export default function DashboardPembina() {
           </div>
         </div>
 
-        {/* PERKEMBANGAN PENDAFTARAN */}
+        {/* PERKEMBANGAN PENDAFTARAN (riwayat, tidak berkurang saat siswa dihapus) */}
         <div className={`${cardClass} mb-6`}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-semibold">
@@ -554,7 +564,7 @@ export default function DashboardPembina() {
           </div>
         </div>
 
-        {/* PENDAFTARAN TERBARU */}
+        {/* PENDAFTARAN TERBARU (hanya siswa aktif) */}
         <div className={`${cardClass} p-0`}>
           <div className="flex items-center justify-between px-5 py-4">
             <div className="flex items-center gap-2 text-sm font-semibold">

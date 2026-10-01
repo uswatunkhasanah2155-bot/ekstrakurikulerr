@@ -124,6 +124,37 @@ export async function getPendaftarEskul() {
   }
 }
 
+// Mengambil SEMUA pendaftaran, termasuk yang sudah dihapus (soft delete).
+// Dipakai halaman LaporanEskul supaya grafik riwayat tetap utuh.
+export async function getRiwayatPendaftarEskul() {
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran?termasuk_dihapus=true`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (handleUnauthorized(response)) return [];
+
+    if (!response.ok) {
+      throw new Error('Gagal mengambil riwayat pendaftar dari server backend');
+    }
+
+    const result = await response.json();
+
+    return result.data || [];
+
+  } catch (error) {
+    console.error('Error fetching riwayat pendaftar:', error);
+    return [];
+  }
+}
+
 
 export async function getSiswaByEskul(namaEskul) {
   try {

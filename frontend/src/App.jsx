@@ -22,6 +22,8 @@ import DashboardSiswa from './pages/DashboardSiswa';
 import ExtracurricularDetail from './pages/ExtracurricularDetail';
 import RegistrationForm from './pages/RegistrationForm';
 import KelolaEskul from './pages/KelolaEskul';
+import KelolaEskulPembina from './pages/Kelolaeskulpembina';
+import AnggotaEskul from './pages/AnggotaEskul';
 import KelolaPembina from './pages/KelolaPembina';
 import PendaftarEskul from './pages/PendaftarEskul';
 import GaleriEskul from './pages/GaleriEskul';
@@ -34,6 +36,7 @@ import DataUser from './pages/DataUser';
 import JadwalEskul from './pages/JadwalEskul';
 import LaporanEskul from './pages/LaporanEskul';
 import PendaftaranSaya from './pages/PendaftaranSaya';
+import ProfilPembina from './pages/Profilpembina';
 
 
 // ======================================================
@@ -296,6 +299,7 @@ function App() {
             {/* Dashboard Berdasarkan Role */}
             <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
             <Route path="/pembina/dashboard" element={<PembinaRoute><DashboardPembina /></PembinaRoute>} />
+            <Route path="/pembina/profil" element={<PembinaRoute><ProfilPembina /></PembinaRoute>} />
             <Route path="/siswa/dashboard" element={<StudentRoute><DashboardSiswa /></StudentRoute>} />
 
             {/* Halaman Jadwal Eskul */}
@@ -314,9 +318,13 @@ function App() {
             <Route path="/admin/kelola-eskul" element={<AdminOrPembinaRoute><KelolaEskul /></AdminOrPembinaRoute>} />
             <Route path="/admin/laporan-eskul/:id" element={<AdminOrPembinaRoute><LaporanEskul /></AdminOrPembinaRoute>} />
 
+            {/* Pembina: kelola eskul yang dibina */}
+            <Route path="/pembina/kelola-eskul" element={<PembinaRoute><KelolaEskulPembina /></PembinaRoute>} />
+
             {/* Ekstrakurikuler Umum */}
             <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
             <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
+            <Route path="/eskul/:namaEskul/anggota" element={<AdminOrPembinaRoute><AnggotaEskul /></AdminOrPembinaRoute>} />
             <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
             <Route path="/eskul/:namaEskul/galeri/upload" element={<AdminOrPembinaRoute><GaleriUploadFoto /></AdminOrPembinaRoute>} />
             <Route path="/eskul/:namaEskul/galeri/:idGaleri" element={<GaleriFotoDetail />} />

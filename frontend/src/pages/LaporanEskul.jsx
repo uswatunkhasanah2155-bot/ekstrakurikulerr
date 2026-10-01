@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import {
   getDaftarEskul,
-  getPendaftarEskul,
+  getRiwayatPendaftarEskul, // <-- diganti dari getPendaftarEskul
   getGaleriEskul,
 } from '../services/api';
 
@@ -83,6 +83,17 @@ function BadgeRelatif({ tgl }) {
       }`}
     >
       {label}
+    </span>
+  );
+}
+
+// Badge untuk siswa yang pendaftarannya sudah dihapus
+function BadgeDihapus({ dihapusPada }) {
+  if (!dihapusPada) return null;
+
+  return (
+    <span className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+      Dihapus
     </span>
   );
 }
@@ -186,7 +197,7 @@ export default function LaporanEskul() {
       try {
         const [eskulData, pendaftarData, galeriData] = await Promise.all([
           getDaftarEskul(),
-          getPendaftarEskul(),
+          getRiwayatPendaftarEskul(), // termasuk yang sudah dihapus
           getGaleriEskul(id),
         ]);
 
@@ -417,7 +428,10 @@ export default function LaporanEskul() {
   }
 
   const { percentChange, labelPembanding } = hitungPersentase();
-  const total = pendaftar.length;
+
+  // Kartu total hanya menghitung siswa yang masih aktif
+  // (grafik & riwayat tetap memakai semua data)
+  const total = pendaftar.filter((p) => !p.dihapus_pada).length;
 
   const xAxisInterval = range === 'hari' ? 2 : range === 'bulan' ? 3 : 0;
 
@@ -681,6 +695,7 @@ export default function LaporanEskul() {
                   <td className="px-6 py-3">{i + 1}</td>
                   <td className="px-6 py-3 font-medium">
                     {p.siswa?.nama_siswa || '-'}
+                    <BadgeDihapus dihapusPada={p.dihapus_pada} />
                   </td>
                   <td className="px-6 py-3">
                     {p.siswa?.kelasData?.nama_kelas || '-'}
@@ -808,6 +823,7 @@ export default function LaporanEskul() {
                 <td className="px-6 py-3">{i + 1}</td>
                 <td className="px-6 py-3">
                   {p.siswa?.nama_siswa || '-'}
+                  <BadgeDihapus dihapusPada={p.dihapus_pada} />
                 </td>
                 <td className="px-6 py-3">
                   {p.siswa?.kelasData?.nama_kelas || '-'}

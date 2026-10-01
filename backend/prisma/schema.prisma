@@ -24,6 +24,7 @@ model Siswa {
   id_kelas      Int?
   jenis_kelamin String
   foto          String?
+  dihapus_pada  DateTime?     @db.Timestamptz(3)   // soft delete
   user          User?         @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
   kelasData     Kelas?        @relation(fields: [id_kelas], references: [id_kelas])
   pendaftaran   Pendaftaran[]
@@ -46,14 +47,15 @@ model Ekstrakurikuler {
   foto          String?
   pendaftaran   Pendaftaran[]
   galeri        GaleriEskul[]
-  pembina_akun  User[]       
+  pembina_akun  User[]
 }
 
 model Pendaftaran {
   id_pendaftaran  Int             @id @default(autoincrement())
-  id_siswa        Int             
+  id_siswa        Int
   id_eskul        Int
-  tanggal         DateTime?       @default(now()) @db.Timestamptz(3)        
+  tanggal         DateTime?       @default(now()) @db.Timestamptz(3)
+  dihapus_pada    DateTime?       @db.Timestamptz(3)   // soft delete
   siswa           Siswa           @relation(fields: [id_siswa], references: [id_siswa], onDelete: Cascade)
   ekstrakurikuler Ekstrakurikuler @relation(fields: [id_eskul], references: [id_eskul], onDelete: Cascade)
 }
@@ -64,6 +66,7 @@ model GaleriEskul {
   foto            String
   keterangan      String?
   is_featured     Boolean         @default(false)
+  kategori        String          @default("Lainnya")   // sudah ada di database
   created_at      DateTime        @default(now())
   ekstrakurikuler Ekstrakurikuler @relation(fields: [id_eskul], references: [id_eskul], onDelete: Cascade)
 }
