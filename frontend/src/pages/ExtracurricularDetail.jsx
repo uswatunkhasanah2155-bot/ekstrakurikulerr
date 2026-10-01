@@ -19,10 +19,13 @@ import {
   Images,
   Calendar,
   UserRound,
-  ArrowLeft
+  ArrowLeft,
+  List,
+  LayoutGrid
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
+import { useViewStore } from '../store/useViewStore';
 
 // Dashboard tujuan sesuai role
 const getDashboardPath = (role) => {
@@ -140,6 +143,10 @@ export default function ExtracurricularDetail() {
         word.charAt(0).toUpperCase() + word.slice(1)
     )
     .join(' ');
+
+  // Mode tampilan (tabel / grid) disimpan di Zustand + persist
+  const view = useViewStore(s => s.view);
+  const setView = useViewStore(s => s.setView);
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPembina, setIsPembina] = useState(false);
@@ -360,6 +367,14 @@ export default function ExtracurricularDetail() {
   const genderLabel = GENDER_OPTIONS.find(
     o => o.value === genderFilter
   )?.label;
+
+  const emptyMessage = searchQuery
+    ? `Tidak ditemukan siswa dengan kata kunci "${searchQuery}".`
+    : tanggalFilter
+      ? `Tidak ada pendaftar pada ${tanggalLabel}.`
+      : genderFilter
+        ? `Belum ada siswa ${genderLabel.toLowerCase()} di ekstrakurikuler ini.`
+        : 'Belum ada siswa yang terdaftar di ekstrakurikuler ini.';
 
   const fotoCoverUrl = fotoUrl(fotoUtamaGaleri?.foto);
 
@@ -586,6 +601,42 @@ export default function ExtracurricularDetail() {
                   ))}
                 </div>
 
+                {/* Toggle mode tampilan: Tabel / Grid */}
+                <div
+                  className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                  role="group"
+                  aria-label="Mode tampilan"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setView('table')}
+                    aria-pressed={view === 'table'}
+                    title="Tampilan tabel"
+                    className={`px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                      view === 'table'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView('grid')}
+                    aria-pressed={view === 'grid'}
+                    title="Tampilan grid"
+                    className={`px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                      view === 'grid'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    
+                  </button>
+                </div>
+
                 <div className="relative flex-1 sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                   <input
@@ -617,6 +668,76 @@ export default function ExtracurricularDetail() {
               {loading ? (
                 <div className="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
                   Memuat data siswa dari backend...
+                </div>
+              ) : view === 'grid' ? (
+                <div className="p-4">
+                  {filteredSiswa.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-gray-400 dark:text-gray-500">
+                      {emptyMessage}
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {filteredSiswa.map(siswa => (
+                        <div
+                          key={siswa.id}
+                          className="flex flex-col items-center text-center p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/40 hover:shadow-md transition-shadow"
+                        >
+                          {siswa.foto ? (
+                            <img
+                              src={fotoUrl(siswa.foto)}
+                              alt={siswa.nama}
+                              className="w-24 h-24 object-cover rounded-full border-2 border-gray-200 dark:border-gray-700 shadow-sm"
+                              onError={e => {
+                                e.target.style.display = 'none';
+                                if (e.target.nextSibling) {
+                                  e.target.nextSibling.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+
+                          <div
+                            className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 items-center justify-center text-gray-400 dark:text-gray-500"
+                            style={{ display: siswa.foto ? 'none' : 'flex' }}
+                          >
+                            <User className="w-8 h-8" />
+                          </div>
+
+                          <p className="mt-3 text-sm font-bold text-gray-800 dark:text-gray-100 line-clamp-2">
+                            {siswa.nama}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {siswa.kelas}
+                          </p>
+                          <span className="mt-2 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
+                            {siswa.jenisKelamin === 'P' ? 'Perempuan' : 'Laki-laki'}
+                          </span>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
+                            {siswa.tanggal || 'Baru saja'}
+                          </p>
+
+                          {canManage && (
+                            <div className="mt-3 flex items-center gap-2">
+                              <button
+                                onClick={() => handleEditSiswa(siswa)}
+                                className="text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-md font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 inline-flex items-center gap-1"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleHapusSiswa(siswa)}
+                                className="text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Hapus
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <table className="w-full text-left border-collapse">
