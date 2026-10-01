@@ -12,6 +12,8 @@ import {
 
 import { verifyToken } from './services/api';
 
+import MainLayout from './components/Mainlayout';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -31,9 +33,6 @@ import ManajemenKelas from './pages/ManajemenKelas';
 import DataUser from './pages/DataUser';
 import JadwalEskul from './pages/JadwalEskul';
 import LaporanEskul from './pages/LaporanEskul';
-
-// ======================================================
-// HELPER: HAPUS SESI
 import PendaftaranSaya from './pages/PendaftaranSaya';
 
 
@@ -279,43 +278,52 @@ function App() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
         <Routes>
 
-          {/* Rute Umum & Autentikasi */}
+          {/* ==============================================
+              RUTE TANPA FOOTER (autentikasi & pengalihan)
+          ============================================== */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Rute Dashboard Berdasarkan Role */}
-          <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
-          <Route path="/pembina/dashboard" element={<PembinaRoute><DashboardPembina /></PembinaRoute>} />
-          <Route path="/siswa/dashboard" element={<StudentRoute><DashboardSiswa /></StudentRoute>} />
-
           {/* Rute Cadangan/Universal Dashboard (Dialihkan otomatis jika diakses langsung) */}
           <Route path="/dashboard" element={<Navigate to="/login" replace />} />
 
-          {/* Rute Halaman Jadwal Eskul */}
-          <Route path="/jadwal" element={<JadwalEskul />} />
+          {/* ==============================================
+              RUTE DENGAN FOOTER (dibungkus MainLayout)
+          ============================================== */}
+          <Route element={<MainLayout />}>
 
-          {/* Rute Halaman Pendaftaran Saya (khusus siswa) */}
-          <Route path="/pendaftaran-saya" element={<StudentRoute><PendaftaranSaya /></StudentRoute>} />
+            {/* Dashboard Berdasarkan Role */}
+            <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
+            <Route path="/pembina/dashboard" element={<PembinaRoute><DashboardPembina /></PembinaRoute>} />
+            <Route path="/siswa/dashboard" element={<StudentRoute><DashboardSiswa /></StudentRoute>} />
 
-          {/* Rute Admin Lainnya */}
-          <Route path="/admin/kelola-pembina" element={<AdminRoute><KelolaPembina /></AdminRoute>} />
-          <Route path="/admin/manajemen-kelas" element={<AdminRoute><ManajemenKelas /></AdminRoute>} />
-          <Route path="/admin/pendaftar" element={<AdminRoute><PendaftarEskul /></AdminRoute>} />
-          <Route path="/admin/data-user" element={<AdminRoute><DataUser /></AdminRoute>} />
+            {/* Halaman Jadwal Eskul */}
+            <Route path="/jadwal" element={<JadwalEskul />} />
 
-          {/* Rute Admin & Pembina */}
-          <Route path="/admin/kelola-eskul" element={<AdminOrPembinaRoute><KelolaEskul /></AdminOrPembinaRoute>} />
-          <Route path="/admin/laporan-eskul/:id" element={<AdminOrPembinaRoute><LaporanEskul /></AdminOrPembinaRoute>} />
+            {/* Halaman Pendaftaran Saya (khusus siswa) */}
+            <Route path="/pendaftaran-saya" element={<StudentRoute><PendaftaranSaya /></StudentRoute>} />
 
-          {/* Rute Ekstrakurikuler Umum */}
-          <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
-          <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
-          <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
-          <Route path="/eskul/:namaEskul/galeri/upload" element={<AdminOrPembinaRoute><GaleriUploadFoto /></AdminOrPembinaRoute>} />
-          <Route path="/eskul/:namaEskul/galeri/:idGaleri" element={<GaleriFotoDetail />} />
-          <Route path="/eskul/:namaEskul/siswa/tambah" element={<AdminOrPembinaRoute><TambahSiswaManual /></AdminOrPembinaRoute>} />
-          <Route path="/eskul/:namaEskul/siswa/edit/:idPendaftaran" element={<AdminOrPembinaRoute><EditSiswaManual /></AdminOrPembinaRoute>} />
+            {/* Admin Lainnya */}
+            <Route path="/admin/kelola-pembina" element={<AdminRoute><KelolaPembina /></AdminRoute>} />
+            <Route path="/admin/manajemen-kelas" element={<AdminRoute><ManajemenKelas /></AdminRoute>} />
+            <Route path="/admin/pendaftar" element={<AdminRoute><PendaftarEskul /></AdminRoute>} />
+            <Route path="/admin/data-user" element={<AdminRoute><DataUser /></AdminRoute>} />
+
+            {/* Admin & Pembina */}
+            <Route path="/admin/kelola-eskul" element={<AdminOrPembinaRoute><KelolaEskul /></AdminOrPembinaRoute>} />
+            <Route path="/admin/laporan-eskul/:id" element={<AdminOrPembinaRoute><LaporanEskul /></AdminOrPembinaRoute>} />
+
+            {/* Ekstrakurikuler Umum */}
+            <Route path="/eskul/:namaEskul" element={<ExtracurricularDetail />} />
+            <Route path="/eskul/:namaEskul/daftar" element={<RegistrationForm />} />
+            <Route path="/eskul/:namaEskul/galeri" element={<GaleriEskul />} />
+            <Route path="/eskul/:namaEskul/galeri/upload" element={<AdminOrPembinaRoute><GaleriUploadFoto /></AdminOrPembinaRoute>} />
+            <Route path="/eskul/:namaEskul/galeri/:idGaleri" element={<GaleriFotoDetail />} />
+            <Route path="/eskul/:namaEskul/siswa/tambah" element={<AdminOrPembinaRoute><TambahSiswaManual /></AdminOrPembinaRoute>} />
+            <Route path="/eskul/:namaEskul/siswa/edit/:idPendaftaran" element={<AdminOrPembinaRoute><EditSiswaManual /></AdminOrPembinaRoute>} />
+
+          </Route>
 
           {/* Fallback jika rute tidak ditemukan */}
           <Route path="*" element={<Navigate to="/login" replace />} />
