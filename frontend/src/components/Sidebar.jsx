@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getDaftarEskul } from '../services/api';
+import { getProfilSaya } from '../services/profilApi';
+import { fotoUrl } from '../utils/fotoUrl';
 import logoSekolah from '../assets/logosmkc.jpeg';
 
 import {
@@ -152,6 +154,39 @@ export default function Sidebar() {
     fetchEskul();
 
   }, [isPembina, idEskulPembina]);
+
+
+  // ======================================================
+  // PROFIL PEMBINA (foto & nama untuk kartu user)
+  // ======================================================
+
+  const [profilSidebar, setProfilSidebar] = useState(null);
+
+  useEffect(() => {
+    if (!isPembina) return;
+
+    let cancelled = false;
+
+    const muatProfil = async () => {
+      const data = await getProfilSaya();
+      if (!cancelled) setProfilSidebar(data);
+    };
+
+    muatProfil();
+
+    // Dipanggil dari halaman Profil Saya setelah profil disimpan
+    window.addEventListener('profil-updated', muatProfil);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('profil-updated', muatProfil);
+    };
+  }, [isPembina]);
+
+  const namaSidebar =
+    profilSidebar?.nama || profilSidebar?.username || 'Pembina';
+
+  const fotoSidebar = fotoUrl(profilSidebar?.foto);
 
 
   const namaEskulDibina =
@@ -355,8 +390,17 @@ export default function Sidebar() {
             flex items-center justify-center
             text-gray-700 dark:text-gray-200
             shrink-0
+            overflow-hidden
           ">
-            <User className="w-6 h-6" />
+            {isPembina && fotoSidebar ? (
+              <img
+                src={fotoSidebar}
+                alt={namaSidebar}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-6 h-6" />
+            )}
           </div>
 
           {!isCollapsed && (
@@ -370,9 +414,7 @@ export default function Sidebar() {
                 {isAdmin
                   ? 'Administrator'
                   : isPembina
-                  ? namaEskulDibina
-                    ? `Pembina ${namaEskulDibina}`
-                    : 'Pembina'
+                  ? namaSidebar
                   : 'Halo, Pengguna'}
               </h4>
 
