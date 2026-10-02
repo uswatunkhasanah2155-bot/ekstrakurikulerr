@@ -7,6 +7,9 @@ import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 
 const router = express.Router();
 
+// Batas jumlah foto banner per eskul (samakan dengan frontend)
+const MAX_BANNER = 5;
+
 // ===============================
 // MULTER STORAGE
 // File ditahan di memori lalu dikirim ke Cloudinary
@@ -379,6 +382,103 @@ router.patch(
       res.status(500).json({
         success: false,
         message: 'Gagal mengubah foto utama'
+      });
+    }
+  }
+);
+
+// ===============================
+// TANDAI / LEPAS FOTO BANNER (toggle)
+// Catatan: sengaja TIDAK memakai status 403 untuk penolakan,
+// karena frontend (handleUnauthorized) otomatis logout pada 401/403.
+// ===============================
+router.patch(
+  '/:id/banner',
+  verifyToken,
+  async (req, res) => {
+    try {
+      const role = (req.user?.role || '').toUpperCase();
+
+      if (role !== 'ADMIN' && role !== 'PEMBINA') {
+        return res.status(400).json({
+          success: false,
+          message: 'Hanya admin atau pembina yang dapat mengatur banner'
+        });
+      }
+
+      const id = Number(req.params.id);
+
+      if (isNaN(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID galeri tidak valid'
+        });
+      }
+
+      const galeri = await prisma.galeriEskul.findUnique({
+        where: {
+          id_galeri: id
+        }
+      });
+
+      if (!galeri) {
+        return res.status(404).json({
+          success: false,
+          message: 'Data galeri tidak ditemukan'
+        });
+      }
+
+      // Pembina hanya boleh mengatur eskul yang dibinanya
+      if (
+        role === 'PEMBINA' &&
+        Number(req.user.id_eskul) !== galeri.id_eskul
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Anda hanya dapat mengatur eskul yang Anda bina'
+        });
+      }
+
+      // Batas maksimal foto banner per eskul
+      if (!galeri.is_banner) {
+        const jumlah = await prisma.galeriEskul.count({
+          where: {
+            id_eskul: galeri.id_eskul,
+            is_banner: true
+          }
+        });
+
+        if (jumlah >= MAX_BANNER) {
+          return res.status(400).json({
+            success: false,
+            message: `Banner maksimal ${MAX_BANNER} foto. Lepas salah satu dulu.`
+          });
+        }
+      }
+
+      const updated = await prisma.galeriEskul.update({
+        where: {
+          id_galeri: id
+        },
+        data: {
+          is_banner: !galeri.is_banner
+        }
+      });
+
+      res.json({
+        success: true,
+        message: updated.is_banner
+          ? 'Foto dijadikan banner'
+          : 'Foto dilepas dari banner',
+        data: updated
+      });
+
+    } catch (error) {
+      console.error('Error set foto banner:', error);
+
+      res.status(500).json({
+        success: false,
+        message: 'Gagal mengubah foto banner'
       });
     }
   }

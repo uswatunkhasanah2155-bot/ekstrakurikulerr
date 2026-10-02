@@ -1,8 +1,11 @@
-node_modules
-# Keep environment variables out of version control
+node_modules/
+**/node_modules/
+
 .env
+*.env
 
 /generated/prisma
 
-# Uploaded files (jangan ikut version control)
 uploads/
+**/uploads/
+*.zip

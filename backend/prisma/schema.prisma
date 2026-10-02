@@ -69,6 +69,7 @@ model GaleriEskul {
   foto            String
   keterangan      String?
   is_featured     Boolean         @default(false)
+  is_banner       Boolean         @default(false)
   kategori        String          @default("Lainnya")   // sudah ada di database
   created_at      DateTime        @default(now())
   ekstrakurikuler Ekstrakurikuler @relation(fields: [id_eskul], references: [id_eskul], onDelete: Cascade)
