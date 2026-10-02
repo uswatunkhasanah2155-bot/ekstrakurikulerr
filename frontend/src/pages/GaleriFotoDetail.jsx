@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { fotoUrl } from '../utils/fotoUrl';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import Navbar from '../components/Navbar';
 import { getDaftarEskul, getGaleriEskul } from '../services/api';
 import {
   ChevronLeft,
@@ -22,15 +23,22 @@ export default function GaleriFotoDetail() {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Role dibaca langsung supaya Navbar/Sidebar tidak "berkedip" saat pertama render
+  const roleAwal = (localStorage.getItem('role') || '').toUpperCase();
+
+  const [isAdmin, setIsAdmin] = useState(roleAwal === 'ADMIN');
+  const [isStaff, setIsStaff] = useState(
+    roleAwal === 'ADMIN' || roleAwal === 'PEMBINA'
+  );
   const [loading, setLoading] = useState(true);
   const [daftarFoto, setDaftarFoto] = useState([]);
   const [fotoAktif, setFotoAktif] = useState(null);
 
   useEffect(() => {
-    const roleUser = localStorage.getItem('role');
+    const roleUser = (localStorage.getItem('role') || '').toUpperCase();
 
-    setIsAdmin(!!(roleUser && roleUser.toUpperCase() === 'ADMIN'));
+    setIsAdmin(roleUser === 'ADMIN');
+    setIsStaff(roleUser === 'ADMIN' || roleUser === 'PEMBINA');
 
     async function fetchData() {
       setLoading(true);
@@ -88,103 +96,108 @@ export default function GaleriFotoDetail() {
       : null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 relative transition-colors duration-300">
-      <Sidebar isAdmin={isAdmin} />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 flex flex-col relative transition-colors duration-300">
+      {/* Siswa memakai Navbar, Admin/Pembina memakai Sidebar */}
+      {!isStaff && <Navbar />}
 
-      <main className="flex-1 p-6 overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => navigate(`/eskul/${namaEskul}/galeri`)}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium inline-flex items-center gap-1.5 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Kembali ke Galeri {formatNamaEskul}
-          </button>
+      <div className="flex flex-1 relative">
+        {isStaff && <Sidebar isAdmin={isAdmin} />}
 
-          {daftarFoto.length > 0 && indexAktif >= 0 && (
-            <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
-              {indexAktif + 1} dari {daftarFoto.length}
-            </span>
-          )}
-        </div>
+        <main className="flex-1 min-w-0 p-6 overflow-y-auto">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => navigate(`/eskul/${namaEskul}/galeri`)}
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-medium inline-flex items-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke Galeri {formatNamaEskul}
+            </button>
 
-        {loading ? (
-          <div className="text-center text-gray-400 dark:text-gray-500 text-sm py-20">
-            Memuat foto...
+            {daftarFoto.length > 0 && indexAktif >= 0 && (
+              <span className="text-xs font-medium text-gray-400 dark:text-gray-500">
+                {indexAktif + 1} dari {daftarFoto.length}
+              </span>
+            )}
           </div>
-        ) : !fotoAktif ? (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-400 dark:text-gray-500 gap-2">
-            <ImageIcon className="w-10 h-10" />
-            <p className="text-sm">Foto tidak ditemukan.</p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <div className="relative w-full flex items-center justify-center">
-              {fotoSebelumnya && (
+
+          {loading ? (
+            <div className="text-center text-gray-400 dark:text-gray-500 text-sm py-20">
+              Memuat foto...
+            </div>
+          ) : !fotoAktif ? (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-400 dark:text-gray-500 gap-2">
+              <ImageIcon className="w-10 h-10" />
+              <p className="text-sm">Foto tidak ditemukan.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <div className="relative w-full flex items-center justify-center">
+                {fotoSebelumnya && (
+                  <button
+                    onClick={() =>
+                      navigate(`/eskul/${namaEskul}/galeri/${fotoSebelumnya.id_galeri}`)
+                    }
+                    className="hidden md:flex absolute left-0 -translate-x-4 z-10 w-11 h-11 rounded-full bg-white dark:bg-gray-900 shadow-md border border-gray-100 dark:border-gray-700 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:shadow-lg transition-all"
+                    title="Foto sebelumnya"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
+
+                <img
+                  src={getFotoUrl(fotoAktif.foto)}
+                  alt={fotoAktif.keterangan || formatNamaEskul}
+                  className="max-w-full max-h-[75vh] w-auto rounded-2xl shadow-xl object-contain"
+                />
+
+                {fotoSelanjutnya && (
+                  <button
+                    onClick={() =>
+                      navigate(`/eskul/${namaEskul}/galeri/${fotoSelanjutnya.id_galeri}`)
+                    }
+                    className="hidden md:flex absolute right-0 translate-x-4 z-10 w-11 h-11 rounded-full bg-white dark:bg-gray-900 shadow-md border border-gray-100 dark:border-gray-700 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:shadow-lg transition-all"
+                    title="Foto selanjutnya"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-6 text-center max-w-xl">
+                <p className="text-base font-medium text-gray-800 dark:text-gray-100">
+                  {fotoAktif.keterangan || 'Tanpa keterangan'}
+                </p>
+              </div>
+
+              <div className="flex md:hidden items-center gap-6 mt-5">
                 <button
                   onClick={() =>
+                    fotoSebelumnya &&
                     navigate(`/eskul/${namaEskul}/galeri/${fotoSebelumnya.id_galeri}`)
                   }
-                  className="hidden md:flex absolute left-0 -translate-x-4 z-10 w-11 h-11 rounded-full bg-white dark:bg-gray-900 shadow-md border border-gray-100 dark:border-gray-700 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:shadow-lg transition-all"
-                  title="Foto sebelumnya"
+                  disabled={!fotoSebelumnya}
+                  className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-4 h-4" />
+                  Sebelumnya
                 </button>
-              )}
 
-              <img
-                src={getFotoUrl(fotoAktif.foto)}
-                alt={fotoAktif.keterangan || formatNamaEskul}
-                className="max-w-full max-h-[75vh] w-auto rounded-2xl shadow-xl object-contain"
-              />
-
-              {fotoSelanjutnya && (
                 <button
                   onClick={() =>
+                    fotoSelanjutnya &&
                     navigate(`/eskul/${namaEskul}/galeri/${fotoSelanjutnya.id_galeri}`)
                   }
-                  className="hidden md:flex absolute right-0 translate-x-4 z-10 w-11 h-11 rounded-full bg-white dark:bg-gray-900 shadow-md border border-gray-100 dark:border-gray-700 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:shadow-lg transition-all"
-                  title="Foto selanjutnya"
+                  disabled={!fotoSelanjutnya}
+                  className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  Selanjutnya
+                  <ChevronRight className="w-4 h-4" />
                 </button>
-              )}
+              </div>
             </div>
-
-            <div className="mt-6 text-center max-w-xl">
-              <p className="text-base font-medium text-gray-800 dark:text-gray-100">
-                {fotoAktif.keterangan || 'Tanpa keterangan'}
-              </p>
-            </div>
-
-            <div className="flex md:hidden items-center gap-6 mt-5">
-              <button
-                onClick={() =>
-                  fotoSebelumnya &&
-                  navigate(`/eskul/${namaEskul}/galeri/${fotoSebelumnya.id_galeri}`)
-                }
-                disabled={!fotoSebelumnya}
-                className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Sebelumnya
-              </button>
-
-              <button
-                onClick={() =>
-                  fotoSelanjutnya &&
-                  navigate(`/eskul/${namaEskul}/galeri/${fotoSelanjutnya.id_galeri}`)
-                }
-                disabled={!fotoSelanjutnya}
-                className="flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:cursor-not-allowed hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-              >
-                Selanjutnya
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

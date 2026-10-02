@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
+import BannerSlider from '../components/Bannerslider';
 import { useViewStore } from '../store/useViewStore';
 
 // Dashboard tujuan sesuai role
@@ -97,6 +98,9 @@ const formatDateKey = key => {
   return `${Number(d)} ${BULAN_LABEL[Number(mo) - 1]} ${y}`;
 };
 
+// Maksimal foto yang tampil di banner slider
+const MAX_FOTO_BANNER = 5;
+
 export default function ExtracurricularDetail() {
   const { namaEskul } = useParams();
   const navigate = useNavigate();
@@ -159,8 +163,9 @@ export default function ExtracurricularDetail() {
     useState([]);
   const [currentEskulDetail, setCurrentEskulDetail] =
     useState(null);
-  const [fotoUtamaGaleri, setFotoUtamaGaleri] =
-    useState(null);
+
+  // Daftar URL foto untuk banner slider (foto utama selalu di urutan pertama)
+  const [fotoBanner, setFotoBanner] = useState([]);
 
   const idEskulPembina =
     localStorage.getItem('id_eskul');
@@ -239,13 +244,19 @@ export default function ExtracurricularDetail() {
             matchedEskul.id_eskul
           );
 
-        const fotoUtama =
-          (fotoGaleri || []).find(
-            item => item.is_featured
-          );
+        // Banner memakai foto yang ditandai "Jadikan Banner" di galeri.
+        // Kalau belum ada yang ditandai, pakai foto utama seperti sebelumnya.
+        const semuaFoto = fotoGaleri || [];
+        let terpilih = semuaFoto.filter(item => item.is_banner);
+        if (terpilih.length === 0) {
+          terpilih = semuaFoto.filter(item => item.is_featured);
+        }
 
-        setFotoUtamaGaleri(
-          fotoUtama || null
+        setFotoBanner(
+          terpilih
+            .slice(0, MAX_FOTO_BANNER)
+            .map(item => fotoUrl(item.foto))
+            .filter(Boolean)
         );
       } catch (error) {
         console.error(
@@ -376,8 +387,6 @@ export default function ExtracurricularDetail() {
         ? `Belum ada siswa ${genderLabel.toLowerCase()} di ekstrakurikuler ini.`
         : 'Belum ada siswa yang terdaftar di ekstrakurikuler ini.';
 
-  const fotoCoverUrl = fotoUrl(fotoUtamaGaleri?.foto);
-
   const fotoLogoUrl = fotoUrl(currentEskulDetail?.foto);
 
   return (
@@ -445,32 +454,22 @@ export default function ExtracurricularDetail() {
               DETAIL ESKUL
           ============================== */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 mb-8 overflow-hidden transition-colors">
-            <div className="relative h-48 sm:h-64 bg-gray-100 dark:bg-gray-800">
-              {fotoCoverUrl ? (
-                <img
-                  src={fotoCoverUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  onError={e => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950/60 dark:to-gray-900" />
-              )}
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
+            <div className="relative h-62 sm:h-92 bg-gray-100 dark:bg-gray-800">
+              {/* Banner slider: bisa digeser / di-drag, ganti otomatis */}
+              <BannerSlider images={fotoBanner} className="h-full">
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
+              </BannerSlider>
 
               <button
                 type="button"
                 onClick={handleLihatGaleri}
-                className="absolute top-4 right-4 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-colors"
+                className="absolute top-4 right-4 z-10 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg transition-colors"
               >
                 <Images className="w-4 h-4" />
                 Lihat Galeri
               </button>
 
-              <div className="absolute -bottom-12 left-6 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] font-medium text-center p-1">
+              <div className="absolute -bottom-12 left-6 z-10 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] font-medium text-center p-1">
                 {fotoLogoUrl ? (
                   <img
                     src={fotoLogoUrl}
@@ -766,13 +765,7 @@ export default function ExtracurricularDetail() {
                           }
                           className="py-4 text-center text-gray-400 dark:text-gray-500"
                         >
-                          {searchQuery
-                            ? `Tidak ditemukan siswa dengan kata kunci "${searchQuery}".`
-                            : tanggalFilter
-                              ? `Tidak ada pendaftar pada ${tanggalLabel}.`
-                              : genderFilter
-                              ? `Belum ada siswa ${genderLabel.toLowerCase()} di ekstrakurikuler ini.`
-                              : 'Belum ada siswa yang terdaftar di ekstrakurikuler ini.'}
+                          {emptyMessage}
                         </td>
                       </tr>
                     ) : (

@@ -954,6 +954,41 @@ export async function setFotoUtamaGaleri(
   }
 }
 
+export async function setBannerGaleri(idGaleri) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/galeri/${idGaleri}/banner`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return { success: false, error: 'Sesi login berakhir.' };
+    }
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal mengubah foto banner');
+    }
+
+    return { success: true, data: result };
+
+  } catch (error) {
+    console.error('Error setting foto banner:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 export async function updateGaleriEskul(
   idGaleri,

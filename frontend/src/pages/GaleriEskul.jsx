@@ -3,11 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { fotoUrl } from '../utils/fotoUrl';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import Navbar from '../components/Navbar';
 import {
   getDaftarEskul,
   getGaleriEskul,
   hapusGaleriEskul,
   setFotoUtamaGaleri,
+  setBannerGaleri,
   updateGaleriEskul
 } from '../services/api';
 import {
@@ -17,8 +19,12 @@ import {
   Image as ImageIcon,
   Calendar,
   Layers,
-  Sparkles
+  Sparkles,
+  PanelTop
 } from 'lucide-react';
+
+// Harus sama dengan batas di backend dan ExtracurricularDetail.jsx
+const MAX_BANNER = 5;
 
 export default function GaleriEskul() {
   const { namaEskul } = useParams();
@@ -31,8 +37,11 @@ export default function GaleriEskul() {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isStaff, setIsStaff] = useState(false);
+  const roleAwal = (localStorage.getItem('role') || '').toUpperCase();
+  const [isAdmin, setIsAdmin] = useState(roleAwal === 'ADMIN');
+  const [isStaff, setIsStaff] = useState(
+    roleAwal === 'ADMIN' || roleAwal === 'PEMBINA'
+  );
   const [loading, setLoading] = useState(true);
   const [currentEskulDetail, setCurrentEskulDetail] = useState(null);
   const [daftarFoto, setDaftarFoto] = useState([]);
@@ -40,6 +49,7 @@ export default function GaleriEskul() {
   const [activeTab, setActiveTab] = useState('Semua');
 
   const [settingUtama, setSettingUtama] = useState(null);
+  const [settingBanner, setSettingBanner] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
   const [editFile, setEditFile] = useState(null);
   const [editKeterangan, setEditKeterangan] = useState('');
@@ -106,6 +116,8 @@ export default function GaleriEskul() {
     fetchData();
   }, [namaEskul, cleanNamaEskul]);
 
+  const jumlahBanner = daftarFoto.filter(f => f.is_banner).length;
+
   const handleHapusFoto = async idGaleri => {
     if (!window.confirm('Yakin ingin menghapus foto ini dari galeri?')) {
       return;
@@ -129,7 +141,7 @@ export default function GaleriEskul() {
   const handleJadikanUtama = async idGaleri => {
     try {
       setSettingUtama(idGaleri);
-      
+
       // Panggil API ke backend untuk mengubah foto utama di database
       const result = await setFotoUtamaGaleri(idGaleri);
 
@@ -149,6 +161,39 @@ export default function GaleriEskul() {
       alert('Terjadi kesalahan pada server.');
     } finally {
       setSettingUtama(null);
+    }
+  };
+
+  // Tandai / lepas foto dari banner slider (toggle)
+  const handleToggleBanner = async item => {
+    if (!item.is_banner && jumlahBanner >= MAX_BANNER) {
+      alert(
+        `Banner maksimal ${MAX_BANNER} foto. Lepas salah satu foto banner dulu.`
+      );
+      return;
+    }
+
+    try {
+      setSettingBanner(item.id_galeri);
+
+      const result = await setBannerGaleri(item.id_galeri);
+
+      if (result.success) {
+        setDaftarFoto(prev =>
+          prev.map(f =>
+            f.id_galeri === item.id_galeri
+              ? { ...f, is_banner: !f.is_banner }
+              : f
+          )
+        );
+      } else {
+        alert('Gagal mengubah foto banner: ' + (result.error || 'Terjadi kesalahan'));
+      }
+    } catch (error) {
+      console.error('Error saat mengubah foto banner:', error);
+      alert('Terjadi kesalahan pada server.');
+    } finally {
+      setSettingBanner(null);
     }
   };
 
@@ -214,10 +259,14 @@ export default function GaleriEskul() {
   });
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-      <Sidebar isAdmin={isAdmin} />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 flex flex-col transition-colors duration-300">
+      {/* Siswa memakai Navbar, Admin/Pembina memakai Sidebar */}
+      {!isStaff && <Navbar />}
 
-      <main className="flex-1 p-6 sm:p-8 overflow-y-auto">
+      <div className="flex flex-1">
+        {isStaff && <Sidebar isAdmin={isAdmin} />}
+
+      <main className="flex-1 min-w-0 p-6 sm:p-8 overflow-y-auto">
         {/* BREADCRUMB */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -257,14 +306,28 @@ export default function GaleriEskul() {
             </div>
           </div>
 
-          <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50 px-5 py-3 rounded-2xl flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-start">
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-              <Layers className="w-5 h-5" />
-              <span className="text-xs font-bold uppercase tracking-wider">Total Foto</span>
+          <div className="flex flex-col sm:flex-row gap-3 self-stretch md:self-auto">
+            {isStaff && (
+              <div className="bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-900/60 px-5 py-3 rounded-2xl flex items-center gap-3 justify-between sm:justify-start">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                  <PanelTop className="w-5 h-5" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Foto Banner</span>
+                </div>
+                <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">
+                  {jumlahBanner}/{MAX_BANNER}
+                </span>
+              </div>
+            )}
+
+            <div className="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/50 px-5 py-3 rounded-2xl flex items-center gap-3 justify-between md:justify-start">
+              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                <Layers className="w-5 h-5" />
+                <span className="text-xs font-bold uppercase tracking-wider">Total Foto</span>
+              </div>
+              <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">
+                {daftarFoto.length}
+              </span>
             </div>
-            <span className="text-xl font-black text-emerald-800 dark:text-emerald-300">
-              {daftarFoto.length}
-            </span>
           </div>
         </div>
 
@@ -322,20 +385,45 @@ export default function GaleriEskul() {
                       onClick={() => handleLihatFoto(item.id_galeri)}
                     />
 
-                    {item.is_featured && (
-                      <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md backdrop-blur-md bg-opacity-90">
-                        <Award className="w-3.5 h-3.5" />
-                        <span>Utama</span>
-                      </div>
-                    )}
+                    {/* Label di pojok kiri atas: Utama dan/atau Banner */}
+                    <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+                      {item.is_featured && (
+                        <div className="bg-emerald-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md backdrop-blur-md bg-opacity-90">
+                          <Award className="w-3.5 h-3.5" />
+                          <span>Utama</span>
+                        </div>
+                      )}
+
+                      {item.is_banner && (
+                        <div className="bg-sky-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md backdrop-blur-md bg-opacity-90">
+                          <PanelTop className="w-3.5 h-3.5" />
+                          <span>Banner</span>
+                        </div>
+                      )}
+                    </div>
 
                     {isStaff && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          onClick={() => handleToggleBanner(item)}
+                          disabled={settingBanner === item.id_galeri}
+                          title={
+                            item.is_banner
+                              ? 'Lepas dari banner'
+                              : 'Jadikan banner'
+                          }
+                          className="bg-white/95 dark:bg-gray-900/95 hover:bg-white text-sky-600 w-10 h-10 md:w-8 md:h-8 rounded-xl flex items-center justify-center shadow-md disabled:opacity-40 transition"
+                        >
+                          <PanelTop
+                            className={`w-4 h-4 ${item.is_banner ? 'fill-sky-200' : ''}`}
+                          />
+                        </button>
+
                         <button
                           onClick={() => handleJadikanUtama(item.id_galeri)}
                           disabled={item.is_featured || settingUtama === item.id_galeri}
                           title="Jadikan foto utama"
-                          className="bg-white/95 dark:bg-gray-900/95 hover:bg-white text-emerald-600 w-8 h-8 rounded-xl flex items-center justify-center shadow-md disabled:opacity-40 transition"
+                          className="bg-white/95 dark:bg-gray-900/95 hover:bg-white text-emerald-600 w-10 h-10 md:w-8 md:h-8 rounded-xl flex items-center justify-center shadow-md disabled:opacity-40 transition"
                         >
                           <Award className={`w-4 h-4 ${item.is_featured ? 'fill-emerald-500' : ''}`} />
                         </button>
@@ -343,7 +431,7 @@ export default function GaleriEskul() {
                         <button
                           onClick={() => handleBukaEdit(item)}
                           title="Edit keterangan & kategori"
-                          className="bg-white/95 dark:bg-gray-900/95 hover:bg-white text-blue-600 w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition"
+                          className="bg-white/95 dark:bg-gray-900/95 hover:bg-white text-blue-600 w-10 h-10 md:w-8 md:h-8 rounded-xl flex items-center justify-center shadow-md transition"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -351,7 +439,7 @@ export default function GaleriEskul() {
                         <button
                           onClick={() => handleHapusFoto(item.id_galeri)}
                           title="Hapus foto"
-                          className="bg-red-600 hover:bg-red-700 text-white w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition"
+                          className="bg-red-600 hover:bg-red-700 text-white w-10 h-10 md:w-8 md:h-8 rounded-xl flex items-center justify-center shadow-md transition"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -380,6 +468,7 @@ export default function GaleriEskul() {
           )}
         </div>
       </main>
+      </div>
 
       {/* MODAL EDIT */}
       {editTarget && (
