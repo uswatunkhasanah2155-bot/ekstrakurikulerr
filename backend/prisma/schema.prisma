@@ -11,7 +11,10 @@ model User {
   username   String           @unique
   password   String
   email      String?
+  nama       String?
+  foto       String?
   role       String           // 'admin', 'siswa', atau 'pembina'
+  created_at DateTime         @default(now())
   id_eskul   Int?
   eskul      Ekstrakurikuler? @relation(fields: [id_eskul], references: [id_eskul])
   siswa      Siswa?

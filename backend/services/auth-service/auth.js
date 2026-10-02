@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
+import upload from '../../middleware/upload.js';
+import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 
 const router = express.Router();
 
@@ -600,6 +602,164 @@ router.get('/verify', (req, res) => {
     res.status(401).json({
       success: false,
       message: 'Token tidak valid atau sudah kedaluwarsa'
+    });
+  }
+});
+
+
+// =====================================================
+// 9. PROFIL SAYA (GET)
+// =====================================================
+
+const selectProfil = {
+  id_user: true,
+  username: true,
+  nama: true,
+  email: true,
+  foto: true,
+  role: true,
+  created_at: true,
+  id_eskul: true,
+
+  eskul: {
+    select: {
+      id_eskul: true,
+      nama_eskul: true,
+      jadwal: true
+    }
+  }
+};
+
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id_user: Number(req.user.id_user) },
+      select: selectProfil
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User tidak ditemukan'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+
+  } catch (error) {
+    console.error('GET PROFIL ERROR:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil profil',
+      error: error.message
+    });
+  }
+});
+
+
+// =====================================================
+// 10. PROFIL SAYA (UPDATE nama, email, foto)
+// Password & username TIDAK bisa diubah lewat endpoint ini.
+// =====================================================
+
+const uploadFotoProfil = (req, res, next) => {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message:
+          err.code === 'LIMIT_FILE_SIZE'
+            ? 'Ukuran foto maksimal 2 MB'
+            : err.message
+      });
+    }
+    next();
+  });
+};
+
+router.put('/me', verifyToken, uploadFotoProfil, async (req, res) => {
+  let fotoBaru = null;
+
+  try {
+    const idUser = Number(req.user.id_user);
+    const body = req.body || {};
+
+    const userLama = await prisma.user.findUnique({
+      where: { id_user: idUser },
+      select: { foto: true }
+    });
+
+    if (!userLama) {
+      return res.status(404).json({
+        success: false,
+        message: 'User tidak ditemukan'
+      });
+    }
+
+    const dataUpdate = {};
+
+    if (body.nama !== undefined) {
+      const nama = String(body.nama).trim();
+
+      if (nama.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nama maksimal 100 karakter'
+        });
+      }
+
+      dataUpdate.nama = nama || null;
+    }
+
+    if (body.email !== undefined) {
+      const email = String(body.email).trim();
+
+      if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Format email tidak valid'
+        });
+      }
+
+      dataUpdate.email = email || null;
+    }
+
+    if (req.file) {
+      fotoBaru = await uploadFoto(req.file, 'profil');
+      dataUpdate.foto = fotoBaru;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id_user: idUser },
+      data: dataUpdate,
+      select: selectProfil
+    });
+
+    // Foto lama dihapus setelah database berhasil diperbarui
+    if (fotoBaru && userLama.foto) {
+      await hapusFoto(userLama.foto);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profil berhasil diperbarui',
+      data: updated
+    });
+
+  } catch (error) {
+    // Database gagal: buang foto baru yang sudah terlanjur diupload
+    if (fotoBaru) await hapusFoto(fotoBaru);
+
+    console.error('UPDATE PROFIL ERROR:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal memperbarui profil',
+      error: error.message
     });
   }
 });
