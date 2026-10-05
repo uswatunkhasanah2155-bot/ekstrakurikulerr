@@ -616,6 +616,7 @@ const selectProfil = {
   username: true,
   nama: true,
   email: true,
+  jenis_kelamin: true,
   foto: true,
   role: true,
   created_at: true,
@@ -662,7 +663,7 @@ router.get('/me', verifyToken, async (req, res) => {
 
 
 // =====================================================
-// 10. PROFIL SAYA (UPDATE nama, email, foto)
+// 10. PROFIL SAYA (UPDATE nama, email, jenis kelamin, foto)
 // Password & username TIDAK bisa diubah lewat endpoint ini.
 // =====================================================
 
@@ -726,6 +727,19 @@ router.put('/me', verifyToken, uploadFotoProfil, async (req, res) => {
       }
 
       dataUpdate.email = email || null;
+    }
+
+    if (body.jenis_kelamin !== undefined) {
+      const jk = String(body.jenis_kelamin).trim().toUpperCase();
+
+      if (jk && !['L', 'P'].includes(jk)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Jenis kelamin tidak valid'
+        });
+      }
+
+      dataUpdate.jenis_kelamin = jk || null;
     }
 
     if (req.file) {

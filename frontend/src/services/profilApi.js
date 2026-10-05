@@ -24,8 +24,8 @@ export async function getProfilSaya() {
   }
 }
 
-// Update nama, email, dan/atau foto profil.
-// dataProfil = { nama, email, foto (File) } -> semua opsional
+// Update nama, email, jenis kelamin, dan/atau foto profil.
+// dataProfil = { nama, email, jenis_kelamin, foto (File) } -> semua opsional
 export async function updateProfilSaya(dataProfil) {
   try {
     const token = localStorage.getItem('token');
@@ -33,6 +33,7 @@ export async function updateProfilSaya(dataProfil) {
     const formData = new FormData();
     if (dataProfil.nama !== undefined) formData.append('nama', dataProfil.nama);
     if (dataProfil.email !== undefined) formData.append('email', dataProfil.email);
+    if (dataProfil.jenis_kelamin !== undefined) formData.append('jenis_kelamin', dataProfil.jenis_kelamin);
     if (dataProfil.foto) formData.append('foto', dataProfil.foto);
 
     const response = await fetch(`${API_URL}/api/auth/me`, {

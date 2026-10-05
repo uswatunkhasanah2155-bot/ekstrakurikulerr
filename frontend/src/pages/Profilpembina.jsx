@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Camera,
   Mail,
+  Users,
   BookOpen,
   CalendarDays,
   UserRound,
@@ -20,6 +21,8 @@ import { getProfilSaya, updateProfilSaya } from '../services/profilApi';
 import { fotoUrl } from '../utils/fotoUrl';
 
 const MAX_FOTO = 2 * 1024 * 1024; // 2 MB, sama dengan batas backend
+
+const JK_LABEL = { L: 'Laki-laki', P: 'Perempuan' };
 
 const formatTanggal = (iso) => {
   if (!iso) return '-';
@@ -38,7 +41,7 @@ export default function ProfilPembina() {
   const [loading, setLoading] = useState(true);
 
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({ nama: '', email: '' });
+  const [form, setForm] = useState({ nama: '', email: '', jenis_kelamin: '' });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pesan, setPesan] = useState(null); // { tipe: 'sukses' | 'error', teks }
@@ -72,9 +75,13 @@ export default function ProfilPembina() {
   const namaEskul = profil?.eskul?.nama_eskul;
   const slugEskul = (namaEskul || '').trim().toLowerCase().replace(/\s+/g, '-');
 
-  // ---------- Edit nama & email ----------
+  // ---------- Edit nama, email & jenis kelamin ----------
   const mulaiEdit = () => {
-    setForm({ nama: profil?.nama || '', email: profil?.email || '' });
+    setForm({
+      nama: profil?.nama || '',
+      email: profil?.email || '',
+      jenis_kelamin: profil?.jenis_kelamin || '',
+    });
     setEditMode(true);
   };
 
@@ -85,6 +92,7 @@ export default function ProfilPembina() {
     const res = await updateProfilSaya({
       nama: form.nama,
       email: form.email,
+      jenis_kelamin: form.jenis_kelamin,
     });
     setSaving(false);
 
@@ -228,6 +236,10 @@ export default function ProfilPembina() {
                     <span className="truncate">{profil.email || 'Email belum diisi'}</span>
                   </div>
                   <div className="flex items-center gap-3">
+                    <Users className="h-4 w-4 shrink-0 text-gray-400" />
+                    <span>{JK_LABEL[profil.jenis_kelamin] || 'Jenis kelamin belum diisi'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <BookOpen className="h-4 w-4 shrink-0 text-gray-400" />
                     <span className="truncate">{namaEskul || 'Belum ada eskul'}</span>
                   </div>
@@ -281,6 +293,23 @@ export default function ProfilPembina() {
                       />
                     ) : (
                       <div className={valueBox}>{profil.email || '-'}</div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className={label}>Jenis Kelamin</label>
+                    {editMode ? (
+                      <select
+                        value={form.jenis_kelamin}
+                        onChange={(e) => setForm({ ...form, jenis_kelamin: e.target.value })}
+                        className={input}
+                      >
+                        <option value="">Pilih jenis kelamin</option>
+                        <option value="L">Laki-laki</option>
+                        <option value="P">Perempuan</option>
+                      </select>
+                    ) : (
+                      <div className={valueBox}>{JK_LABEL[profil.jenis_kelamin] || '-'}</div>
                     )}
                   </div>
                 </div>
