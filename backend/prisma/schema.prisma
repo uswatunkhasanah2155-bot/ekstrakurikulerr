@@ -7,17 +7,19 @@ generator client {
 }
 
 model User {
-  id_user    Int              @id @default(autoincrement())
-  username   String           @unique
-  password   String
-  email      String?
-  nama       String?
-  foto       String?
-  role       String           // 'admin', 'siswa', atau 'pembina'
-  created_at DateTime         @default(now())
-  id_eskul   Int?
-  eskul      Ekstrakurikuler? @relation(fields: [id_eskul], references: [id_eskul])
-  siswa      Siswa?
+  id_user        Int              @id @default(autoincrement())
+  username       String           @unique
+  password       String
+  email          String?
+  nama           String?
+  jenis_kelamin  String?          // 'L' atau 'P'
+  foto           String?
+  role           String           // 'admin', 'siswa', atau 'pembina'
+  created_at     DateTime         @default(now())
+
+  id_eskul       Int?
+  eskul          Ekstrakurikuler? @relation(fields: [id_eskul], references: [id_eskul])
+  siswa          Siswa?
 }
 
 model Siswa {
