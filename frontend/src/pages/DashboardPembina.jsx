@@ -64,6 +64,7 @@ const normalisasi = (item) => {
     idSiswa: siswa.id_siswa ?? item.id_siswa,
     nama: siswa.nama ?? siswa.nama_siswa ?? item.nama ?? item.nama_siswa ?? 'Tanpa nama',
     kelas:
+      siswa.kelasData?.nama_kelas ??
       siswa.kelas?.nama_kelas ??
       item.kelas?.nama_kelas ??
       (typeof siswa.kelas === 'string' ? siswa.kelas : null) ??
