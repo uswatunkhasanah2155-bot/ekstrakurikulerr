@@ -2,8 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Menu,
-  X,
   LogOut,
   ChevronDown,
   Sun,
@@ -24,7 +22,7 @@ import logoSekolah from '../assets/logosmkc.jpeg';
 
 // Gaya link menu: aktif (biru) vs tidak aktif
 const linkBase =
-  'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors';
+  'flex items-center gap-1.5 whitespace-nowrap px-3 xl:px-4 py-2 rounded-lg text-sm font-semibold transition-colors';
 const linkActive =
   'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
 const linkIdle =
@@ -33,18 +31,18 @@ const linkIdle =
 const navClass = ({ isActive }) =>
   `${linkBase} ${isActive ? linkActive : linkIdle}`;
 
-const mobileClass = ({ isActive }) =>
-  `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold ${
-    isActive
-      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-  }`;
+// Menu baris bawah (HP / tablet): tombol kecil yang bisa digeser ke samping
+const pillBase =
+  'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors';
+
+const pillClass = ({ isActive }) =>
+  `${pillBase} ${isActive ? linkActive : linkIdle}`;
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mobileEskulOpen, setMobileEskulOpen] = useState(false);
   const [eskulDropdownOpen, setEskulDropdownOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const eskulRef = useRef(null);
@@ -111,6 +109,11 @@ export default function Navbar() {
     navigate('/login');
   };
 
+  // Tutup daftar eskul (HP) saat pindah halaman
+  useEffect(() => {
+    setMobileEskulOpen(false);
+  }, [location.pathname]);
+
   // Klik di luar dropdown untuk menutupnya secara otomatis
   useEffect(() => {
     function handleClickOutside(event) {
@@ -129,12 +132,13 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-40 transition-colors duration-300 w-full">
-      {/* Lebar penuh, padding sama dengan halaman lain */}
       <div className="w-full px-4 sm:px-6 lg:px-10">
-        <div className="flex items-center justify-between h-16">
+
+        {/* ===== BARIS ATAS ===== */}
+        <div className="flex items-center justify-between gap-3 h-16">
 
           {/* LOGO SEKOLAH */}
-          <Link to="/Dashboard" className="flex items-center gap-2">
+          <Link to="/Dashboard" className="flex items-center gap-2 shrink-0">
             <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-white">
               <img
                 src={logoSekolah}
@@ -142,13 +146,13 @@ export default function Navbar() {
                 className="w-full h-full object-contain"
               />
             </div>
-            <span className="font-bold text-gray-800 dark:text-gray-100 text-lg hidden sm:inline">
+            <span className="font-bold text-gray-800 dark:text-gray-100 text-lg whitespace-nowrap hidden sm:inline">
               SESCO ESKUL
             </span>
           </Link>
 
           {/* MENU DESKTOP */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1">
             <NavLink to="/Dashboard" className={navClass}>
               <LayoutDashboard className="w-4 h-4" />
               <span>Dashboard</span>
@@ -205,8 +209,8 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* TEMA + PROFIL DESKTOP */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* TEMA + PROFIL (semua ukuran layar) */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Tombol Toggle Tema Terang/Gelap */}
             <button
               onClick={toggleTheme}
@@ -216,18 +220,18 @@ export default function Navbar() {
               {isDarkMode ? (
                 <>
                   <Sun className="w-4 h-4 text-yellow-400" />
-                  <span>Terang</span>
+                  <span className="hidden xl:inline">Terang</span>
                 </>
               ) : (
                 <>
                   <Moon className="w-4 h-4 text-slate-700" />
-                  <span>Gelap</span>
+                  <span className="hidden xl:inline">Gelap</span>
                 </>
               )}
             </button>
 
             {/* DROPDOWN PROFIL */}
-            <div className="relative pl-3 border-l border-gray-200 dark:border-gray-700" ref={profileRef}>
+            <div className="relative pl-2 sm:pl-3 border-l border-gray-200 dark:border-gray-700" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
@@ -235,7 +239,7 @@ export default function Navbar() {
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-sm">
                   {inisial}
                 </div>
-                <div className="text-left leading-tight">
+                <div className="text-left leading-tight hidden xl:block">
                   <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize max-w-[120px] truncate">
                     {username}
                   </p>
@@ -272,101 +276,60 @@ export default function Navbar() {
               )}
             </div>
           </div>
-
-          {/* TOMBOL KANAN (MOBILE) */}
-          <div className="flex items-center gap-2 md:hidden">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
-              title="Ubah Tema"
-            >
-              {isDarkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
-            </button>
-
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-600 dark:text-gray-300 p-2"
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-
         </div>
 
-        {/* MENU MOBILE */}
-        {isMenuOpen && (
-          <div className="md:hidden pb-4 space-y-1 border-t border-gray-100 dark:border-gray-800 pt-3">
-            {/* Info user di mobile */}
-            <div className="flex items-center gap-3 px-4 py-2 mb-1">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm">
-                {inisial}
-              </div>
-              <div className="leading-tight">
-                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize">
-                  {username}
-                </p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400">{roleLabel}</p>
-              </div>
-            </div>
+        {/* ===== BARIS MENU (HP / tablet): bisa digeser ke samping ===== */}
+        <div className="lg:hidden -mx-4 sm:-mx-6 px-4 sm:px-6 pb-2 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <NavLink to="/Dashboard" className={pillClass}>
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
+          </NavLink>
 
-            <NavLink
-              to="/Dashboard"
-              onClick={() => setIsMenuOpen(false)}
-              className={mobileClass}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </NavLink>
+          <NavLink to="/jadwal" className={pillClass}>
+            <CalendarDays className="w-4 h-4" />
+            Jadwal
+          </NavLink>
 
-            <NavLink
-              to="/jadwal"
-              onClick={() => setIsMenuOpen(false)}
-              className={mobileClass}
-            >
-              <CalendarDays className="w-4 h-4" />
-              Jadwal Eskul
-            </NavLink>
+          <NavLink to="/pendaftaran-saya" className={pillClass}>
+            <ClipboardList className="w-4 h-4" />
+            Pendaftaran Saya
+          </NavLink>
 
-            <NavLink
-              to="/pendaftaran-saya"
-              onClick={() => setIsMenuOpen(false)}
-              className={mobileClass}
-            >
-              <ClipboardList className="w-4 h-4" />
-              Pendaftaran Saya
-            </NavLink>
+          <button
+            onClick={() => setMobileEskulOpen(!mobileEskulOpen)}
+            className={`${pillBase} ${
+              eskulAktif || mobileEskulOpen ? linkActive : linkIdle
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            Ekstrakurikuler
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-200 ${
+                mobileEskulOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+        </div>
 
-            <div className="flex items-center gap-2 px-4 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider mt-2">
-              <Trophy className="w-3.5 h-3.5" />
-              Daftar Eskul
-            </div>
+        {/* Daftar eskul (HP / tablet) */}
+        {mobileEskulOpen && (
+          <div className="lg:hidden flex flex-wrap gap-2 border-t border-gray-100 dark:border-gray-800 pt-3 pb-3">
             {daftarEskul.map((item, index) => (
               <NavLink
                 key={index}
                 to={item.path}
-                onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-2.5 px-6 py-2 rounded-lg text-sm ${
+                  `flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-semibold'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'border-blue-500/40 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'border-gray-200 text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800'
                   }`
                 }
               >
-                <item.icon className="w-4 h-4 shrink-0" />
+                <item.icon className="w-3.5 h-3.5 shrink-0" />
                 {item.nama}
               </NavLink>
             ))}
-
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 mt-2">
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
-              >
-                <LogOut className="w-4 h-4" />
-                Keluar
-              </button>
-            </div>
           </div>
         )}
       </div>

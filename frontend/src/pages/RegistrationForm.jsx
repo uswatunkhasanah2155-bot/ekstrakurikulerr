@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import Navbar from '../components/Navbar';
 import {
   tambahPendaftar,
   getDaftarEskul,
@@ -184,9 +185,12 @@ export default function RegistrationForm() {
     }
   };
 
+  const roleLogin = (localStorage.getItem('role') || '').toUpperCase();
+  const bisaKelola = roleLogin === 'ADMIN' || roleLogin === 'PEMBINA';
+
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-      <Sidebar />
+    <div className={`flex min-h-screen ${bisaKelola ? '' : 'flex-col'} bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300`}>
+      {bisaKelola ? <Sidebar /> : <Navbar />}
 
       <main className="flex-1 p-6 overflow-y-auto">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">
