@@ -293,224 +293,228 @@ export default function DataUser() {
   // ==================================================
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 flex flex-col relative transition-colors duration-300">
+      
+      {/* Kontainer bagian bawah (Sidebar & Konten Utama) */}
+      <div className="flex flex-1 relative">
 
-      <Sidebar />
+        <Sidebar />
 
-      <main className="flex-1 p-6 md:p-8">
+        <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-10 py-6 overflow-y-auto">
 
-        {/* HEADER */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* HEADER */}
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/40">
-              <UserCog className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/40">
+                <UserCog className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  Data User
+                </h1>
+
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Kelola akun pengguna sistem.
+                </p>
+              </div>
+
             </div>
 
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Data User
-              </h1>
 
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Kelola akun pengguna sistem.
-              </p>
-            </div>
+            {/* TAMBAH USER */}
+            <button
+              onClick={bukaTambah}
+              className="
+                flex items-center justify-center gap-2
+                rounded-lg bg-indigo-600 px-4 py-2.5
+                font-semibold text-white transition
+                hover:bg-indigo-700
+              "
+            >
+              <Plus className="h-5 w-5" />
+              Tambah User
+            </button>
 
           </div>
 
 
-          {/* TAMBAH USER */}
-          <button
-            onClick={bukaTambah}
-            className="
-              flex items-center justify-center gap-2
-              rounded-lg bg-indigo-600 px-4 py-2.5
-              font-semibold text-white transition
-              hover:bg-indigo-700
-            "
-          >
-            <Plus className="h-5 w-5" />
-            Tambah User
-          </button>
+          {/* TABLE CONTAINER */}
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-gray-900 border border-gray-100 dark:border-gray-800">
 
-        </div>
+            <div className="
+              flex items-center justify-between
+              border-b border-gray-200
+              px-6 py-4 dark:border-gray-700
+            ">
+              <div>
+                <h2 className="font-semibold text-gray-800 dark:text-white">
+                  Daftar User
+                </h2>
 
-
-        {/* TABLE */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-gray-900">
-
-          <div className="
-            flex items-center justify-between
-            border-b border-gray-200
-            px-6 py-4 dark:border-gray-700
-          ">
-            <div>
-              <h2 className="font-semibold text-gray-800 dark:text-white">
-                Daftar User
-              </h2>
-
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Total {daftarUser.length} user
-              </p>
-            </div>
-          </div>
-
-
-          {/* LOADING */}
-          {loading ? (
-
-            <div className="p-10 text-center text-gray-500">
-              Memuat data user...
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Total {daftarUser.length} user
+                </p>
+              </div>
             </div>
 
-          ) : daftarUser.length === 0 ? (
 
-            <div className="p-10 text-center text-gray-500">
-              Belum ada data user.
-            </div>
+            {/* LOADING */}
+            {loading ? (
 
-          ) : (
+              <div className="p-10 text-center text-gray-500">
+                Memuat data user...
+              </div>
 
-            <div className="overflow-x-auto">
+            ) : daftarUser.length === 0 ? (
 
-              <table className="w-full text-sm">
+              <div className="p-10 text-center text-gray-500">
+                Belum ada data user.
+              </div>
 
-                <thead>
-                  <tr className="
-                    border-b bg-gray-50 text-left
-                    dark:border-gray-700 dark:bg-gray-800
-                  ">
+            ) : (
 
-                    <th className="px-6 py-4 font-semibold">
-                      No
-                    </th>
+              <div className="overflow-x-auto">
 
-                    <th className="px-6 py-4 font-semibold">
-                      Username
-                    </th>
+                <table className="w-full text-left border-collapse text-sm">
 
-                    <th className="px-6 py-4 font-semibold">
-                      Email
-                    </th>
+                  <thead>
+                    <tr className="
+                      border-b bg-gray-50 text-gray-500 dark:text-gray-400 uppercase text-xs
+                      dark:border-gray-700 dark:bg-gray-800/50
+                    ">
 
-                    <th className="px-6 py-4 font-semibold">
-                      Role
-                    </th>
+                      <th className="px-6 py-3 font-semibold">
+                        No
+                      </th>
 
-                    <th className="px-6 py-4 font-semibold">
-                      Eskul
-                    </th>
+                      <th className="px-6 py-3 font-semibold">
+                        Username
+                      </th>
 
-                    <th className="px-6 py-4 text-center font-semibold">
-                      Aksi
-                    </th>
+                      <th className="px-6 py-3 font-semibold">
+                        Email
+                      </th>
 
-                  </tr>
-                </thead>
+                      <th className="px-6 py-3 font-semibold">
+                        Role
+                      </th>
 
+                      <th className="px-6 py-3 font-semibold">
+                        Eskul
+                      </th>
 
-                <tbody>
-
-                  {daftarUser.map((user, index) => (
-
-                    <tr
-                      key={user.id_user}
-                      className="
-                        border-b last:border-b-0
-                        hover:bg-gray-50
-                        dark:border-gray-700
-                        dark:hover:bg-gray-800
-                      "
-                    >
-
-                      <td className="px-6 py-4">
-                        {index + 1}
-                      </td>
-
-                      <td className="px-6 py-4 font-medium">
-                        {user.username}
-                      </td>
-
-                      <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
-                        {user.email || '-'}
-                      </td>
-
-                      <td className="px-6 py-4">
-
-                        <span
-                          className={`
-                            inline-flex rounded-full px-3 py-1
-                            text-xs font-semibold
-                            ${
-                              user.role?.toUpperCase() === 'ADMIN'
-                                ? 'bg-purple-100 text-purple-700'
-                                : user.role?.toUpperCase() === 'PEMBINA'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-green-100 text-green-700'
-                            }
-                          `}
-                        >
-                          {user.role?.toUpperCase()}
-                        </span>
-
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {getNamaEskul(user)}
-                      </td>
-
-                      <td className="px-6 py-4">
-
-                        <div className="flex justify-center gap-2">
-
-                          <button
-                            onClick={() => bukaEdit(user)}
-                            title="Edit User"
-                            className="
-                              rounded-lg p-2
-                              text-blue-600 transition
-                              hover:bg-blue-50
-                              dark:hover:bg-blue-900/30
-                            "
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-
-
-                          <button
-                            onClick={() => handleDelete(user)}
-                            title="Hapus User"
-                            className="
-                              rounded-lg p-2
-                              text-red-600 transition
-                              hover:bg-red-50
-                              dark:hover:bg-red-900/30
-                            "
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-
-                        </div>
-
-                      </td>
+                      <th className="px-6 py-3 text-center font-semibold">
+                        Aksi
+                      </th>
 
                     </tr>
+                  </thead>
 
-                  ))}
 
-                </tbody>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
 
-              </table>
+                    {daftarUser.map((user, index) => (
 
-            </div>
+                      <tr
+                        key={user.id_user}
+                        className="
+                          hover:bg-gray-50/50
+                          dark:hover:bg-gray-800/50
+                          transition-colors
+                        "
+                      >
 
-          )}
+                        <td className="px-6 py-3 font-medium text-gray-500 dark:text-gray-400">
+                          {index + 1}
+                        </td>
 
-        </div>
+                        <td className="px-6 py-3 font-semibold text-gray-800 dark:text-gray-100">
+                          {user.username}
+                        </td>
 
-      </main>
+                        <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
+                          {user.email || '-'}
+                        </td>
+
+                        <td className="px-6 py-3">
+
+                          <span
+                            className={`
+                              inline-flex rounded-full px-3 py-1
+                              text-xs font-semibold
+                              ${
+                                user.role?.toUpperCase() === 'ADMIN'
+                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                                  : user.role?.toUpperCase() === 'PEMBINA'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                                  : 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300'
+                              }
+                            `}
+                          >
+                            {user.role?.toUpperCase()}
+                          </span>
+
+                        </td>
+
+                        <td className="px-6 py-3 text-gray-600 dark:text-gray-300">
+                          {getNamaEskul(user)}
+                        </td>
+
+                        <td className="px-6 py-3">
+
+                          <div className="flex justify-center gap-2">
+
+                            <button
+                              onClick={() => bukaEdit(user)}
+                              title="Edit User"
+                              className="
+                                rounded-lg p-2
+                                text-blue-600 transition
+                                hover:bg-blue-50
+                                dark:hover:bg-blue-900/30
+                              "
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+
+
+                            <button
+                              onClick={() => handleDelete(user)}
+                              title="Hapus User"
+                              className="
+                                rounded-lg p-2
+                                text-red-600 transition
+                                hover:bg-red-50
+                                dark:hover:bg-red-900/30
+                              "
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+
+                    ))}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            )}
+
+          </div>
+
+        </main>
+
+      </div>
 
 
       {/* MODAL */}

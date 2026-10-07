@@ -106,6 +106,9 @@ export default function ExtracurricularDetail() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // State untuk toggle deskripsi selengkapnya / disembunyikan
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // Filter jenis kelamin dari URL: ?gender=L atau ?gender=P
   const genderParam = (searchParams.get('gender') || '').toUpperCase();
   const genderFilter =
@@ -245,7 +248,6 @@ export default function ExtracurricularDetail() {
           );
 
         // Banner memakai foto yang ditandai "Jadikan Banner" di galeri.
-        // Kalau belum ada yang ditandai, pakai foto utama seperti sebelumnya.
         const semuaFoto = fotoGaleri || [];
         let terpilih = semuaFoto.filter(item => item.is_banner);
         if (terpilih.length === 0) {
@@ -340,14 +342,12 @@ export default function ExtracurricularDetail() {
 
   const filteredSiswa =
     siswaTerdaftar.filter(siswa => {
-      // Filter jenis kelamin (sama dengan cara tabel menampilkannya)
       if (genderFilter) {
         const g =
           siswa.jenisKelamin === 'P' ? 'P' : 'L';
         if (g !== genderFilter) return false;
       }
 
-      // Filter tanggal daftar
       if (tanggalFilter) {
         const key = toDateKey(
           siswa.tanggal_daftar ??
@@ -388,6 +388,11 @@ export default function ExtracurricularDetail() {
         : 'Belum ada siswa yang terdaftar di ekstrakurikuler ini.';
 
   const fotoLogoUrl = fotoUrl(currentEskulDetail?.foto);
+  
+  // Teks deskripsi dinamis
+  const deskripsiText = currentEskulDetail?.deskripsi ||
+    `Program latihan untuk pengembangan skill ${formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.`;
+  const isLongText = deskripsiText.length > 200;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 flex flex-col relative transition-colors duration-300">
@@ -401,7 +406,7 @@ export default function ExtracurricularDetail() {
         {/* Sidebar HANYA dirender jika user adalah Admin atau Pembina */}
         {canManage && <Sidebar />}
 
-        {/* Lebar penuh layar (sebelumnya max-w-7xl mx-auto) */}
+        {/* Lebar penuh layar */}
         <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-10 py-6 overflow-y-auto">
 
           {/* ==============================
@@ -455,7 +460,6 @@ export default function ExtracurricularDetail() {
           ============================== */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 mb-8 overflow-hidden transition-colors">
             <div className="relative h-62 sm:h-92 bg-gray-100 dark:bg-gray-800">
-              {/* Banner slider: bisa digeser / di-drag, ganti otomatis */}
               <BannerSlider images={fotoBanner} className="h-full">
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
               </BannerSlider>
@@ -502,10 +506,22 @@ export default function ExtracurricularDetail() {
                 </span>
               </div>
 
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-5 leading-relaxed">
-                {currentEskulDetail?.deskripsi ||
-                  `Program latihan untuk pengembangan skill ${formatNamaEskul.toLowerCase()}, strategi tim, dan partisipasi kompetisi antar sekolah.`}
-              </p>
+              {/* Bagian Deskripsi dengan Tombol Selengkapnya / Sembunyikan */}
+              <div className="mb-5">
+                <p className={`text-sm text-gray-600 dark:text-gray-300 leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                  {deskripsiText}
+                </p>
+
+                {isLongText && (
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="mt-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    {isExpanded ? 'Sembunyikan' : 'Baca Selengkapnya...'}
+                  </button>
+                )}
+              </div>
 
               <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900 px-4 py-3 rounded-xl mb-5">
                 <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -559,7 +575,6 @@ export default function ExtracurricularDetail() {
               </h3>
 
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                {/* Chip filter tanggal (dari klik diagram dashboard) */}
                 {tanggalFilter && (
                   <button
                     type="button"
@@ -573,7 +588,6 @@ export default function ExtracurricularDetail() {
                   </button>
                 )}
 
-                {/* Filter jenis kelamin */}
                 <div
                   className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
                   role="group"
@@ -600,7 +614,6 @@ export default function ExtracurricularDetail() {
                   ))}
                 </div>
 
-                {/* Toggle mode tampilan: Tabel / Grid */}
                 <div
                   className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
                   role="group"
@@ -618,7 +631,6 @@ export default function ExtracurricularDetail() {
                     }`}
                   >
                     <List className="w-3.5 h-3.5" />
-                    
                   </button>
                   <button
                     type="button"
@@ -632,12 +644,11 @@ export default function ExtracurricularDetail() {
                     }`}
                   >
                     <LayoutGrid className="w-3.5 h-3.5" />
-                    
                   </button>
                 </div>
 
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+                <div className="relative flex-1 sm:w-64 group">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none transition-colors group-focus-within:text-emerald-500" />
                   <input
                     type="text"
                     value={searchQuery}
@@ -647,7 +658,7 @@ export default function ExtracurricularDetail() {
                       )
                     }
                     placeholder="Cari nama siswa..."
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg outline-none bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg outline-none bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 focus:shadow-[0_0_18px_rgba(16,185,129,0.35)]"
                   />
                 </div>
 

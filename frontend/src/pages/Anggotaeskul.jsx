@@ -11,7 +11,6 @@ import {
 import {
   Users,
   Search,
-  Plus,
   Pencil,
   Trash2,
   User
@@ -135,16 +134,6 @@ export default function AnggotaEskul() {
               </p>
             </div>
           </div>
-
-          {isStaff && !dilarang && (
-            <button
-              onClick={() => navigate(`/eskul/${namaEskul}/siswa/tambah`)}
-              className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all self-start sm:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              Tambah Siswa
-            </button>
-          )}
         </div>
 
         {dilarang ? (
@@ -155,14 +144,14 @@ export default function AnggotaEskul() {
           <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
             {/* PENCARIAN */}
             <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-              <div className="relative max-w-sm">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="relative max-w-sm group">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-emerald-500" />
                 <input
                   type="text"
                   value={kataCari}
                   onChange={handleCari}
                   placeholder="Cari nama siswa..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 transition"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 transition-all duration-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 focus:shadow-[0_0_18px_rgba(16,185,129,0.35)]"
                 />
               </div>
             </div>

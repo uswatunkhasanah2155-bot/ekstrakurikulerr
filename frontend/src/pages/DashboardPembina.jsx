@@ -634,13 +634,6 @@ export default function DashboardPembina() {
 
                       <td className="px-5 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => navigate(`/eskul/${slugEskul}`)}
-                            className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-500/20 dark:text-blue-400"
-                          >
-                            Detail
-                          </button>
-
                           {p.status === 'menunggu' && (
                             <>
                               <button

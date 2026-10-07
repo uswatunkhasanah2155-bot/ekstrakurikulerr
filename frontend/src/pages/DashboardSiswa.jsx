@@ -118,28 +118,31 @@ export default function DashboardSiswa() {
 
       <main className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
 
-        {/* ===== Banner Sapaan: dasar putih, logo jelas di kanan, sisi kiri blur gelap ===== */}
-        <div className="relative overflow-hidden rounded-3xl bg-white p-6 sm:p-8 md:min-h-[240px] flex items-center shadow-lg border border-gray-200">
+        {/* ===== Banner Sapaan: teks di kiri, logo di kanan ===== */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 shadow-lg border border-gray-200 dark:border-gray-800 min-h-[240px] flex items-center">
 
-          {/* Logo di sisi kanan (tajam, tidak diblur) */}
-          <div className="hidden md:block absolute inset-y-0 right-0 w-1/2 pointer-events-none select-none">
-            <img
-              src={logoSekolah}
-              alt="Logo Sekolah"
-              className="absolute inset-0 w-full h-full object-contain p-4"
-            />
-          </div>
+          {/* Dekorasi cahaya */}
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 right-1/3 w-72 h-72 rounded-full bg-indigo-400/20 blur-3xl pointer-events-none" />
 
-          {/* Lapisan blur gelap di sisi kiri, memudar ke kanan (di HP menutupi seluruh banner) */}
-          <div
-            className="absolute inset-y-0 left-0 w-full md:w-[68%] pointer-events-none backdrop-blur-xl bg-gradient-to-r from-blue-950 via-blue-900 to-blue-900 md:via-blue-900/90 md:to-transparent md:[-webkit-mask-image:linear-gradient(to_right,black_60%,transparent)] md:[mask-image:linear-gradient(to_right,black_60%,transparent)]"
+          {/* Logo sekolah di sisi kanan */}
+          <img
+            src={logoSekolah}
+            alt="Logo Sekolah"
+            className="absolute right-4 sm:right-12 top-1/2 -translate-y-1/2 h-[90%] sm:h-[115%] w-auto object-contain opacity-20 sm:opacity-40 pointer-events-none select-none"
           />
 
-          <div className="relative z-10 max-w-xl space-y-3">
-            <h1 className="text-3xl sm:text-4xl font-extrabold flex items-center gap-2 capitalize text-white drop-shadow-md">
-              Halo, {username}! <span className="text-3xl">👋</span>
+          {/* Teks sapaan rata kiri */}
+          <div className="relative z-10 max-w-xl space-y-3 p-6 sm:p-10 text-left">
+            <span className="inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-100 backdrop-blur">
+              SESCO ESKUL • SMK Negeri Compreng
+            </span>
+
+            <h1 className="text-2xl sm:text-4xl font-extrabold flex items-center gap-2 capitalize text-white drop-shadow-lg">
+              Halo, {username}! <span className="text-2xl sm:text-3xl">👋</span>
             </h1>
-            <p className="text-blue-100 text-sm sm:text-base font-medium leading-relaxed">
+
+            <p className="text-blue-50/90 text-xs sm:text-base font-medium leading-relaxed">
               Jelajahi berbagai ekstrakurikuler, temukan minat dan bakatmu, asah kemampuanmu, dan jadikan setiap kegiatan sebagai langkah untuk meraih prestasi dan pengalaman yang membanggakan!
             </p>
           </div>
@@ -162,14 +165,14 @@ export default function DashboardSiswa() {
               </p>
             </div>
 
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="relative w-full sm:w-72 group">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-blue-500" />
               <input
                 type="text"
                 placeholder="Cari ekstrakurikuler..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-100"
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-800 dark:text-gray-100 outline-none transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 focus:shadow-[0_0_18px_rgba(59,130,246,0.4)]"
               />
             </div>
           </div>

@@ -1,13 +1,21 @@
 // src/pages/RegistrationForm.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
+import { ClipboardList, Lock, ImagePlus, Send, ArrowLeft } from 'lucide-react';
+// Samakan import ini dengan yang dipakai di DashboardSiswa.jsx
+import Navbar from '../components/Navbar';
 import {
   tambahPendaftar,
   getDaftarEskul,
   getDaftarKelas,
   getProfilSiswaSaya
 } from '../services/api';
+
+const labelClass =
+  'mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400';
+
+const fieldClass =
+  'w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:disabled:bg-gray-800/60 dark:disabled:text-gray-400';
 
 export default function RegistrationForm() {
   const { namaEskul } = useParams();
@@ -16,10 +24,7 @@ export default function RegistrationForm() {
   const formatNamaEskul = namaEskul
     ? namaEskul
         .split('-')
-        .map(
-          (word) =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-        )
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ')
     : 'Ekstrakurikuler';
 
@@ -31,14 +36,26 @@ export default function RegistrationForm() {
   });
 
   const [loading, setLoading] = useState(false);
-
   const [daftarKelas, setDaftarKelas] = useState([]);
   const [loadingKelas, setLoadingKelas] = useState(true);
 
-  // OPSI 2: kalau siswa sudah punya profil, nama/kelas/gender
-  // tidak bisa diubah lagi lewat form pendaftaran eskul baru.
+  // Kalau siswa sudah punya profil, nama/kelas/gender dikunci.
   const [profilSudahAda, setProfilSudahAda] = useState(false);
   const [loadingProfil, setLoadingProfil] = useState(true);
+
+  const terkunci = profilSudahAda || loadingProfil;
+
+  // Preview foto yang baru dipilih
+  const previewFoto = useMemo(
+    () => (formData.foto ? URL.createObjectURL(formData.foto) : null),
+    [formData.foto]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewFoto) URL.revokeObjectURL(previewFoto);
+    };
+  }, [previewFoto]);
 
   useEffect(() => {
     async function fetchKelas() {
@@ -65,13 +82,8 @@ export default function RegistrationForm() {
           setFormData((prev) => ({
             ...prev,
             namaLengkap: profil.nama_siswa || '',
-            id_kelas: profil.id_kelas
-              ? String(profil.id_kelas)
-              : '',
-            jenisKelamin:
-              profil.jenis_kelamin === 'P'
-                ? 'Perempuan'
-                : 'Laki-laki'
+            id_kelas: profil.id_kelas ? String(profil.id_kelas) : '',
+            jenisKelamin: profil.jenis_kelamin === 'P' ? 'Perempuan' : 'Laki-laki'
           }));
         }
       } catch (error) {
@@ -86,17 +98,11 @@ export default function RegistrationForm() {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleFileChange = (e) => {
-    setFormData({
-      ...formData,
-      foto: e.target.files[0]
-    });
+    setFormData({ ...formData, foto: e.target.files[0] || null });
   };
 
   const handleSubmit = async (e) => {
@@ -107,20 +113,15 @@ export default function RegistrationForm() {
       const daftarEskul = await getDaftarEskul();
 
       const slugFormatted = namaEskul
-        ? namaEskul
-            .trim()
-            .toLowerCase()
-            .replace(/[\s%20]+/g, '-')
+        ? namaEskul.trim().toLowerCase().replace(/[\s%20]+/g, '-')
         : '';
 
       const eskulDitemukan = daftarEskul.find((item) => {
         if (!item.nama_eskul) return false;
-
         const dbEskulSlug = item.nama_eskul
           .trim()
           .toLowerCase()
           .replace(/[\s%20]+/g, '-');
-
         return dbEskulSlug === slugFormatted;
       });
 
@@ -131,36 +132,15 @@ export default function RegistrationForm() {
       }
 
       const rawIdUser =
-        localStorage.getItem('id_user') ||
-        localStorage.getItem('userId');
-
-      const userIdLogin = rawIdUser
-        ? Number(rawIdUser)
-        : null;
+        localStorage.getItem('id_user') || localStorage.getItem('userId');
+      const userIdLogin = rawIdUser ? Number(rawIdUser) : null;
 
       const dataToSend = new FormData();
-
-      dataToSend.append(
-        'id_eskul',
-        eskulDitemukan.id_eskul
-      );
-
+      dataToSend.append('id_eskul', eskulDitemukan.id_eskul);
       dataToSend.append('id_user', userIdLogin);
-
-      dataToSend.append(
-        'nama',
-        formData.namaLengkap
-      );
-
-      dataToSend.append(
-        'id_kelas',
-        formData.id_kelas
-      );
-
-      dataToSend.append(
-        'jenisKelamin',
-        formData.jenisKelamin
-      );
+      dataToSend.append('nama', formData.namaLengkap);
+      dataToSend.append('id_kelas', formData.id_kelas);
+      dataToSend.append('jenisKelamin', formData.jenisKelamin);
 
       if (formData.foto) {
         dataToSend.append('foto', formData.foto);
@@ -169,10 +149,7 @@ export default function RegistrationForm() {
       const result = await tambahPendaftar(dataToSend);
 
       if (result.success) {
-        alert(
-          `Pendaftaran untuk ${formatNamaEskul} berhasil dikirim!`
-        );
-
+        alert(`Pendaftaran untuk ${formatNamaEskul} berhasil dikirim!`);
         navigate(`/eskul/${slugFormatted}`);
       } else {
         alert('Gagal mendaftar: ' + result.error);
@@ -185,151 +162,178 @@ export default function RegistrationForm() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
-      <Sidebar />
+    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-800 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-100">
+      <Navbar />
 
-      <main className="flex-1 p-6 overflow-y-auto">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">
-          Form Pendaftaran Ekstrakurikuler:{' '}
-          {formatNamaEskul}
-        </h2>
-
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 max-w-2xl transition-colors">
-          {profilSudahAda && (
-            <div className="mb-4 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
-              Data profil kamu sudah tersimpan. Nama, kelas, dan jenis
-              kelamin tidak bisa diubah dari form ini — hubungi admin
-              kalau ada yang perlu dikoreksi.
-            </div>
-          )}
-
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-4"
+      <main className="flex-1 px-4 py-8 sm:px-6">
+        <div className="mx-auto w-full max-w-4xl">
+          {/* Kembali */}
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400"
           >
-            {/* Nama Lengkap */}
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">
-                Nama Lengkap
-              </label>
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </button>
 
-              <input
-                type="text"
-                name="namaLengkap"
-                value={formData.namaLengkap}
-                onChange={handleChange}
-                required
-                disabled={profilSudahAda || loadingProfil}
-                placeholder="Masukkan nama lengkapmu"
-                className="w-full px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 dark:disabled:bg-gray-800/60 disabled:text-gray-500 dark:disabled:text-gray-400"
-              />
-            </div>
-
-            {/* Kelas */}
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">
-                Kelas
-              </label>
-
-              <select
-                name="id_kelas"
-                value={formData.id_kelas}
-                onChange={handleChange}
-                required
-                disabled={
-                  loadingKelas ||
-                  profilSudahAda ||
-                  loadingProfil
-                }
-                className="w-full px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 dark:disabled:bg-gray-800/60 disabled:text-gray-500 dark:disabled:text-gray-400"
-              >
-                <option value="" disabled>
-                  {loadingKelas
-                    ? 'Memuat daftar kelas...'
-                    : 'Pilih Kelas'}
-                </option>
-
-                {daftarKelas.map((kls) => (
-                  <option
-                    key={kls.id_kelas}
-                    value={kls.id_kelas}
-                  >
-                    {kls.nama_kelas}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Jenis Kelamin */}
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">
-                Jenis Kelamin
-              </label>
-
-              <select
-                name="jenisKelamin"
-                value={formData.jenisKelamin}
-                onChange={handleChange}
-                required
-                disabled={profilSudahAda || loadingProfil}
-                className="w-full px-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 dark:disabled:bg-gray-800/60 disabled:text-gray-500 dark:disabled:text-gray-400"
-              >
-                <option value="" disabled>
-                  Pilih Jenis Kelamin
-                </option>
-
-                <option value="Laki-laki">
-                  Laki-laki
-                </option>
-
-                <option value="Perempuan">
-                  Perempuan
-                </option>
-              </select>
-            </div>
-
-            {/* Foto */}
-            <div>
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-1">
-                Foto Siswa
-              </label>
-
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                required={!profilSudahAda}
-                className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/40 file:text-emerald-700 dark:file:text-emerald-400 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/60 cursor-pointer"
-              />
-
-              {profilSudahAda && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  Opsional — hanya diisi kalau ingin memperbarui foto.
+          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            {/* Header kartu */}
+            <div className="flex items-center gap-4 bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-6 text-white sm:px-8">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                <ClipboardList className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-emerald-100">
+                  Form Pendaftaran
                 </p>
+                <h1 className="text-xl font-extrabold sm:text-2xl">
+                  {formatNamaEskul}
+                </h1>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8">
+              {profilSudahAda && (
+                <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-relaxed text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    Data profil kamu sudah tersimpan. Nama, kelas, dan jenis
+                    kelamin tidak bisa diubah dari form ini. Hubungi admin kalau
+                    ada yang perlu dikoreksi.
+                  </p>
+                </div>
               )}
-            </div>
 
-            {/* Tombol */}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={loading || loadingProfil}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-50"
-              >
-                {loading
-                  ? 'Mengirim...'
-                  : 'Kirim Pendaftaran'}
-              </button>
+              {/* Nama Lengkap */}
+              <div>
+                <label className={labelClass}>
+                  Nama Lengkap
+                  {terkunci && <Lock className="h-3 w-3" />}
+                </label>
+                <input
+                  type="text"
+                  name="namaLengkap"
+                  value={formData.namaLengkap}
+                  onChange={handleChange}
+                  required
+                  disabled={terkunci}
+                  placeholder="Masukkan nama lengkapmu"
+                  className={fieldClass}
+                />
+              </div>
 
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
-              >
-                Batal
-              </button>
-            </div>
-          </form>
+              {/* Kelas & Jenis Kelamin berdampingan */}
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>
+                    Kelas
+                    {terkunci && <Lock className="h-3 w-3" />}
+                  </label>
+                  <select
+                    name="id_kelas"
+                    value={formData.id_kelas}
+                    onChange={handleChange}
+                    required
+                    disabled={loadingKelas || terkunci}
+                    className={fieldClass}
+                  >
+                    <option value="" disabled>
+                      {loadingKelas ? 'Memuat daftar kelas...' : 'Pilih Kelas'}
+                    </option>
+                    {daftarKelas.map((kls) => (
+                      <option key={kls.id_kelas} value={kls.id_kelas}>
+                        {kls.nama_kelas}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Jenis Kelamin
+                    {terkunci && <Lock className="h-3 w-3" />}
+                  </label>
+                  <select
+                    name="jenisKelamin"
+                    value={formData.jenisKelamin}
+                    onChange={handleChange}
+                    required
+                    disabled={terkunci}
+                    className={fieldClass}
+                  >
+                    <option value="" disabled>
+                      Pilih Jenis Kelamin
+                    </option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Foto */}
+              <div>
+                <label className={labelClass}>
+                  Foto Siswa
+                  {profilSudahAda && (
+                    <span className="font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">
+                      (opsional)
+                    </span>
+                  )}
+                </label>
+
+                <label className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-gray-200 p-4 transition-colors hover:border-emerald-500 hover:bg-emerald-50/50 dark:border-gray-700 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/20">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 text-gray-400 dark:bg-gray-800">
+                    {previewFoto ? (
+                      <img
+                        src={previewFoto}
+                        alt="Preview foto"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ImagePlus className="h-6 w-6" />
+                    )}
+                  </div>
+                  <div className="min-w-0 text-sm">
+                    <p className="truncate font-semibold text-gray-700 dark:text-gray-200">
+                      {formData.foto ? formData.foto.name : 'Klik untuk memilih foto'}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                      {profilSudahAda
+                        ? 'Isi hanya kalau ingin memperbarui foto.'
+                        : 'Format JPG atau PNG.'}
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    required={!profilSudahAda}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
+
+              {/* Tombol */}
+              <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || loadingProfil}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                  {loading ? 'Mengirim...' : 'Kirim Pendaftaran'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </main>
     </div>
