@@ -1,8 +1,17 @@
 // src/pages/LaporanEskul.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fotoUrl } from '../utils/fotoUrl';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, ImageIcon, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Users,
+  ImageIcon,
+  X,
+  Camera,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import {
   AreaChart,
   Area,
@@ -15,7 +24,7 @@ import {
 } from 'recharts';
 import {
   getDaftarEskul,
-  getRiwayatPendaftarEskul, // <-- diganti dari getPendaftarEskul
+  getRiwayatPendaftarEskul,
   getGaleriEskul,
 } from '../services/api';
 
@@ -29,7 +38,6 @@ const OPSI_FILTER = [
 ];
 
 const WARNA_SISWA = '#4f7fa8';
-const WARNA_FOTO = '#f59e0b';
 
 // ==================================================
 // HELPER
@@ -103,15 +111,11 @@ const inRange = (tgl, mulai, selesai) => {
   return t >= mulai && t < selesai;
 };
 
-// Tooltip yang hanya menampilkan SATU jenis data,
-// sesuai titik yang sedang di-hover (biru = siswa, kuning = foto)
-function TooltipSatu({ active, payload, tipe }) {
-  if (!active || !payload?.length || !tipe) return null;
+// Tooltip grafik (khusus siswa mendaftar)
+function TooltipSiswa({ active, payload }) {
+  if (!active || !payload?.length) return null;
 
   const row = payload[0].payload;
-  const isSiswa = tipe === 'siswa';
-  const warna = isSiswa ? WARNA_SISWA : WARNA_FOTO;
-  const jumlah = isSiswa ? row.jumlahSiswa : row.jumlahFoto;
 
   return (
     <div
@@ -124,9 +128,8 @@ function TooltipSatu({ active, payload, tipe }) {
       }}
     >
       <p style={{ color: '#9ca3af', marginBottom: 4 }}>{row.tanggalLengkap}</p>
-      <p style={{ color: warna, fontWeight: 600 }}>
-        {isSiswa ? 'Siswa mendaftar' : 'Foto diunggah'} : {jumlah}{' '}
-        {isSiswa ? 'siswa' : 'foto'}
+      <p style={{ color: WARNA_SISWA, fontWeight: 600 }}>
+        Siswa mendaftar : {row.jumlahSiswa} siswa
       </p>
     </div>
   );
@@ -176,6 +179,295 @@ function buatBuckets(range, now) {
 }
 
 // ==================================================
+// KALENDER REKAPAN UPLOAD FOTO
+// ==================================================
+
+const HARI_KALENDER = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+const NAMA_BULAN = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+
+// Warna pill solid sesuai legenda jumlah foto
+function kelasPillFoto(n) {
+  if (n <= 3) return 'bg-sky-500 text-white';
+  if (n <= 7) return 'bg-emerald-500 text-white';
+  if (n <= 12) return 'bg-violet-600 text-white';
+  if (n <= 20) return 'bg-orange-500 text-white';
+  return 'bg-rose-500 text-white';
+}
+
+const LEGENDA_FOTO = [
+  { label: '1–3 foto', warna: 'bg-sky-500' },
+  { label: '4–7 foto', warna: 'bg-emerald-500' },
+  { label: '8–12 foto', warna: 'bg-violet-600' },
+  { label: '13–20 foto', warna: 'bg-orange-500' },
+  { label: '> 20 foto', warna: 'bg-rose-500' },
+];
+
+function KalenderFoto({ galeri, tanggalDipilih, onPilihTanggal }) {
+  const bulanSekarang = () => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  };
+  const [bulanAktif, setBulanAktif] = useState(bulanSekarang);
+
+  // Hitung jumlah foto per tanggal (waktu lokal)
+  const perTanggal = useMemo(() => {
+    const map = {};
+    galeri.forEach((g) => {
+      const d = new Date(g.created_at);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      map[key] = (map[key] || 0) + 1;
+    });
+    return map;
+  }, [galeri]);
+
+  const tahun = bulanAktif.getFullYear();
+  const bulan = bulanAktif.getMonth();
+
+  // Minggu dimulai hari Senin
+  const offset = (new Date(tahun, bulan, 1).getDay() + 6) % 7;
+  const jumlahHari = new Date(tahun, bulan + 1, 0).getDate();
+
+  const sel = [
+    ...Array(offset).fill(null),
+    ...Array.from({ length: jumlahHari }, (_, i) => i + 1),
+  ];
+  while (sel.length % 7 !== 0) sel.push(null);
+
+  const hariIni = new Date();
+  const isHariIni = (t) =>
+    t === hariIni.getDate() &&
+    bulan === hariIni.getMonth() &&
+    tahun === hariIni.getFullYear();
+
+  const isDipilih = (t) =>
+    tanggalDipilih &&
+    t === tanggalDipilih.getDate() &&
+    bulan === tanggalDipilih.getMonth() &&
+    tahun === tanggalDipilih.getFullYear();
+
+  return (
+    <div className="mt-4 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 transition-colors duration-300">
+      {/* JUDUL */}
+      <div className="flex items-start gap-3 mb-5">
+        <CalendarDays className="w-6 h-6 text-cyan-700 dark:text-cyan-400 mt-0.5" />
+        <div>
+          <h3 className="text-base font-bold">Rekapan Upload Foto</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Lihat jumlah foto yang diunggah setiap tanggal. Klik tanggal untuk
+            melihat fotonya.
+          </p>
+        </div>
+      </div>
+
+      {/* TOMBOL HARI INI + BULAN */}
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          type="button"
+          onClick={() => setBulanAktif(bulanSekarang())}
+          className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm transition"
+        >
+          Hari Ini
+        </button>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setBulanAktif(new Date(tahun, bulan - 1, 1))}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-base font-bold min-w-37.5 text-center">
+            {NAMA_BULAN[bulan]} {tahun}
+          </span>
+          <button
+            type="button"
+            onClick={() => setBulanAktif(new Date(tahun, bulan + 1, 1))}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* GRID: nama hari di dalam tiap kolom, tanggal di tengah */}
+      <div className="grid grid-cols-7 border-t border-l border-gray-200 dark:border-gray-800">
+        {sel.map((t, i) => {
+          const n = t ? perTanggal[`${tahun}-${bulan}-${t}`] || 0 : 0;
+          const dipilih = t && isDipilih(t);
+
+          return (
+            <div
+              key={i}
+              onClick={() => n > 0 && onPilihTanggal(new Date(tahun, bulan, t))}
+              className={`min-h-21 sm:min-h-24 px-1.5 pt-1.5 pb-2 border-r border-b border-gray-200 dark:border-gray-800 text-center transition ${
+                t ? '' : 'bg-gray-50/60 dark:bg-gray-800/20'
+              } ${n > 0 ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50' : ''} ${
+                dipilih ? 'ring-2 ring-inset ring-cyan-500' : ''
+              }`}
+            >
+              {/* nama hari hanya di baris pertama */}
+              {i < 7 && (
+                <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                  {HARI_KALENDER[i]}
+                </div>
+              )}
+
+              {t && (
+                <>
+                  <div className="flex justify-center mt-0.5">
+                    <span
+                      className={
+                        isHariIni(t)
+                          ? 'inline-flex w-6 h-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold'
+                          : 'inline-flex w-6 h-6 items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-200'
+                      }
+                    >
+                      {t}
+                    </span>
+                  </div>
+
+                  {n > 0 && (
+                    <div
+                      className={`mt-1.5 flex items-center justify-center gap-1 rounded-md px-1 py-1 text-[11px] sm:text-xs font-semibold ${kelasPillFoto(
+                        n
+                      )}`}
+                    >
+                      <Camera className="w-3 h-3 shrink-0" />
+                      {n} foto
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* LEGENDA */}
+      <div className="flex flex-wrap gap-4 mt-4 text-xs text-gray-500 dark:text-gray-400">
+        {LEGENDA_FOTO.map((l) => (
+          <span key={l.label} className="inline-flex items-center gap-1.5">
+            <span className={`w-2.5 h-2.5 rounded-full ${l.warna}`} />
+            {l.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
+// POP UP FOTO (lightbox)
+// ==================================================
+
+function FotoPopup({ daftar, index, onGanti, onTutup, onBukaGaleri }) {
+  const foto = daftar[index];
+  const adaPrev = index > 0;
+  const adaNext = index < daftar.length - 1;
+
+  // Keyboard: Esc = tutup, panah kiri/kanan = ganti foto
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') onTutup();
+      else if (e.key === 'ArrowLeft' && adaPrev) onGanti(index - 1);
+      else if (e.key === 'ArrowRight' && adaNext) onGanti(index + 1);
+    }
+
+    window.addEventListener('keydown', onKey);
+    const overflowAwal = document.body.style.overflow;
+    document.body.style.overflow = 'hidden'; // halaman di belakang tidak ikut scroll
+
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflowAwal;
+    };
+  }, [index, adaPrev, adaNext, onGanti, onTutup]);
+
+  if (!foto) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4"
+      onClick={onTutup}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="relative w-full max-w-4xl rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl p-4 sm:p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* BAR ATAS */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium text-white/80">
+            {index + 1} dari {daftar.length}
+          </span>
+          <button
+            type="button"
+            onClick={onTutup}
+            title="Tutup"
+            className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/15 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* FOTO + PANAH */}
+        <div className="relative flex items-center justify-center">
+          <img
+            src={getFotoUrl(foto.foto)}
+            alt={foto.keterangan || 'Foto galeri'}
+            className="max-h-[65vh] w-auto max-w-full rounded-xl object-contain"
+          />
+
+          <button
+            type="button"
+            onClick={() => adaPrev && onGanti(index - 1)}
+            disabled={!adaPrev}
+            className="absolute left-2 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => adaNext && onGanti(index + 1)}
+            disabled={!adaNext}
+            className="absolute right-2 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* KETERANGAN */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-white">
+              {foto.keterangan || 'Tanpa keterangan'}
+            </p>
+            <p className="text-xs text-white/70 mt-0.5">
+              Diunggah {new Date(foto.created_at).toLocaleString('id-ID')}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onBukaGaleri(foto.id_galeri)}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/30 text-white hover:bg-white/15 transition"
+          >
+            Buka di halaman galeri
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================================================
 // HALAMAN UTAMA
 // ==================================================
 
@@ -188,9 +480,10 @@ export default function LaporanEskul() {
   const [loading, setLoading] = useState(true);
 
   const [range, setRange] = useState('minggu'); // 'hari' | 'minggu' | 'bulan'
-  const [selIdx, setSelIdx] = useState(null); // titik/hari yang dipilih
-  const [selTipe, setSelTipe] = useState(null); // null = tampilkan riwayat | 'siswa' | 'foto'
-  const [hoverTipe, setHoverTipe] = useState(null); // titik yang sedang di-hover: 'siswa' | 'foto'
+  const [selIdx, setSelIdx] = useState(null); // titik/hari yang dipilih di grafik
+  const [selTipe, setSelTipe] = useState(null); // null = riwayat | 'siswa' | 'foto'
+  const [tglFoto, setTglFoto] = useState(null); // tanggal yang dipilih di kalender foto
+  const [popup, setPopup] = useState(null); // { daftar, index } | null
 
   useEffect(() => {
     async function fetchData() {
@@ -233,16 +526,14 @@ export default function LaporanEskul() {
 
   const now = new Date();
 
-  // ---------- DATA GRAFIK GABUNGAN (siswa + foto) ----------
+  // ---------- DATA GRAFIK (hanya siswa mendaftar) ----------
   const dataGrafik = buatBuckets(range, now).map((b) => ({
     ...b,
     jumlahSiswa: pendaftar.filter((p) => inRange(p.tanggal, b.mulai, b.selesai))
       .length,
-    jumlahFoto: galeri.filter((g) => inRange(g.created_at, b.mulai, b.selesai))
-      .length,
   }));
 
-  // ---------- TITIK YANG SEDANG DIPILIH (default: hari ini) ----------
+  // ---------- TITIK YANG SEDANG DIPILIH DI GRAFIK ----------
   const activeIdx =
     selIdx !== null && selIdx < dataGrafik.length
       ? selIdx
@@ -268,22 +559,34 @@ export default function LaporanEskul() {
     inRange(p.tanggal, aktMulai, aktSelesai)
   );
 
+  // ---------- FOTO PADA TANGGAL YANG DIPILIH DI KALENDER ----------
+  const fotoMulai = tglFoto ? new Date(tglFoto) : awalHariIni;
+  fotoMulai.setHours(0, 0, 0, 0);
+  const fotoSelesai = new Date(fotoMulai);
+  fotoSelesai.setDate(fotoSelesai.getDate() + 1);
+
   const fotoAktif = galeri.filter((g) =>
-    inRange(g.created_at, aktMulai, aktSelesai)
+    inRange(g.created_at, fotoMulai, fotoSelesai)
   );
+  const fotoIsHariIni = fotoMulai.toDateString() === now.toDateString();
 
   // ---------- AKSI KLIK ----------
-  function pilih(idx, tipe) {
-    setSelIdx(idx);
-    if (tipe) setSelTipe(tipe);
-  }
-
   function gantiRange(key) {
     setRange(key);
     setSelIdx(null);
   }
 
-  // Klik di area chart (bukan tepat di titik): hanya pindah hari
+  function pilihSiswa(idx) {
+    setSelIdx(idx);
+    setSelTipe('siswa');
+  }
+
+  function pilihTanggalFoto(tgl) {
+    setTglFoto(tgl);
+    setSelTipe('foto');
+  }
+
+  // Klik di area chart (bukan tepat di titik): pindah ke hari tersebut
   function handleChartClick(state) {
     if (!state) return;
 
@@ -296,8 +599,7 @@ export default function LaporanEskul() {
     idx = Number(idx);
 
     if (idx >= 0 && idx < dataGrafik.length) {
-      setSelIdx(idx);
-      setSelTipe((prev) => prev ?? 'siswa');
+      pilihSiswa(idx);
     }
   }
 
@@ -305,68 +607,33 @@ export default function LaporanEskul() {
   function tutupDetail() {
     setSelTipe(null);
     setSelIdx(null);
+    setTglFoto(null);
   }
 
-  // Titik yang bisa di-hover & diklik: titik biru -> siswa, titik kuning -> foto
-  const renderDot = (tipe, warna, radius) => (props) => {
+  // Titik biru di grafik (bisa diklik -> daftar siswa)
+  const renderDot = (props) => {
     const { cx, cy, payload } = props;
     if (cx === undefined || cy === undefined) return null;
 
     const idx = dataGrafik.findIndex((d) => d.label === payload?.label);
-    const terpilih = selTipe === tipe && idx === activeIdx;
-
-    // Kalau jumlah siswa & foto sama, kedua titik menumpuk di tempat yang sama.
-    // Supaya keduanya tetap bisa di-hover/klik, titik foto digambar
-    // sebagai cincin kuning yang mengelilingi titik biru.
-    const menumpuk = payload?.jumlahSiswa === payload?.jumlahFoto;
-
-    const handlers = {
-      onClick: (e) => {
-        e.stopPropagation();
-        pilih(idx, tipe);
-      },
-      onMouseEnter: () => setHoverTipe(tipe),
-      onMouseLeave: () => setHoverTipe(null),
-    };
-
-    if (menumpuk && tipe === 'foto') {
-      const rr = 10;
-
-      return (
-        <g key={`${tipe}-${idx}`} {...handlers} style={{ cursor: 'pointer' }}>
-          <circle
-            cx={cx}
-            cy={cy}
-            r={rr}
-            fill="none"
-            stroke="transparent"
-            strokeWidth={8}
-            pointerEvents="stroke"
-          />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={rr}
-            fill="none"
-            stroke={warna}
-            strokeWidth={terpilih ? 3.5 : 2.5}
-            pointerEvents="none"
-          />
-        </g>
-      );
-    }
-
-    const hit = menumpuk ? radius + 2 : radius + 7;
+    const terpilih = selTipe === 'siswa' && idx === activeIdx;
 
     return (
-      <g key={`${tipe}-${idx}`} {...handlers} style={{ cursor: 'pointer' }}>
+      <g
+        key={`siswa-${idx}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          pilihSiswa(idx);
+        }}
+        style={{ cursor: 'pointer' }}
+      >
         {/* area klik */}
-        <circle cx={cx} cy={cy} r={hit} fill="transparent" />
+        <circle cx={cx} cy={cy} r={12} fill="transparent" />
         <circle
           cx={cx}
           cy={cy}
-          r={terpilih ? radius + 2 : radius}
-          fill={warna}
+          r={terpilih ? 7 : 5}
+          fill={WARNA_SISWA}
           stroke={terpilih ? '#ffffff' : 'none'}
           strokeWidth={terpilih ? 2 : 0}
         />
@@ -430,7 +697,6 @@ export default function LaporanEskul() {
   const { percentChange, labelPembanding } = hitungPersentase();
 
   // Kartu total hanya menghitung siswa yang masih aktif
-  // (grafik & riwayat tetap memakai semua data)
   const total = pendaftar.filter((p) => !p.dihapus_pada).length;
 
   const xAxisInterval = range === 'hari' ? 2 : range === 'bulan' ? 3 : 0;
@@ -438,7 +704,14 @@ export default function LaporanEskul() {
   // Link ke detail foto di halaman galeri
   const slugEskul = (eskul?.nama_eskul || '').trim().replace(/\s+/g, '-');
 
-  function bukaFoto(idGaleri) {
+  // Klik foto -> pop up (bukan pindah halaman).
+  // `daftar` = urutan foto yang bisa digeser di pop up.
+  function bukaFoto(idGaleri, daftar = galeri) {
+    const index = daftar.findIndex((f) => f.id_galeri === idGaleri);
+    if (index >= 0) setPopup({ daftar, index });
+  }
+
+  function bukaDiGaleri(idGaleri) {
     if (slugEskul) {
       navigate(`/eskul/${slugEskul}/galeri/${idGaleri}`);
     }
@@ -478,7 +751,7 @@ export default function LaporanEskul() {
       </div>
 
       {/* =====================================================
-          GRAFIK GABUNGAN + REKAPITULASI
+          GRAFIK SISWA TERDAFTAR + REKAPITULASI
       ====================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
@@ -516,15 +789,8 @@ export default function LaporanEskul() {
               />
               Siswa mendaftar
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: WARNA_FOTO }}
-              />
-              Foto diunggah
-            </span>
             <span className="ml-auto italic">
-              Klik titik biru = daftar siswa · klik titik kuning (atau cincin kuning) = foto
+              Klik titik biru = daftar siswa yang mendaftar
             </span>
           </div>
 
@@ -540,10 +806,6 @@ export default function LaporanEskul() {
                   <linearGradient id="gradSiswa" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={WARNA_SISWA} stopOpacity={0.35} />
                     <stop offset="100%" stopColor={WARNA_SISWA} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradFoto" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={WARNA_FOTO} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={WARNA_FOTO} stopOpacity={0} />
                   </linearGradient>
                 </defs>
 
@@ -571,16 +833,12 @@ export default function LaporanEskul() {
                 />
 
                 <Tooltip
-                  cursor={
-                    hoverTipe
-                      ? { stroke: '#64748b', strokeDasharray: '3 3' }
-                      : false
-                  }
-                  content={<TooltipSatu tipe={hoverTipe} />}
+                  cursor={{ stroke: '#64748b', strokeDasharray: '3 3' }}
+                  content={<TooltipSiswa />}
                 />
 
                 {/* Penanda hari yang sedang dipilih */}
-                {selTipe && bucketAktif && (
+                {selTipe === 'siswa' && bucketAktif && (
                   <ReferenceLine
                     x={bucketAktif.label}
                     stroke="#22d3ee"
@@ -596,18 +854,7 @@ export default function LaporanEskul() {
                   stroke={WARNA_SISWA}
                   strokeWidth={2.5}
                   fill="url(#gradSiswa)"
-                  dot={renderDot('siswa', WARNA_SISWA, 5)}
-                  activeDot={false}
-                />
-
-                <Area
-                  type="monotone"
-                  name="Foto diunggah"
-                  dataKey="jumlahFoto"
-                  stroke={WARNA_FOTO}
-                  strokeWidth={2}
-                  fill="url(#gradFoto)"
-                  dot={renderDot('foto', WARNA_FOTO, 4)}
+                  dot={renderDot}
                   activeDot={false}
                 />
               </AreaChart>
@@ -642,9 +889,18 @@ export default function LaporanEskul() {
       </div>
 
       {/* =====================================================
-          DETAIL SESUAI TITIK YANG DIKLIK
-          - titik biru  -> HANYA nama siswa
-          - titik kuning -> HANYA foto
+          KALENDER REKAPAN UPLOAD FOTO
+      ====================================================== */}
+      <KalenderFoto
+        galeri={galeri}
+        tanggalDipilih={selTipe === 'foto' ? tglFoto : null}
+        onPilihTanggal={pilihTanggalFoto}
+      />
+
+      {/* =====================================================
+          DETAIL SESUAI YANG DIKLIK
+          - titik biru di grafik  -> nama siswa
+          - tanggal di kalender   -> foto pada tanggal itu
       ====================================================== */}
       {selTipe === 'siswa' && (
         <div className="mt-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300">
@@ -724,10 +980,10 @@ export default function LaporanEskul() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex flex-wrap items-center gap-3">
               <h3 className="text-base font-bold">
-                Foto yang Diunggah — {aktLabel}
+                Foto yang Diunggah — {formatTanggalPanjang(fotoMulai)}
               </h3>
 
-              {aktIsHariIni && (
+              {fotoIsHariIni && (
                 <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-cyan-100 dark:bg-cyan-900/40 text-cyan-800 dark:text-cyan-300">
                   Hari ini
                 </span>
@@ -752,7 +1008,7 @@ export default function LaporanEskul() {
             <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 gap-2">
               <ImageIcon className="w-9 h-9" />
               <p className="text-sm">
-                Tidak ada foto yang diunggah pada waktu ini.
+                Tidak ada foto yang diunggah pada tanggal ini.
               </p>
             </div>
           ) : (
@@ -761,7 +1017,7 @@ export default function LaporanEskul() {
                 <button
                   key={f.id_galeri}
                   type="button"
-                  onClick={() => bukaFoto(f.id_galeri)}
+                  onClick={() => bukaFoto(f.id_galeri, fotoAktif)}
                   className="group relative aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"
                   title={f.keterangan || 'Lihat foto'}
                 >
@@ -899,6 +1155,17 @@ export default function LaporanEskul() {
         </table>
       </div>
       </>
+      )}
+
+      {/* POP UP FOTO */}
+      {popup && (
+        <FotoPopup
+          daftar={popup.daftar}
+          index={popup.index}
+          onGanti={(i) => setPopup((p) => ({ ...p, index: i }))}
+          onTutup={() => setPopup(null)}
+          onBukaGaleri={bukaDiGaleri}
+        />
       )}
     </div>
   );
