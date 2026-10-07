@@ -5,6 +5,7 @@ import { ClipboardList, Lock, ImagePlus, Send, ArrowLeft } from 'lucide-react';
 // Samakan import ini dengan yang dipakai di DashboardSiswa.jsx
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
+import FotoProfilModal from './Fotoprofilmodal';
 import {
   tambahPendaftar,
   getDaftarEskul,
@@ -37,6 +38,7 @@ export default function RegistrationForm() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [fileMentah, setFileMentah] = useState(null); // foto yang sedang di-crop
   const [daftarKelas, setDaftarKelas] = useState([]);
   const [loadingKelas, setLoadingKelas] = useState(true);
 
@@ -103,11 +105,41 @@ export default function RegistrationForm() {
   };
 
   const handleFileChange = (e) => {
-    setFormData({ ...formData, foto: e.target.files[0] || null });
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Hanya file gambar yang diizinkan.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Ukuran foto maksimal 10 MB.');
+      return;
+    }
+
+    // Buka modal preview/crop dulu; foto baru masuk ke form setelah "Simpan foto"
+    setFileMentah(file);
+  };
+
+  const simpanHasilCrop = (fotoHasilCrop) => {
+    if (fotoHasilCrop.size > 2 * 1024 * 1024) {
+      alert('Hasil foto masih lebih dari 2 MB. Coba potong area yang lebih kecil.');
+      return; // modal tetap terbuka supaya bisa dipotong ulang
+    }
+    setFormData((prev) => ({ ...prev, foto: fotoHasilCrop }));
+    setFileMentah(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Input file tidak lagi memakai "required" (nilainya dikosongkan setelah crop)
+    if (!profilSudahAda && !formData.foto) {
+      alert('Silakan pilih foto siswa terlebih dahulu.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -300,7 +332,7 @@ export default function RegistrationForm() {
                   </div>
                   <div className="min-w-0 text-sm">
                     <p className="truncate font-semibold text-gray-700 dark:text-gray-200">
-                      {formData.foto ? formData.foto.name : 'Klik untuk memilih foto'}
+                      {formData.foto ? 'Foto siap dikirim (klik untuk ganti)' : 'Klik untuk memilih foto'}
                     </p>
                     <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                       {profilSudahAda
@@ -312,7 +344,6 @@ export default function RegistrationForm() {
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
-                    required={!profilSudahAda}
                     className="sr-only"
                   />
                 </label>
@@ -340,6 +371,13 @@ export default function RegistrationForm() {
           </div>
         </div>
       </main>
+
+      <FotoProfilModal
+        file={fileMentah}
+        judul="Sesuaikan foto siswa"
+        onCancel={() => setFileMentah(null)}
+        onSave={simpanHasilCrop}
+      />
     </div>
   );
 }

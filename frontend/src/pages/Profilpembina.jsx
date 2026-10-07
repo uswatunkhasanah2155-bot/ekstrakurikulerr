@@ -19,8 +19,10 @@ import {
 import Sidebar from '../components/Sidebar';
 import { getProfilSaya, updateProfilSaya } from '../services/profilApi';
 import { fotoUrl } from '../utils/fotoUrl';
+import FotoProfilModal from './Fotoprofilmodal';
 
-const MAX_FOTO = 2 * 1024 * 1024; // 2 MB, sama dengan batas backend
+const MAX_FOTO = 2 * 1024 * 1024; // 2 MB, sama dengan batas backend (untuk hasil crop)
+const MAX_PILIH = 10 * 1024 * 1024; // 10 MB, foto asli sebelum dipotong
 
 const JK_LABEL = { L: 'Laki-laki', P: 'Perempuan' };
 
@@ -44,6 +46,7 @@ export default function ProfilPembina() {
   const [form, setForm] = useState({ nama: '', email: '', jenis_kelamin: '' });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [fileTerpilih, setFileTerpilih] = useState(null); // foto yang sedang di-crop
   const [pesan, setPesan] = useState(null); // { tipe: 'sukses' | 'error', teks }
 
   useEffect(() => {
@@ -107,7 +110,7 @@ export default function ProfilPembina() {
   };
 
   // ---------- Ganti foto ----------
-  const pilihFoto = async (e) => {
+  const pilihFoto = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -116,14 +119,26 @@ export default function ProfilPembina() {
       tampilkanPesan('error', 'Hanya file gambar yang diizinkan.');
       return;
     }
-    if (file.size > MAX_FOTO) {
-      tampilkanPesan('error', 'Ukuran foto maksimal 2 MB.');
+    if (file.size > MAX_PILIH) {
+      tampilkanPesan('error', 'Ukuran foto maksimal 10 MB.');
+      return;
+    }
+
+    // Buka modal preview/crop dulu, upload baru dilakukan setelah klik "Simpan foto"
+    setFileTerpilih(file);
+  };
+
+  const simpanFoto = async (fotoHasilCrop) => {
+    if (fotoHasilCrop.size > MAX_FOTO) {
+      setFileTerpilih(null);
+      tampilkanPesan('error', 'Hasil foto masih lebih dari 2 MB. Coba potong area yang lebih kecil.');
       return;
     }
 
     setUploading(true);
-    const res = await updateProfilSaya({ foto: file });
+    const res = await updateProfilSaya({ foto: fotoHasilCrop });
     setUploading(false);
+    setFileTerpilih(null);
 
     if (res.success) {
       setProfil(res.data);
@@ -373,6 +388,12 @@ export default function ProfilPembina() {
           </div>
         )}
       </main>
+
+      <FotoProfilModal
+        file={fileTerpilih}
+        onCancel={() => setFileTerpilih(null)}
+        onSave={simpanFoto}
+      />
     </div>
   );
 }
