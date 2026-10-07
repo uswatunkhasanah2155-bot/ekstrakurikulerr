@@ -1,16 +1,7 @@
 import multer from 'multer';
-import path from 'path';
 
-// Konfigurasi penyimpanan file
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Pastikan folder uploads sudah ada di root backend
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// File ditahan di memori lalu dikirim ke Cloudinary (tidak disimpan di folder uploads)
+const storage = multer.memoryStorage();
 
 // Filter jenis file (opsional, contoh untuk gambar)
 const fileFilter = (req, file, cb) => {

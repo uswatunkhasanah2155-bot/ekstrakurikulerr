@@ -204,9 +204,9 @@ export default function PendaftarEskul() {
             </h3>
 
             {/* SEARCH */}
-            <div className="relative w-full sm:w-72">
+            <div className="relative w-full sm:w-72 group">
 
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 pointer-events-none transition-colors group-focus-within:text-emerald-500" />
 
               <input
                 type="text"
@@ -215,7 +215,7 @@ export default function PendaftarEskul() {
                   setSearchQuery(e.target.value)
                 }
                 placeholder="Cari nama, kelas, atau eskul..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg outline-none bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg outline-none bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 focus:shadow-[0_0_18px_rgba(16,185,129,0.35)]"
               />
 
             </div>

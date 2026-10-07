@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
+import upload from '../../middleware/upload.js';
+import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 
 const router = express.Router();
 
@@ -153,6 +155,7 @@ router.post('/login', async (req, res) => {
       role: user.role,
       id_user: user.id_user,
       id_eskul: user.id_eskul,
+      username: user.username,
       token
     });
 
@@ -431,6 +434,9 @@ router.patch('/users/:id', verifyToken, async (req, res) => {
 
 // =====================================================
 // 6. HAPUS USER
+// Akun dihapus permanen, tetapi profil siswa & riwayat
+// pendaftarannya TIDAK ikut terhapus (soft delete), supaya
+// grafik riwayat tetap utuh.
 // =====================================================
 
 router.delete('/users/:id', verifyToken, async (req, res) => {
@@ -441,6 +447,9 @@ router.delete('/users/:id', verifyToken, async (req, res) => {
     const userExist = await prisma.user.findUnique({
       where: {
         id_user: id
+      },
+      include: {
+        siswa: true
       }
     });
 
@@ -451,11 +460,43 @@ router.delete('/users/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Hapus user
-    await prisma.user.delete({
-      where: {
-        id_user: id
+    await prisma.$transaction(async (tx) => {
+      const siswa = userExist.siswa;
+
+      if (siswa) {
+        const sekarang = new Date();
+
+        // 1. Tandai semua pendaftaran aktif siswa ini sebagai dihapus
+        await tx.pendaftaran.updateMany({
+          where: {
+            id_siswa: siswa.id_siswa,
+            dihapus_pada: null
+          },
+          data: {
+            dihapus_pada: sekarang
+          }
+        });
+
+        // 2. Tandai siswa sebagai dihapus dan LEPASKAN dari akun,
+        //    supaya cascade (User -> Siswa -> Pendaftaran) tidak
+        //    menghapus datanya saat akun dihapus.
+        await tx.siswa.update({
+          where: {
+            id_siswa: siswa.id_siswa
+          },
+          data: {
+            dihapus_pada: siswa.dihapus_pada ?? sekarang,
+            id_user: null
+          }
+        });
       }
+
+      // 3. Baru hapus akun user
+      await tx.user.delete({
+        where: {
+          id_user: id
+        }
+      });
     });
 
     res.status(200).json({
@@ -561,6 +602,178 @@ router.get('/verify', (req, res) => {
     res.status(401).json({
       success: false,
       message: 'Token tidak valid atau sudah kedaluwarsa'
+    });
+  }
+});
+
+
+// =====================================================
+// 9. PROFIL SAYA (GET)
+// =====================================================
+
+const selectProfil = {
+  id_user: true,
+  username: true,
+  nama: true,
+  email: true,
+  jenis_kelamin: true,
+  foto: true,
+  role: true,
+  created_at: true,
+  id_eskul: true,
+
+  eskul: {
+    select: {
+      id_eskul: true,
+      nama_eskul: true,
+      jadwal: true
+    }
+  }
+};
+
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id_user: Number(req.user.id_user) },
+      select: selectProfil
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User tidak ditemukan'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+
+  } catch (error) {
+    console.error('GET PROFIL ERROR:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil profil',
+      error: error.message
+    });
+  }
+});
+
+
+// =====================================================
+// 10. PROFIL SAYA (UPDATE nama, email, jenis kelamin, foto)
+// Password & username TIDAK bisa diubah lewat endpoint ini.
+// =====================================================
+
+const uploadFotoProfil = (req, res, next) => {
+  upload.single('foto')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message:
+          err.code === 'LIMIT_FILE_SIZE'
+            ? 'Ukuran foto maksimal 2 MB'
+            : err.message
+      });
+    }
+    next();
+  });
+};
+
+router.put('/me', verifyToken, uploadFotoProfil, async (req, res) => {
+  let fotoBaru = null;
+
+  try {
+    const idUser = Number(req.user.id_user);
+    const body = req.body || {};
+
+    const userLama = await prisma.user.findUnique({
+      where: { id_user: idUser },
+      select: { foto: true }
+    });
+
+    if (!userLama) {
+      return res.status(404).json({
+        success: false,
+        message: 'User tidak ditemukan'
+      });
+    }
+
+    const dataUpdate = {};
+
+    if (body.nama !== undefined) {
+      const nama = String(body.nama).trim();
+
+      if (nama.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nama maksimal 100 karakter'
+        });
+      }
+
+      dataUpdate.nama = nama || null;
+    }
+
+    if (body.email !== undefined) {
+      const email = String(body.email).trim();
+
+      if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Format email tidak valid'
+        });
+      }
+
+      dataUpdate.email = email || null;
+    }
+
+    if (body.jenis_kelamin !== undefined) {
+      const jk = String(body.jenis_kelamin).trim().toUpperCase();
+
+      if (jk && !['L', 'P'].includes(jk)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Jenis kelamin tidak valid'
+        });
+      }
+
+      dataUpdate.jenis_kelamin = jk || null;
+    }
+
+    if (req.file) {
+      fotoBaru = await uploadFoto(req.file, 'profil');
+      dataUpdate.foto = fotoBaru;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id_user: idUser },
+      data: dataUpdate,
+      select: selectProfil
+    });
+
+    // Foto lama dihapus setelah database berhasil diperbarui
+    if (fotoBaru && userLama.foto) {
+      await hapusFoto(userLama.foto);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profil berhasil diperbarui',
+      data: updated
+    });
+
+  } catch (error) {
+    // Database gagal: buang foto baru yang sudah terlanjur diupload
+    if (fotoBaru) await hapusFoto(fotoBaru);
+
+    console.error('UPDATE PROFIL ERROR:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal memperbarui profil',
+      error: error.message
     });
   }
 });

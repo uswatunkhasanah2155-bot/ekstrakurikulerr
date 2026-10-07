@@ -1,5 +1,5 @@
 // src/pages/EditSiswaManual.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import {
@@ -8,7 +8,9 @@ import {
   getDaftarKelas,
   updatePendaftar
 } from '../services/api';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ImagePlus } from 'lucide-react';
+import FotoProfilModal from './Fotoprofilmodal';
+import { fotoUrl } from '../utils/fotoUrl';
 
 export default function EditSiswaManual() {
   const { namaEskul, idPendaftaran } = useParams();
@@ -51,6 +53,22 @@ export default function EditSiswaManual() {
     jenisKelamin: '',
     foto: null
   });
+
+  const [fotoLama, setFotoLama] = useState(null); // foto siswa yang sudah tersimpan
+
+  const [fileMentah, setFileMentah] = useState(null); // foto yang sedang di-crop
+
+  // Preview foto hasil crop
+  const previewFoto = useMemo(
+    () => (formData.foto ? URL.createObjectURL(formData.foto) : null),
+    [formData.foto]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewFoto) URL.revokeObjectURL(previewFoto);
+    };
+  }, [previewFoto]);
 
   // ==================================================
   // AMBIL DATA
@@ -130,6 +148,8 @@ export default function EditSiswaManual() {
             target.id_siswa
           );
 
+          setFotoLama(target.foto || null);
+
           setFormData({
             nama: target.nama || '',
             id_kelas:
@@ -164,6 +184,34 @@ export default function EditSiswaManual() {
     cleanNamaEskul,
     idPendaftaran
   ]);
+
+  // ---------- Foto: pilih -> crop -> masuk ke form ----------
+  const handlePilihFoto = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Hanya file gambar yang diizinkan.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Ukuran foto maksimal 10 MB.');
+      return;
+    }
+
+    // Buka modal preview/crop dulu; foto baru masuk ke form setelah "Simpan foto"
+    setFileMentah(file);
+  };
+
+  const simpanHasilCrop = (fotoHasilCrop) => {
+    if (fotoHasilCrop.size > 2 * 1024 * 1024) {
+      alert('Hasil foto masih lebih dari 2 MB. Coba potong area yang lebih kecil.');
+      return; // modal tetap terbuka supaya bisa dipotong ulang
+    }
+    setFormData((prev) => ({ ...prev, foto: fotoHasilCrop }));
+    setFileMentah(null);
+  };
 
   // ==================================================
   // HANDLE SUBMIT
@@ -415,18 +463,37 @@ export default function EditSiswaManual() {
                   Foto (opsional, kosongkan jika tidak diganti)
                 </label>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      foto:
-                        e.target.files[0]
-                    })
-                  }
-                  className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-900/40 file:text-emerald-700 dark:file:text-emerald-300 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-900/60 cursor-pointer"
-                />
+                <label className="flex cursor-pointer items-center gap-4 rounded-lg border-2 border-dashed border-gray-200 p-3 transition-colors hover:border-emerald-500 hover:bg-emerald-50/50 dark:border-gray-700 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/20">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-gray-400 dark:bg-gray-800">
+                    {(previewFoto || fotoUrl(fotoLama)) ? (
+                      <img
+                        src={(previewFoto || fotoUrl(fotoLama))}
+                        alt="Preview foto"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ImagePlus className="h-6 w-6" />
+                    )}
+                  </div>
+                  <div className="min-w-0 text-sm">
+                    <p className="font-semibold text-gray-700 dark:text-gray-200">
+                      {formData.foto
+                          ? 'Foto baru siap dikirim (klik untuk ganti)'
+                          : fotoLama
+                          ? 'Klik untuk mengganti foto'
+                          : 'Klik untuk memilih foto'}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                      Foto bisa dipotong sebelum disimpan.
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePilihFoto}
+                    className="sr-only"
+                  />
+                </label>
 
               </div>
 
@@ -463,6 +530,13 @@ export default function EditSiswaManual() {
         )}
 
       </main>
+
+      <FotoProfilModal
+        file={fileMentah}
+        judul="Sesuaikan foto siswa"
+        onCancel={() => setFileMentah(null)}
+        onSave={simpanHasilCrop}
+      />
     </div>
   );
 }

@@ -72,6 +72,7 @@ export default function Login() {
       localStorage.setItem('role', data.role);
       localStorage.setItem('id_user', data.id_user || '');
       localStorage.setItem('id_eskul', data.id_eskul || '');
+      localStorage.setItem('username', data.username || formData.username);
 
       setSuccessMessage('Login berhasil! Mengalihkan...');
 
@@ -229,11 +230,11 @@ export default function Login() {
         </form>
 
         <div className="relative flex py-4 items-center">
-          <div className="flex-grow border-t border-gray-200"></div>
-          <span className="flex-shrink mx-4 text-gray-400 text-xs">
+          <div className="grow border-t border-gray-200"></div>
+          <span className="shrink mx-4 text-gray-400 text-xs">
             atau
           </span>
-          <div className="flex-grow border-t border-gray-200"></div>
+          <div className="grow border-t border-gray-200"></div>
         </div>
 
         <div className="text-center text-sm text-gray-500">

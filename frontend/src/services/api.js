@@ -124,6 +124,37 @@ export async function getPendaftarEskul() {
   }
 }
 
+// Mengambil SEMUA pendaftaran, termasuk yang sudah dihapus (soft delete).
+// Dipakai halaman LaporanEskul supaya grafik riwayat tetap utuh.
+export async function getRiwayatPendaftarEskul() {
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran?termasuk_dihapus=true`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (handleUnauthorized(response)) return [];
+
+    if (!response.ok) {
+      throw new Error('Gagal mengambil riwayat pendaftar dari server backend');
+    }
+
+    const result = await response.json();
+
+    return result.data || [];
+
+  } catch (error) {
+    console.error('Error fetching riwayat pendaftar:', error);
+    return [];
+  }
+}
+
 
 export async function getSiswaByEskul(namaEskul) {
   try {
@@ -923,6 +954,41 @@ export async function setFotoUtamaGaleri(
   }
 }
 
+export async function setBannerGaleri(idGaleri) {
+  try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    const response = await fetch(
+      `${API_URL}/api/galeri/${idGaleri}/banner`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (handleUnauthorized(response)) {
+      return { success: false, error: 'Sesi login berakhir.' };
+    }
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Gagal mengubah foto banner');
+    }
+
+    return { success: true, data: result };
+
+  } catch (error) {
+    console.error('Error setting foto banner:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 export async function updateGaleriEskul(
   idGaleri,
@@ -997,8 +1063,7 @@ export async function updateGaleriEskul(
 
 export async function getDaftarPembina() {
   try {
-    const token =
-      localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
     const response = await fetch(
       `${API_URL}/api/auth/pembina`,
@@ -1019,57 +1084,54 @@ export async function getDaftarPembina() {
       );
     }
 
-    const result =
-      await response.json();
+    const result = await response.json();
 
     return result.data || [];
 
   } catch (error) {
-    console.error(
-      'Error fetching pembina:',
-      error
-    );
-
+    console.error('Error fetching pembina:', error);
     return [];
   }
 }
 
 
-export async function tambahPembina(
-  dataPembina
-) {
+export async function tambahPembina(dataPembina) {
   try {
+    const token = localStorage.getItem('token');
+
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
     const response = await fetch(
       `${API_URL}/api/auth/register`,
       {
         method: 'POST',
-
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Ditambahkan token agar diizinkan backend
         },
-
         body: JSON.stringify({
-          username:
-            dataPembina.username,
-
-          password:
-            dataPembina.password,
-
+          username: dataPembina.username,
+          password: dataPembina.password,
           role: 'pembina',
-
-          id_eskul:
-            Number(dataPembina.id_eskul)
+          id_eskul: Number(dataPembina.id_eskul)
         })
       }
     );
 
-    const result =
-      await response.json();
+    if (handleUnauthorized(response)) {
+      return {
+        success: false,
+        error: 'Sesi login berakhir.'
+      };
+    }
+
+    const result = await response.json();
 
     if (!response.ok) {
       throw new Error(
-        result.message ||
-        'Gagal menambahkan akun pembina'
+        result.message || 'Gagal menambahkan akun pembina'
       );
     }
 
@@ -1079,11 +1141,7 @@ export async function tambahPembina(
     };
 
   } catch (error) {
-    console.error(
-      'Error adding pembina:',
-      error
-    );
-
+    console.error('Error adding pembina:', error);
     return {
       success: false,
       error: error.message
@@ -1092,18 +1150,19 @@ export async function tambahPembina(
 }
 
 
-export async function hapusPembina(
-  idUser
-) {
+export async function hapusPembina(idUser) {
   try {
-    const token =
-      localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
+    if (!token || token === 'null' || token === 'undefined') {
+      throw new Error('Sesi login kedaluwarsa. Silakan login ulang.');
+    }
+
+    // Menyesuaikan endpoint penghapusan user/pembina standar backend (biasanya /api/auth/users/:id)
     const response = await fetch(
-      `${API_URL}/api/auth/pembina/${idUser}`,
+      `${API_URL}/api/auth/users/${idUser}`,
       {
         method: 'DELETE',
-
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -1117,26 +1176,21 @@ export async function hapusPembina(
       };
     }
 
-    if (!response.ok) {
-      const errorResult =
-        await response.json();
+    const result = await response.json();
 
+    if (!response.ok) {
       throw new Error(
-        errorResult.message ||
-        'Gagal menghapus akun pembina'
+        result.message || 'Gagal menghapus akun pembina'
       );
     }
 
     return {
-      success: true
+      success: true,
+      data: result
     };
 
   } catch (error) {
-    console.error(
-      'Error deleting pembina:',
-      error
-    );
-
+    console.error('Error deleting pembina:', error);
     return {
       success: false,
       error: error.message

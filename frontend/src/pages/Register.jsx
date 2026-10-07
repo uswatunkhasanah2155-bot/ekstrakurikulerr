@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import InputField from '../components/InputField';
+import logoSekolah from '../assets/logosmkc.jpeg';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -77,12 +78,14 @@ export default function Register() {
       {/* Card Container */}
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 relative z-10 border border-purple-50">
         
-        {/* Header dengan Icon Profil */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-purple-50 text-purple-600 rounded-full mb-4 shadow-inner">
-            <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
+        {/* Header dengan Logo Sekolah */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center mb-4">
+            <img
+              src={logoSekolah}
+              alt="Logo Sekolah"
+              className="w-24 h-24 object-contain"
+            />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Daftar Akun</h2>
           <p className="text-xs text-gray-400 mt-1">Buat akun baru untuk mulai menggunakan sistem.</p>
@@ -192,9 +195,9 @@ export default function Register() {
 
         {/* Garis Pemisah */}
         <div className="relative flex py-5 items-center">
-          <div className="flex-grow border-t border-gray-200"></div>
-          <span className="flex-shrink mx-4 text-gray-400 text-xs">atau</span>
-          <div className="flex-grow border-t border-gray-200"></div>
+          <div className="grow border-t border-gray-200"></div>
+          <span className="shrink mx-4 text-gray-400 text-xs">atau</span>
+          <div className="grow border-t border-gray-200"></div>
         </div>
 
         {/* Footer Login */}

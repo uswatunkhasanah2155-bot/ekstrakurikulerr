@@ -1,3 +1,24 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+
+/* ===== Responsive: halaman yang memakai Sidebar =====
+   Di HP/tablet sidebar menjadi menu geser dengan top bar tetap (tinggi 3.5rem),
+   jadi isi halaman diberi ruang di atas agar tidak tertutup. */
+.sidebar-topbar ~ main {
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .sidebar-topbar ~ main {
+    padding-top: 4.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .sidebar-topbar ~ main {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

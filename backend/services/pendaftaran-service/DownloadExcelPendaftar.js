@@ -4,6 +4,10 @@ import ExcelJS from 'exceljs';
 export const handleDownloadExcelPendaftar = async (req, res) => {
   try {
     const listPendaftaran = await prisma.pendaftaran.findMany({
+      where: {
+        dihapus_pada: null,            // hanya pendaftaran aktif
+        siswa: { dihapus_pada: null }, // dan siswa yang belum dihapus
+      },
       include: {
         siswa: {
           include: {
@@ -12,9 +16,14 @@ export const handleDownloadExcelPendaftar = async (req, res) => {
         },
         ekstrakurikuler: true,
       },
-      orderBy: { id_siswa: 'asc' },
+      orderBy: {
+        id_siswa: 'asc',
+      },
     });
 
+    // =========================
+    // GROUPING BERDASARKAN SISWA
+    // =========================
     const grouped = {};
 
     listPendaftaran.forEach((item) => {
@@ -27,64 +36,91 @@ export const handleDownloadExcelPendaftar = async (req, res) => {
           nama: item.siswa?.nama_siswa || 'Tanpa Nama',
           kelas: item.siswa?.kelasData?.nama_kelas || '-',
           jenisKelamin:
-            item.siswa?.jenis_kelamin === 'P'
-              ? 'Perempuan'
-              : 'Laki-laki',
+            item.siswa?.jenis_kelamin === 'P' ? 'Perempuan' : 'Laki-laki',
           eskul: [],
+          tanggalDaftar: [],
         };
       }
 
-      grouped[idSiswa].eskul.push(
-        item.ekstrakurikuler?.nama_eskul || '-'
-      );
+      // Nama eskul
+      const namaEskul = item.ekstrakurikuler?.nama_eskul || '-';
+      grouped[idSiswa].eskul.push(namaEskul);
+
+      // Tanggal pendaftaran (cukup tanggalnya saja)
+      if (item.tanggal) {
+        const tanggalFormat = new Date(item.tanggal).toLocaleDateString(
+          'id-ID',
+          {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          }
+        );
+
+        grouped[idSiswa].tanggalDaftar.push(tanggalFormat);
+      } else {
+        grouped[idSiswa].tanggalDaftar.push('-');
+      }
     });
 
     const dataSiswa = Object.values(grouped);
 
+    // =========================
+    // BUAT WORKBOOK
+    // =========================
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Rekap Pendaftar');
 
     worksheet.views = [{ showGridLines: true }];
 
+    // =========================
+    // HEADER
+    // =========================
     const headers = [
       'No',
       'Nama Siswa',
       'Kelas',
       'Jenis Kelamin',
       'Ekstrakurikuler Diikuti',
+      'Tanggal Daftar',
     ];
+
+    const borderHeader = {
+      top: { style: 'thin', color: { argb: 'CCCCCC' } },
+      left: { style: 'thin', color: { argb: 'CCCCCC' } },
+      bottom: { style: 'thin', color: { argb: 'CCCCCC' } },
+      right: { style: 'thin', color: { argb: 'CCCCCC' } },
+    };
 
     headers.forEach((header, index) => {
       const colLetter = String.fromCharCode(65 + index);
       const cell = worksheet.getCell(`${colLetter}2`);
 
       cell.value = header;
-
       cell.font = {
         name: 'Calibri',
         size: 11,
         bold: true,
         color: { argb: 'FFFFFF' },
       };
-
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: '343A40' },
       };
-
-      cell.alignment = {
-        horizontal: 'center',
-        vertical: 'center',
-      };
-
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'CCCCCC' } },
-        left: { style: 'thin', color: { argb: 'CCCCCC' } },
-        bottom: { style: 'thin', color: { argb: 'CCCCCC' } },
-        right: { style: 'thin', color: { argb: 'CCCCCC' } },
-      };
+      cell.alignment = { horizontal: 'center', vertical: 'center' };
+      cell.border = borderHeader;
     });
+
+    // =========================
+    // DATA SISWA
+    // =========================
+    const borderData = {
+      top: { style: 'thin', color: { argb: 'E0E0E0' } },
+      left: { style: 'thin', color: { argb: 'E0E0E0' } },
+      bottom: { style: 'thin', color: { argb: 'E0E0E0' } },
+      right: { style: 'thin', color: { argb: 'E0E0E0' } },
+    };
 
     let rowIndex = 3;
 
@@ -96,53 +132,51 @@ export const handleDownloadExcelPendaftar = async (req, res) => {
       row.getCell('C').value = siswa.kelas;
       row.getCell('D').value = siswa.jenisKelamin;
       row.getCell('E').value = siswa.eskul.join(', ');
+      row.getCell('F').value = siswa.tanggalDaftar.join(', ');
 
-      ['A', 'B', 'C', 'D', 'E'].forEach((colLetter) => {
+      ['A', 'B', 'C', 'D', 'E', 'F'].forEach((colLetter) => {
         const cell = row.getCell(colLetter);
 
-        cell.font = {
-          name: 'Calibri',
-          size: 11,
-        };
+        cell.font = { name: 'Calibri', size: 11 };
+        cell.border = borderData;
 
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'E0E0E0' } },
-          left: { style: 'thin', color: { argb: 'E0E0E0' } },
-          bottom: { style: 'thin', color: { argb: 'E0E0E0' } },
-          right: { style: 'thin', color: { argb: 'E0E0E0' } },
-        };
-
-        cell.alignment =
-          colLetter === 'B' || colLetter === 'E'
-            ? {
-                horizontal: 'left',
-                vertical: 'center',
-              }
-            : {
-                horizontal: 'center',
-                vertical: 'center',
-              };
+        if (colLetter === 'B' || colLetter === 'E' || colLetter === 'F') {
+          cell.alignment = {
+            horizontal: 'left',
+            vertical: 'center',
+            wrapText: true,
+          };
+        } else {
+          cell.alignment = {
+            horizontal: 'center',
+            vertical: 'center',
+          };
+        }
       });
 
       rowIndex++;
     });
 
+    // =========================
+    // LEBAR KOLOM
+    // =========================
     worksheet.columns.forEach((column) => {
       let maxLength = 0;
 
       column.eachCell({ includeEmpty: true }, (cell) => {
-        const len = cell.value
-          ? cell.value.toString().length
-          : 10;
+        const len = cell.value ? cell.value.toString().length : 10;
 
         if (len > maxLength) {
           maxLength = len;
         }
       });
 
-      column.width = Math.max(maxLength + 5, 12);
+      column.width = Math.min(Math.max(maxLength + 5, 12), 50);
     });
 
+    // =========================
+    // HEADER DOWNLOAD
+    // =========================
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -154,6 +188,7 @@ export const handleDownloadExcelPendaftar = async (req, res) => {
     );
 
     await workbook.xlsx.write(res);
+
     res.end();
 
   } catch (error) {

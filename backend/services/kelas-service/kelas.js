@@ -43,7 +43,8 @@ router.get('/:id', verifyToken, async (req, res) => {
         id_kelas: id,
       },
       include: {
-        siswa: true,
+        // hanya siswa yang belum dihapus
+        siswa: { where: { dihapus_pada: null } },
       },
     });
 
@@ -193,10 +194,11 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Cek apakah masih ada siswa yang menggunakan kelas ini
+    // Cek apakah masih ada siswa AKTIF yang menggunakan kelas ini
     const jumlahSiswa = await prisma.siswa.count({
       where: {
         id_kelas: id,
+        dihapus_pada: null,
       },
     });
 

@@ -2,30 +2,27 @@ import express from 'express';
 import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import multer from 'multer';
-import path from 'path';
+import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 
 const router = express.Router();
 
 // ==================================================
 // KONFIGURASI MULTER
 // ==================================================
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/siswa/');
+// File ditahan di memori lalu dikirim ke Cloudinary
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Hanya file gambar yang diizinkan!'), false);
+    }
   },
-
-  filename: (req, file, cb) => {
-    const uniqueSuffix =
-      Date.now() + '-' + Math.round(Math.random() * 1E9);
-
-    cb(
-      null,
-      'siswa-' + uniqueSuffix + path.extname(file.originalname)
-    );
-  }
+  limits: { fileSize: 2 * 1024 * 1024 }, // Maksimal 2 MB
 });
-
-const upload = multer({ storage });
 
 
 // ==================================================
@@ -34,7 +31,7 @@ const upload = multer({ storage });
 // Aturan:
 // - admin        -> boleh akses siswa manapun
 // - pembina      -> boleh akses siswa HANYA jika siswa itu terdaftar
-//                   (punya row pendaftaran) di eskul milik pembina tsb
+//                   (punya pendaftaran AKTIF) di eskul milik pembina tsb
 // - role lain     -> ditolak (403)
 //
 // Mengembalikan { allowed: boolean, statusCode, message }
@@ -69,11 +66,12 @@ async function cekAksesEditSiswa(req, targetIdSiswa) {
       };
     }
 
-    // Cek apakah siswa target terdaftar di eskul milik pembina ini
+    // Cek apakah siswa target terdaftar (aktif) di eskul milik pembina ini
     const pendaftaranDiEskulIni = await prisma.pendaftaran.findFirst({
       where: {
         id_siswa: Number(targetIdSiswa),
         id_eskul: Number(idEskulPembina),
+        dihapus_pada: null,
       },
     });
 
@@ -98,11 +96,12 @@ async function cekAksesEditSiswa(req, targetIdSiswa) {
 
 
 // ==================================================
-// GET SEMUA SISWA
+// GET SEMUA SISWA (hanya yang belum dihapus)
 // ==================================================
 router.get('/', verifyToken, async (req, res) => {
   try {
     const listSiswa = await prisma.siswa.findMany({
+      where: { dihapus_pada: null },
       include: {
         user: true,
         kelasData: true,
@@ -175,8 +174,8 @@ router.get('/:id', verifyToken, async (req, res) => {
   try {
     const id = Number(req.params.id);
 
-    const siswa = await prisma.siswa.findUnique({
-      where: { id_siswa: id },
+    const siswa = await prisma.siswa.findFirst({
+      where: { id_siswa: id, dihapus_pada: null },
       include: {
         user: true,
         kelasData: true,
@@ -246,7 +245,7 @@ router.post(
       }
 
       const fotoPath = req.file
-        ? `uploads/siswa/${req.file.filename}`
+        ? await uploadFoto(req.file, 'siswa')
         : null;
 
       const siswaBaru = await prisma.siswa.create({
@@ -296,7 +295,7 @@ router.put(
         where: { id_siswa: id },
       });
 
-      if (!siswaCek) {
+      if (!siswaCek || siswaCek.dihapus_pada) {
         return res.status(404).json({
           success: false,
           message: 'Data siswa tidak ditemukan',
@@ -330,7 +329,7 @@ router.put(
       }
 
       const fotoPath = req.file
-        ? `uploads/siswa/${req.file.filename}`
+        ? await uploadFoto(req.file, 'siswa')
         : undefined;
 
       const siswaUpdated = await prisma.siswa.update({
@@ -347,6 +346,11 @@ router.put(
         },
         include: { kelasData: true },
       });
+
+      // Foto lama dihapus setelah database berhasil diperbarui
+      if (fotoPath && siswaCek.foto) {
+        await hapusFoto(siswaCek.foto);
+      }
 
       res.json({
         success: true,
@@ -368,8 +372,11 @@ router.put(
 
 
 // ==================================================
-// DELETE SISWA
-// Hanya admin, atau pembina utk siswa di eskul-nya sendiri
+// DELETE SISWA (SOFT DELETE)
+// Hanya admin, atau pembina utk siswa di eskul-nya sendiri.
+//
+// Siswa dan pendaftarannya TIDAK dihapus permanen, hanya ditandai
+// dihapus_pada. Dengan begitu grafik riwayat pendaftaran tetap utuh.
 // ==================================================
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
@@ -379,7 +386,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
       where: { id_siswa: siswaId },
     });
 
-    if (!siswaCek) {
+    if (!siswaCek || siswaCek.dihapus_pada) {
       return res.status(404).json({
         success: false,
         message: 'Data siswa tidak ditemukan',
@@ -398,19 +405,25 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Hapus seluruh pendaftaran siswa
-    await prisma.pendaftaran.deleteMany({
-      where: { id_siswa: siswaId },
-    });
+    const sekarang = new Date();
 
-    // Hapus data siswa
-    await prisma.siswa.delete({
-      where: { id_siswa: siswaId },
-    });
+    await prisma.$transaction([
+      // Tandai semua pendaftaran aktif siswa ini sebagai dihapus
+      prisma.pendaftaran.updateMany({
+        where: { id_siswa: siswaId, dihapus_pada: null },
+        data: { dihapus_pada: sekarang },
+      }),
+
+      // Tandai siswa sebagai dihapus
+      prisma.siswa.update({
+        where: { id_siswa: siswaId },
+        data: { dihapus_pada: sekarang },
+      }),
+    ]);
 
     res.json({
       success: true,
-      message: 'Berhasil menghapus data siswa beserta seluruh pendaftarannya',
+      message: 'Berhasil menghapus data siswa',
     });
 
   } catch (error) {

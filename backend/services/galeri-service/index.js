@@ -3,39 +3,18 @@ import prisma from '../../lib/prisma.js';
 import { verifyToken } from '../../middleware/authMiddleware.js';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 
 const router = express.Router();
 
-// ===============================
-// FOLDER UPLOAD GALERI
-// ===============================
-const galeriDir = 'uploads/galeri/';
-
-if (!fs.existsSync(galeriDir)) {
-  fs.mkdirSync(galeriDir, { recursive: true });
-}
+// Batas jumlah foto banner per eskul (samakan dengan frontend)
+const MAX_BANNER = 5;
 
 // ===============================
 // MULTER STORAGE
+// File ditahan di memori lalu dikirim ke Cloudinary
 // ===============================
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, galeriDir);
-  },
-
-  filename: (req, file, cb) => {
-    const uniqueSuffix =
-      Date.now() + '-' + Math.round(Math.random() * 1E9);
-
-    cb(
-      null,
-      'galeri-' +
-        uniqueSuffix +
-        path.extname(file.originalname)
-    );
-  }
-});
+const storage = multer.memoryStorage();
 
 // ===============================
 // VALIDASI FILE
@@ -160,31 +139,36 @@ router.post(
       });
 
       if (!eskul) {
-        // Hapus file yang sudah terupload jika eskul tidak ditemukan
-        req.files.forEach((file) => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-        });
-
         return res.status(404).json({
           success: false,
           message: 'Ekstrakurikuler tidak ditemukan'
         });
       }
 
-      const hasil = [];
+      // Upload semua foto ke Cloudinary, lalu simpan path-nya di database
+      const fotoBaru = [];
+      let hasil = [];
 
-      for (const file of req.files) {
-        const data = await prisma.galeriEskul.create({
-          data: {
-            id_eskul,
-            foto: `/uploads/galeri/${file.filename}`,
-            keterangan: req.body.keterangan || null
-          }
-        });
+      try {
+        for (const file of req.files) {
+          fotoBaru.push(await uploadFoto(file, 'galeri'));
+        }
 
-        hasil.push(data);
+        hasil = await prisma.$transaction(
+          fotoBaru.map((foto) =>
+            prisma.galeriEskul.create({
+              data: {
+                id_eskul,
+                foto,
+                keterangan: req.body.keterangan || null
+              }
+            })
+          )
+        );
+      } catch (err) {
+        // Kalau ada yang gagal, foto yang sudah terlanjur diupload dibersihkan
+        await Promise.all(fotoBaru.map((f) => hapusFoto(f)));
+        throw err;
       }
 
       res.status(201).json({
@@ -195,15 +179,6 @@ router.post(
 
     } catch (error) {
       console.error('Error upload galeri:', error);
-
-      // Hapus file jika database gagal
-      if (req.files) {
-        req.files.forEach((file) => {
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-        });
-      }
 
       res.status(500).json({
         success: false,
@@ -221,6 +196,8 @@ router.put(
   verifyToken,
   upload.single('foto'),
   async (req, res) => {
+    let fotoBaru = null;
+
     try {
       const id = Number(req.params.id);
 
@@ -238,10 +215,6 @@ router.put(
       });
 
       if (!galeri) {
-        if (req.file && fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-        }
-
         return res.status(404).json({
           success: false,
           message: 'Data galeri tidak ditemukan'
@@ -255,20 +228,10 @@ router.put(
           req.body.keterangan || null;
       }
 
-      // Jika ada foto baru
+      // Jika ada foto baru: upload ke Cloudinary
       if (req.file) {
-        dataUpdate.foto =
-          `/uploads/galeri/${req.file.filename}`;
-
-        // Hapus foto lama
-        const oldPath = path.join(
-          process.cwd(),
-          galeri.foto.replace(/^\/+/, '')
-        );
-
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
+        fotoBaru = await uploadFoto(req.file, 'galeri');
+        dataUpdate.foto = fotoBaru;
       }
 
       const updated = await prisma.galeriEskul.update({
@@ -277,6 +240,11 @@ router.put(
         },
         data: dataUpdate
       });
+
+      // Foto lama dihapus setelah database berhasil diperbarui
+      if (fotoBaru) {
+        await hapusFoto(galeri.foto);
+      }
 
       res.json({
         success: true,
@@ -287,8 +255,9 @@ router.put(
     } catch (error) {
       console.error('Error update galeri:', error);
 
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
+      // Database gagal: buang foto baru yang sudah terlanjur diupload
+      if (fotoBaru) {
+        await hapusFoto(fotoBaru);
       }
 
       res.status(500).json({
@@ -326,22 +295,15 @@ router.delete('/:id', verifyToken, async (req, res) => {
       });
     }
 
-    // Hapus file foto
-    const filePath = path.join(
-      process.cwd(),
-      galeri.foto.replace(/^\/+/, '')
-    );
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
     // Hapus data database
     await prisma.galeriEskul.delete({
       where: {
         id_galeri: id
       }
     });
+
+    // Hapus file foto (Cloudinary, atau folder uploads untuk data lama)
+    await hapusFoto(galeri.foto);
 
     res.json({
       success: true,
@@ -420,6 +382,103 @@ router.patch(
       res.status(500).json({
         success: false,
         message: 'Gagal mengubah foto utama'
+      });
+    }
+  }
+);
+
+// ===============================
+// TANDAI / LEPAS FOTO BANNER (toggle)
+// Catatan: sengaja TIDAK memakai status 403 untuk penolakan,
+// karena frontend (handleUnauthorized) otomatis logout pada 401/403.
+// ===============================
+router.patch(
+  '/:id/banner',
+  verifyToken,
+  async (req, res) => {
+    try {
+      const role = (req.user?.role || '').toUpperCase();
+
+      if (role !== 'ADMIN' && role !== 'PEMBINA') {
+        return res.status(400).json({
+          success: false,
+          message: 'Hanya admin atau pembina yang dapat mengatur banner'
+        });
+      }
+
+      const id = Number(req.params.id);
+
+      if (isNaN(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID galeri tidak valid'
+        });
+      }
+
+      const galeri = await prisma.galeriEskul.findUnique({
+        where: {
+          id_galeri: id
+        }
+      });
+
+      if (!galeri) {
+        return res.status(404).json({
+          success: false,
+          message: 'Data galeri tidak ditemukan'
+        });
+      }
+
+      // Pembina hanya boleh mengatur eskul yang dibinanya
+      if (
+        role === 'PEMBINA' &&
+        Number(req.user.id_eskul) !== galeri.id_eskul
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Anda hanya dapat mengatur eskul yang Anda bina'
+        });
+      }
+
+      // Batas maksimal foto banner per eskul
+      if (!galeri.is_banner) {
+        const jumlah = await prisma.galeriEskul.count({
+          where: {
+            id_eskul: galeri.id_eskul,
+            is_banner: true
+          }
+        });
+
+        if (jumlah >= MAX_BANNER) {
+          return res.status(400).json({
+            success: false,
+            message: `Banner maksimal ${MAX_BANNER} foto. Lepas salah satu dulu.`
+          });
+        }
+      }
+
+      const updated = await prisma.galeriEskul.update({
+        where: {
+          id_galeri: id
+        },
+        data: {
+          is_banner: !galeri.is_banner
+        }
+      });
+
+      res.json({
+        success: true,
+        message: updated.is_banner
+          ? 'Foto dijadikan banner'
+          : 'Foto dilepas dari banner',
+        data: updated
+      });
+
+    } catch (error) {
+      console.error('Error set foto banner:', error);
+
+      res.status(500).json({
+        success: false,
+        message: 'Gagal mengubah foto banner'
       });
     }
   }
