@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ClipboardList, Lock, ImagePlus, Send, ArrowLeft } from 'lucide-react';
 // Samakan import ini dengan yang dipakai di DashboardSiswa.jsx
+import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import {
   tambahPendaftar,
@@ -161,9 +162,12 @@ export default function RegistrationForm() {
     }
   };
 
+  const roleLogin = (localStorage.getItem('role') || '').toUpperCase();
+  const bisaKelola = roleLogin === 'ADMIN' || roleLogin === 'PEMBINA';
+
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-800 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-100">
-      <Navbar />
+    <div className={`flex min-h-screen ${bisaKelola ? '' : 'flex-col'} bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300`}>
+      {bisaKelola ? <Sidebar /> : <Navbar />}
 
       <main className="flex-1 px-4 py-8 sm:px-6">
         <div className="mx-auto w-full max-w-4xl">

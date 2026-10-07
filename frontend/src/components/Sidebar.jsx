@@ -1,7 +1,7 @@
 // src/components/Sidebar.jsx
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { getDaftarEskul } from '../services/api';
 import { getProfilSaya } from '../services/profilApi';
 import { fotoUrl } from '../utils/fotoUrl';
@@ -20,7 +20,9 @@ import {
   Sun,
   Database,
   Image,         // Galeri (Pembina)
-  ClipboardList  // Kelola Eskul (Pembina)
+  ClipboardList, // Kelola Eskul (Pembina)
+  Menu,          // Tombol hamburger (HP)
+  X              // Tutup menu (HP)
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -52,16 +54,53 @@ export default function Sidebar() {
   // COLLAPSE / EXPAND SIDEBAR
   // ======================================================
 
-  const [isCollapsed, setIsCollapsed] = useState(() => {
+  // Layar besar (desktop) >= 1024px. Di bawah itu sidebar jadi menu geser (drawer).
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.matchMedia('(min-width: 1024px)').matches
+  );
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+
+    const onChange = (e) => {
+      setIsDesktop(e.matches);
+      if (e.matches) setMobileOpen(false);
+    };
+
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // Tutup menu saat pindah halaman
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Kunci scroll halaman saat menu terbuka di HP
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+  // Preferensi collapse tersimpan; hanya berlaku di desktop
+  const [isCollapsedPref, setIsCollapsedPref] = useState(() => {
     return localStorage.getItem('sidebarCollapsed') === 'true';
   });
+
+  const isCollapsed = isCollapsedPref && isDesktop;
 
   useEffect(() => {
     localStorage.setItem(
       'sidebarCollapsed',
-      isCollapsed
+      isCollapsedPref
     );
+  }, [isCollapsedPref]);
 
+  useEffect(() => {
     if (isCollapsed) {
       setIsDropdownOpen(false);
       setIsMasterDropdownOpen(false);
@@ -70,7 +109,7 @@ export default function Sidebar() {
 
 
   const toggleSidebar = () => {
-    setIsCollapsed(prev => !prev);
+    setIsCollapsedPref(prev => !prev);
   };
 
 
@@ -286,21 +325,87 @@ export default function Sidebar() {
   // ======================================================
 
   return (
+    <>
+
+    {/* TOP BAR + HAMBURGER (hanya di HP / tablet) */}
+    <div className="
+      sidebar-topbar
+      lg:hidden
+      fixed top-0 inset-x-0 z-30
+      h-14
+      px-3
+      flex items-center gap-3
+      bg-white/95 dark:bg-gray-900/95
+      backdrop-blur
+      border-b border-gray-200 dark:border-gray-700
+    ">
+      <button
+        onClick={() => setMobileOpen(true)}
+        aria-label="Buka menu"
+        className="
+          w-10 h-10
+          rounded-lg
+          flex items-center justify-center
+          text-gray-700 dark:text-gray-200
+          hover:bg-gray-100 dark:hover:bg-gray-800
+        "
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
+      <img
+        src={logoSekolah}
+        alt="Logo Sekolah"
+        className="w-8 h-8 rounded-md object-contain bg-white"
+      />
+
+      <span className="font-bold text-gray-800 dark:text-white">
+        SESCO ESKUL
+      </span>
+    </div>
+
+    {/* LATAR GELAP saat menu terbuka di HP */}
+    {mobileOpen && (
+      <div
+        onClick={() => setMobileOpen(false)}
+        className="lg:hidden fixed inset-0 z-40 bg-black/50"
+      />
+    )}
 
     <aside
       className={`
-        relative
-        ${isCollapsed ? 'w-20' : 'w-64'}
+        fixed inset-y-0 left-0 z-50
+        w-64
+        max-lg:overflow-y-auto
+        transition-transform duration-300 lg:transition-all
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:translate-x-0 lg:relative lg:inset-auto lg:z-auto lg:min-h-screen
+        ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
         bg-white dark:bg-gray-900
         border-r border-gray-200 dark:border-gray-700
-        min-h-screen
         flex flex-col
         justify-between
         p-4
         shadow-sm
-        transition-all duration-300
       `}
     >
+
+      {/* TOMBOL TUTUP (hanya di HP) */}
+      <button
+        onClick={() => setMobileOpen(false)}
+        aria-label="Tutup menu"
+        className="
+          lg:hidden
+          absolute right-3 top-3
+          w-8 h-8
+          rounded-lg
+          flex items-center justify-center
+          text-gray-500 dark:text-gray-300
+          hover:bg-gray-100 dark:hover:bg-gray-800
+        "
+      >
+        <X className="w-5 h-5" />
+      </button>
 
       {/* TOMBOL COLLAPSE / EXPAND */}
       <button
@@ -318,7 +423,7 @@ export default function Sidebar() {
           bg-white dark:bg-gray-800
           border border-gray-200 dark:border-gray-700
           shadow-sm
-          flex items-center justify-center
+          hidden lg:flex items-center justify-center
           text-gray-500 dark:text-gray-300
           hover:bg-gray-100 dark:hover:bg-gray-700
           transition-colors
@@ -461,7 +566,7 @@ export default function Sidebar() {
               <button
                 onClick={() => {
                   if (isCollapsed) {
-                    setIsCollapsed(false);
+                    setIsCollapsedPref(false);
                     setIsMasterDropdownOpen(true);
                   } else {
                     setIsMasterDropdownOpen(!isMasterDropdownOpen);
@@ -621,7 +726,7 @@ export default function Sidebar() {
               <button
                 onClick={() => {
                   if (isCollapsed) {
-                    setIsCollapsed(false);
+                    setIsCollapsedPref(false);
                     setIsDropdownOpen(true);
                   } else {
                     setIsDropdownOpen(!isDropdownOpen);
@@ -785,5 +890,7 @@ export default function Sidebar() {
       </div>
 
     </aside>
+
+    </>
   );
 }
