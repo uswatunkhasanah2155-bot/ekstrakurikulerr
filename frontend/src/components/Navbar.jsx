@@ -236,11 +236,11 @@ export default function Navbar() {
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
               >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-sky-400 text-white flex items-center justify-center font-bold text-sm shadow-sm">
                   {inisial}
                 </div>
                 <div className="text-left leading-tight hidden xl:block">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize max-w-[120px] truncate">
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize max-w-30 truncate">
                     {username}
                   </p>
                   <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
@@ -279,7 +279,7 @@ export default function Navbar() {
         </div>
 
         {/* ===== BARIS MENU (HP / tablet): bisa digeser ke samping ===== */}
-        <div className="lg:hidden -mx-4 sm:-mx-6 px-4 sm:px-6 pb-2 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="lg:hidden -mx-4 sm:-mx-6 px-4 sm:px-6 pb-2 flex gap-1 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
           <NavLink to="/Dashboard" className={pillClass}>
             <LayoutDashboard className="w-4 h-4" />
             Dashboard
