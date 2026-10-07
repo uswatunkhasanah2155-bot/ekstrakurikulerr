@@ -771,7 +771,7 @@ export default function LaporanEskul() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
 
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-left">
+                  <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent p-2 text-left">
                     <p className="text-[10px] text-white/90 font-medium">
                       {formatJam(new Date(f.created_at))}
                     </p>
