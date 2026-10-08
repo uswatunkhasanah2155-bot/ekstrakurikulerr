@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { getDaftarEskul, handleUnauthorized } from '../services/api';
+import { API_URL } from '../config';
 import {
   Pencil,
   Trash2,
@@ -93,8 +94,8 @@ export default function KelolaEskul() {
       }
 
       const url = isEditing
-        ? `http://localhost:5000/api/eskul/${editId}`
-        : 'http://localhost:5000/api/eskul';
+        ? `${API_URL}/api/eskul/${editId}`
+        : `${API_URL}/api/eskul`;
 
       const method = isEditing
         ? 'PUT'
@@ -228,7 +229,7 @@ export default function KelolaEskul() {
       try {
         const response =
           await fetch(
-            `http://localhost:5000/api/eskul/${id}`,
+            `${API_URL}/api/eskul/${id}`,
             {
               method: 'DELETE',
               headers: {

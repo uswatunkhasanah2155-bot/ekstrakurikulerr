@@ -18,8 +18,9 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { getDaftarEskul } from '../services/api';
+import { API_URL } from '../config';
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = API_URL;
 
 // idx mengikuti Date.getDay(): Minggu = 0, Senin = 1, ... Sabtu = 6
 const HARI = [
@@ -264,7 +265,7 @@ export default function PendaftaranSaya() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Kartu profil */}
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 border-2 border-blue-100 dark:border-blue-900 bg-gradient-to-br from-blue-500 to-sky-400 flex items-center justify-center text-white text-2xl font-bold shadow-sm">
+                <div className="w-20 h-20 rounded-full overflow-hidden shrink-0 border-2 border-blue-100 dark:border-blue-900 bg-linear-to-br from-blue-500 to-sky-400 flex items-center justify-center text-white text-2xl font-bold shadow-sm">
                   {fotoProfil ? (
                     <img
                       src={fotoProfil}
@@ -322,7 +323,7 @@ export default function PendaftaranSaya() {
                     </p>
                   </div>
 
-                  <div className="bg-gradient-to-br from-blue-600 to-sky-500 text-white rounded-2xl p-5 shadow-sm">
+                  <div className="bg-linear-to-br from-blue-600 to-sky-500 text-white rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center gap-2 text-sm font-semibold text-blue-100 mb-2">
                       <Clock className="w-4 h-4" />
                       Kegiatan Terdekat
@@ -379,7 +380,7 @@ export default function PendaftaranSaya() {
                       return (
                         <div
                           key={h.nama}
-                          className={`rounded-xl border p-3 min-h-[110px] ${
+                          className={`rounded-xl border p-3 min-h-27.5 ${
                             isHariIni
                               ? 'border-blue-400 dark:border-blue-500 bg-blue-50/60 dark:bg-blue-950/30'
                               : 'border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30'
@@ -477,7 +478,7 @@ export default function PendaftaranSaya() {
                         </div>
 
                         {/* Tengah: jadwal, pembina, tanggal daftar */}
-                        <div className="w-full md:w-auto md:min-w-[280px] border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-3 md:pt-0 md:px-6 space-y-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                        <div className="w-full md:w-auto md:min-w-70 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-3 md:pt-0 md:px-6 space-y-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-blue-500 shrink-0" />
                             <span className="font-medium text-gray-700 dark:text-gray-200">

@@ -1,6 +1,6 @@
 // src/services/api.js
 
-const API_URL = 'http://localhost:5000';
+import { API_URL } from '../config';
 
 // ==================================================
 // HELPER: Deteksi token invalid/expired, otomatis logout

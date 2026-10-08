@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { fotoUrl } from '../utils/fotoUrl';
+import { API_URL } from '../config';
 import {
   getDaftarEskul,
   getGaleriEskul,
@@ -20,7 +21,7 @@ import {
   X
 } from 'lucide-react';
 
-const API_ESKUL = 'http://localhost:5000/api/eskul';
+const API_ESKUL = `${API_URL}/api/eskul`;
 
 const TIPE_LOGO = ['image/jpeg', 'image/png', 'image/webp'];
 const MAKS_UKURAN_LOGO = 2 * 1024 * 1024; // 2 MB
@@ -328,7 +329,7 @@ export default function KelolaEskulPembina() {
 
         {/* FOTO UTAMA */}
         <div className="flex-1 flex flex-col justify-end pt-2">
-          <div className="aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+          <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center">
             {fotoCoverUrl ? (
               <img
                 src={fotoCoverUrl}
@@ -405,10 +406,10 @@ export default function KelolaEskulPembina() {
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950/60 dark:to-gray-900" />
+                  <div className="w-full h-full bg-linear-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950/60 dark:to-gray-900" />
                 )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/25 via-transparent to-black/10" />
 
                 {/* Logo menumpang di pojok kiri bawah sampul */}
                 <div className="absolute -bottom-12 left-6 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-white dark:bg-gray-800 border-4 border-white dark:border-gray-900 shadow-xl overflow-hidden flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] font-medium text-center p-1">
@@ -545,7 +546,7 @@ export default function KelolaEskulPembina() {
                       key={item.id_galeri}
                       onClick={() => pilihFotoUtama(item.id_galeri)}
                       disabled={settingId !== null}
-                      className={`relative aspect-[16/10] rounded-xl overflow-hidden border-2 transition disabled:opacity-60 ${
+                      className={`relative aspect-16/10 rounded-xl overflow-hidden border-2 transition disabled:opacity-60 ${
                         item.is_featured
                           ? 'border-emerald-500'
                           : 'border-transparent hover:border-emerald-300'

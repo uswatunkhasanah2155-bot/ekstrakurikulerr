@@ -1,6 +1,7 @@
 // src/pages/ExtracurricularDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { fotoUrl } from '../utils/fotoUrl';
+import { API_URL } from '../config';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getSiswaByEskul,
@@ -292,7 +293,7 @@ export default function ExtracurricularDetail() {
 
   const handleDownloadExcel = () => {
     window.open(
-      `http://localhost:5000/api/eskul/slug/${namaEskul}/download`,
+      `${API_URL}/api/eskul/slug/${namaEskul}/download`,
       '_blank'
     );
   };
@@ -461,7 +462,7 @@ export default function ExtracurricularDetail() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 mb-8 overflow-hidden transition-colors">
             <div className="relative h-62 sm:h-92 bg-gray-100 dark:bg-gray-800">
               <BannerSlider images={fotoBanner} className="h-full">
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
+                <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/25 via-transparent to-black/10" />
               </BannerSlider>
 
               <button

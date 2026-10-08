@@ -9,7 +9,9 @@
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
 // Data lama (sebelum pindah ke Cloudinary) masih memakai folder uploads di backend
-const LEGACY_BASE = 'http://localhost:5000';
+import { API_URL } from '../config';
+
+const LEGACY_BASE = API_URL;
 
 export function fotoUrl(path) {
   if (!path) return null;

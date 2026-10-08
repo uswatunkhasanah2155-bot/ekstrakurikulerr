@@ -46,7 +46,12 @@ app.get('/', (req, res) => {
   });
 });
 
-// Jalankan server
-app.listen(PORT, () => {
-  console.log(`Server aktif di http://localhost:${PORT}`);
-});
+// Jalankan server hanya di komputer sendiri.
+// Di Vercel, server dijalankan oleh Vercel sendiri dari `app` yang di-export di bawah.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server aktif di http://localhost:${PORT}`);
+  });
+}
+
+export default app;
