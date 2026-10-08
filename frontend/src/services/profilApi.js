@@ -1,7 +1,7 @@
 // src/services/profilApi.js
 import { handleUnauthorized } from './api';
 
-const API_URL = 'http://localhost:5000';
+import { API_URL } from '../config';
 
 // Ambil profil akun yang sedang login
 export async function getProfilSaya() {
