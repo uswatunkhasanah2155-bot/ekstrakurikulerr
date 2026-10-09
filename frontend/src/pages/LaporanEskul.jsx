@@ -43,6 +43,24 @@ const WARNA_SISWA = '#4f7fa8';
 // HELPER
 // ==================================================
 
+// true kalau lebar layar di bawah breakpoint `sm` Tailwind (640px)
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < breakpoint
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const onChange = () => setIsMobile(mq.matches);
+
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
 function formatTanggalPanjang(d) {
   return d.toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -54,6 +72,17 @@ function formatTanggalPanjang(d) {
 
 function formatJam(d) {
   return d.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// Format tanggal + jam yang lebih pendek untuk layar HP, contoh: "11 Sep 26 14.19"
+function formatTanggalJamSingkat(d) {
+  return d.toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -78,13 +107,14 @@ function labelHariRelatif(tgl) {
   return null;
 }
 
+// Di HP badge turun ke baris bawah supaya kolom tidak melebar
 function BadgeRelatif({ tgl }) {
   const label = labelHariRelatif(tgl);
   if (!label) return null;
 
   return (
     <span
-      className={`ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+      className={`inline-block ml-0 sm:ml-2 mt-1 sm:mt-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
         label === 'Hari ini'
           ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
@@ -100,7 +130,7 @@ function BadgeDihapus({ dihapusPada }) {
   if (!dihapusPada) return null;
 
   return (
-    <span className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+    <span className="inline-block ml-0 sm:ml-2 mt-1 sm:mt-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
       Dihapus
     </span>
   );
@@ -474,6 +504,7 @@ function FotoPopup({ daftar, index, onGanti, onTutup, onBukaGaleri }) {
 export default function LaporanEskul() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [eskul, setEskul] = useState(null);
   const [pendaftar, setPendaftar] = useState([]);
   const [galeri, setGaleri] = useState([]);
@@ -525,6 +556,12 @@ export default function LaporanEskul() {
   }, [id]);
 
   const now = new Date();
+
+  // Tanggal + jam: lengkap di laptop, singkat di HP supaya kolom tidak terpotong
+  const fmtTglJam = (tgl) => {
+    const d = new Date(tgl);
+    return isMobile ? formatTanggalJamSingkat(d) : d.toLocaleString('id-ID');
+  };
 
   // ---------- DATA GRAFIK (hanya siswa mendaftar) ----------
   const dataGrafik = buatBuckets(range, now).map((b) => ({
@@ -699,7 +736,20 @@ export default function LaporanEskul() {
   // Kartu total hanya menghitung siswa yang masih aktif
   const total = pendaftar.filter((p) => !p.dihapus_pada).length;
 
-  const xAxisInterval = range === 'hari' ? 2 : range === 'bulan' ? 3 : 0;
+  // Interval label sumbu X (interval = jumlah label yang dilewati di antara 2 label).
+  // Mobile: label dijarangkan (sekitar 4 label) supaya tidak menumpuk.
+  // Laptop: nilai tetap seperti semula.
+  const xAxisInterval = isMobile
+    ? range === 'hari'
+      ? 5
+      : range === 'bulan'
+      ? 7
+      : 1
+    : range === 'hari'
+    ? 2
+    : range === 'bulan'
+    ? 3
+    : 0;
 
   // Link ke detail foto di halaman galeri
   const slugEskul = (eskul?.nama_eskul || '').trim().replace(/\s+/g, '-');
@@ -728,7 +778,7 @@ export default function LaporanEskul() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 p-6 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 p-3 sm:p-6 transition-colors duration-300">
 
       {/* HEADER */}
       <div className="flex items-center gap-3 mb-6">
@@ -817,7 +867,7 @@ export default function LaporanEskul() {
 
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: '#9ca3af' }}
                   axisLine={false}
                   tickLine={false}
                   interval={xAxisInterval}
@@ -905,7 +955,7 @@ export default function LaporanEskul() {
       {selTipe === 'siswa' && (
         <div className="mt-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300">
 
-          <div className="flex flex-wrap items-center justify-between gap-3 p-6 pb-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-6 pb-0">
             <div className="flex flex-wrap items-center gap-3">
               <h3 className="text-base font-bold">
                 Siswa yang Mendaftar — {aktLabel}
@@ -932,50 +982,54 @@ export default function LaporanEskul() {
             </div>
           </div>
 
-          <table className="w-full text-sm mt-4">
-            <thead>
-              <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
-                <th className="px-6 py-2">No</th>
-                <th className="px-6 py-2">Nama Siswa</th>
-                <th className="px-6 py-2">Kelas</th>
-                <th className="px-6 py-2">Jam Daftar</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {siswaAktif.map((p, i) => (
-                <tr
-                  key={p.id_pendaftaran || i}
-                  className="border-b border-gray-50 dark:border-gray-800/60"
-                >
-                  <td className="px-6 py-3">{i + 1}</td>
-                  <td className="px-6 py-3 font-medium">
-                    {p.siswa?.nama_siswa || '-'}
-                    <BadgeDihapus dihapusPada={p.dihapus_pada} />
-                  </td>
-                  <td className="px-6 py-3">
-                    {p.siswa?.kelasData?.nama_kelas || '-'}
-                  </td>
-                  <td className="px-6 py-3">
-                    {formatJam(new Date(p.tanggal))}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs sm:text-sm mt-4">
+              <thead>
+                <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                  <th className="px-2 sm:px-6 py-2">No</th>
+                  <th className="px-2 sm:px-6 py-2">Nama Siswa</th>
+                  <th className="px-2 sm:px-6 py-2">Kelas</th>
+                  <th className="px-2 sm:px-6 py-2">Terdaftar Pada</th>
                 </tr>
-              ))}
+              </thead>
 
-              {siswaAktif.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
-                    Tidak ada siswa yang mendaftar pada waktu ini.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              <tbody>
+                {siswaAktif.map((p, i) => (
+                  <tr
+                    key={p.id_pendaftaran || i}
+                    className="border-b border-gray-50 dark:border-gray-800/60"
+                  >
+                    <td className="px-2 sm:px-6 py-2 sm:py-3">{i + 1}</td>
+                    <td className="px-2 sm:px-6 py-2 sm:py-3 font-medium wrap-break-word">
+                      {p.siswa?.nama_siswa || '-'}
+                      <BadgeDihapus dihapusPada={p.dihapus_pada} />
+                    </td>
+                    <td className="px-2 sm:px-6 py-2 sm:py-3">
+                      {p.siswa?.kelasData?.nama_kelas || '-'}
+                    </td>
+                    <td className="px-2 sm:px-6 py-2 sm:py-3">
+                      {range === 'hari'
+                        ? formatJam(new Date(p.tanggal))
+                        : fmtTglJam(p.tanggal)}
+                    </td>
+                  </tr>
+                ))}
+
+                {siswaAktif.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
+                      Tidak ada siswa yang mendaftar pada waktu ini.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {selTipe === 'foto' && (
-        <div className="mt-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 transition-colors duration-300">
+        <div className="mt-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 sm:p-6 transition-colors duration-300">
 
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -1056,103 +1110,107 @@ export default function LaporanEskul() {
       {/* TABEL RIWAYAT SISWA TERDAFTAR */}
       <div className="mt-8 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300">
 
-        <h3 className="text-base font-bold p-6 pb-0">
+        <h3 className="text-base font-bold p-4 sm:p-6 pb-0">
           Riwayat Siswa Terdaftar
         </h3>
 
-        <table className="w-full text-sm mt-4">
-          <thead>
-            <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
-              <th className="px-6 py-2">No</th>
-              <th className="px-6 py-2">Nama Siswa</th>
-              <th className="px-6 py-2">Kelas</th>
-              <th className="px-6 py-2">Tanggal Pendaftaran</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {pendaftar.map((p, i) => (
-              <tr
-                key={p.id_pendaftaran || i}
-                className="border-b border-gray-50 dark:border-gray-800/60"
-              >
-                <td className="px-6 py-3">{i + 1}</td>
-                <td className="px-6 py-3">
-                  {p.siswa?.nama_siswa || '-'}
-                  <BadgeDihapus dihapusPada={p.dihapus_pada} />
-                </td>
-                <td className="px-6 py-3">
-                  {p.siswa?.kelasData?.nama_kelas || '-'}
-                </td>
-                <td className="px-6 py-3">
-                  {new Date(p.tanggal).toLocaleString('id-ID')}
-                  <BadgeRelatif tgl={p.tanggal} />
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs sm:text-sm mt-4">
+            <thead>
+              <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <th className="px-2 sm:px-6 py-2">No</th>
+                <th className="px-2 sm:px-6 py-2">Nama Siswa</th>
+                <th className="px-2 sm:px-6 py-2">Kelas</th>
+                <th className="px-2 sm:px-6 py-2">Tanggal Pendaftaran</th>
               </tr>
-            ))}
+            </thead>
 
-            {pendaftar.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-6 py-6 text-center text-gray-400">
-                  Belum ada pendaftar.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            <tbody>
+              {pendaftar.map((p, i) => (
+                <tr
+                  key={p.id_pendaftaran || i}
+                  className="border-b border-gray-50 dark:border-gray-800/60"
+                >
+                  <td className="px-2 sm:px-6 py-2 sm:py-3">{i + 1}</td>
+                  <td className="px-2 sm:px-6 py-2 sm:py-3 wrap-break-word">
+                    {p.siswa?.nama_siswa || '-'}
+                    <BadgeDihapus dihapusPada={p.dihapus_pada} />
+                  </td>
+                  <td className="px-2 sm:px-6 py-2 sm:py-3">
+                    {p.siswa?.kelasData?.nama_kelas || '-'}
+                  </td>
+                  <td className="px-2 sm:px-6 py-2 sm:py-3">
+                    {fmtTglJam(p.tanggal)}
+                    <BadgeRelatif tgl={p.tanggal} />
+                  </td>
+                </tr>
+              ))}
+
+              {pendaftar.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-6 text-center text-gray-400">
+                    Belum ada pendaftar.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* TABEL RIWAYAT FOTO YANG DIUNGGAH */}
       <div className="mt-8 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300">
 
-        <h3 className="text-base font-bold p-6 pb-0">
+        <h3 className="text-base font-bold p-4 sm:p-6 pb-0">
           Riwayat Foto yang Diunggah
         </h3>
 
-        <table className="w-full text-sm mt-4">
-          <thead>
-            <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
-              <th className="px-6 py-2">No</th>
-              <th className="px-6 py-2">Foto</th>
-              <th className="px-6 py-2">Keterangan</th>
-              <th className="px-6 py-2">Tanggal Upload</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {galeri.map((f, i) => (
-              <tr
-                key={f.id_galeri || i}
-                onClick={() => bukaFoto(f.id_galeri)}
-                className="border-b border-gray-50 dark:border-gray-800/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition"
-              >
-                <td className="px-6 py-3">{i + 1}</td>
-                <td className="px-6 py-3">
-                  <img
-                    src={getFotoUrl(f.foto)}
-                    alt={f.keterangan || 'Foto galeri'}
-                    className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
-                  />
-                </td>
-                <td className="px-6 py-3">
-                  {f.keterangan || 'Tanpa keterangan'}
-                </td>
-                <td className="px-6 py-3">
-                  {new Date(f.created_at).toLocaleString('id-ID')}
-                  <BadgeRelatif tgl={f.created_at} />
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs sm:text-sm mt-4">
+            <thead>
+              <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <th className="px-2 sm:px-6 py-2">No</th>
+                <th className="px-2 sm:px-6 py-2">Foto</th>
+                <th className="px-2 sm:px-6 py-2">Keterangan</th>
+                <th className="px-2 sm:px-6 py-2">Tanggal Upload</th>
               </tr>
-            ))}
+            </thead>
 
-            {galeri.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-6 py-6 text-center text-gray-400">
-                  Belum ada foto yang diunggah.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            <tbody>
+              {galeri.map((f, i) => (
+                <tr
+                  key={f.id_galeri || i}
+                  onClick={() => bukaFoto(f.id_galeri)}
+                  className="border-b border-gray-50 dark:border-gray-800/60 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition"
+                >
+                  <td className="px-2 sm:px-6 py-2 sm:py-3">{i + 1}</td>
+                  <td className="px-2 sm:px-6 py-2 sm:py-3">
+                    <img
+                      src={getFotoUrl(f.foto)}
+                      alt={f.keterangan || 'Foto galeri'}
+                      className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
+                    />
+                  </td>
+                  <td className="px-2 sm:px-6 py-2 sm:py-3 wrap-break-word">
+                    {f.keterangan || 'Tanpa keterangan'}
+                  </td>
+                  <td className="px-2 sm:px-6 py-2 sm:py-3">
+                    {fmtTglJam(f.created_at)}
+                    <BadgeRelatif tgl={f.created_at} />
+                  </td>
+                </tr>
+              ))}
+
+              {galeri.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-6 text-center text-gray-400">
+                    Belum ada foto yang diunggah.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
       </>
       )}

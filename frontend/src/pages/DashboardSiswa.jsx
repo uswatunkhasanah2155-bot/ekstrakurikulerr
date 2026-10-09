@@ -29,7 +29,7 @@ function EskulCardHeader({ cover, logo, nama }) {
 
   return (
     <div className="relative">
-      <div className="h-32 w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-slate-800">
+      <div className="h-32 w-full overflow-hidden bg-linear-to-br from-cyan-700 to-slate-800">
         {coverSrc && !coverError && (
           <img
             src={coverSrc}
@@ -119,7 +119,7 @@ export default function DashboardSiswa() {
       <main className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-6">
 
         {/* ===== Banner Sapaan: teks di kiri, logo di kanan ===== */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 shadow-lg border border-gray-200 dark:border-gray-800 min-h-[240px] flex items-center">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-blue-950 via-blue-900 to-indigo-900 shadow-lg border border-gray-200 dark:border-gray-800 min-h-60 flex items-center">
 
           {/* Dekorasi cahaya */}
           <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
@@ -194,7 +194,7 @@ export default function DashboardSiswa() {
             </div>
 
             {/* Total Ekstrakurikuler */}
-            <div className="rounded-2xl p-4 flex items-center gap-3 text-white bg-gradient-to-r from-blue-600 to-indigo-500 shadow-lg">
+            <div className="rounded-2xl p-4 flex items-center gap-3 text-white bg-linear-to-r from-blue-600 to-indigo-500 shadow-lg">
               <div className="w-12 h-12 shrink-0 rounded-full bg-white/20 flex items-center justify-center">
                 <Sprout className="w-6 h-6" />
               </div>

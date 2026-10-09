@@ -18,6 +18,18 @@ import {
   UserCog
 } from 'lucide-react';
 
+// warna badge role (dipakai di tabel desktop & kartu mobile)
+const roleBadgeClass = (role) => {
+  const r = role?.toUpperCase();
+  if (r === 'ADMIN') {
+    return 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300';
+  }
+  if (r === 'PEMBINA') {
+    return 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300';
+  }
+  return 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300';
+};
+
 export default function DataUser() {
 
   const [daftarUser, setDaftarUser] = useState([]);
@@ -294,7 +306,7 @@ export default function DataUser() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 flex flex-col relative transition-colors duration-300">
-      
+
       {/* Kontainer bagian bawah (Sidebar & Konten Utama) */}
       <div className="flex flex-1 relative">
 
@@ -307,12 +319,12 @@ export default function DataUser() {
 
             <div className="flex items-center gap-3">
 
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/40">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/40">
                 <UserCog className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
               </div>
 
               <div>
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">
                   Data User
                 </h1>
 
@@ -347,7 +359,7 @@ export default function DataUser() {
             <div className="
               flex items-center justify-between
               border-b border-gray-200
-              px-6 py-4 dark:border-gray-700
+              px-4 sm:px-6 py-4 dark:border-gray-700
             ">
               <div>
                 <h2 className="font-semibold text-gray-800 dark:text-white">
@@ -378,35 +390,36 @@ export default function DataUser() {
 
               <div className="overflow-x-auto">
 
-                <table className="w-full text-left border-collapse text-sm">
+                <table className="w-full text-left border-collapse text-xs sm:text-sm">
 
                   <thead>
                     <tr className="
-                      border-b bg-gray-50 text-gray-500 dark:text-gray-400 uppercase text-xs
+                      border-b bg-gray-50 text-gray-500 dark:text-gray-400 uppercase
+                      text-[10px] sm:text-xs
                       dark:border-gray-700 dark:bg-gray-800/50
                     ">
 
-                      <th className="px-6 py-3 font-semibold">
+                      <th className="hidden sm:table-cell px-6 py-3 font-semibold">
                         No
                       </th>
 
-                      <th className="px-6 py-3 font-semibold">
+                      <th className="px-2 py-2 sm:px-6 sm:py-3 font-semibold">
                         Username
                       </th>
 
-                      <th className="px-6 py-3 font-semibold">
+                      <th className="px-2 py-2 sm:px-6 sm:py-3 font-semibold">
                         Email
                       </th>
 
-                      <th className="px-6 py-3 font-semibold">
+                      <th className="px-2 py-2 sm:px-6 sm:py-3 font-semibold">
                         Role
                       </th>
 
-                      <th className="px-6 py-3 font-semibold">
+                      <th className="px-2 py-2 sm:px-6 sm:py-3 font-semibold">
                         Eskul
                       </th>
 
-                      <th className="px-6 py-3 text-center font-semibold">
+                      <th className="px-2 py-2 sm:px-6 sm:py-3 text-center font-semibold">
                         Aksi
                       </th>
 
@@ -427,57 +440,47 @@ export default function DataUser() {
                         "
                       >
 
-                        <td className="px-6 py-3 font-medium text-gray-500 dark:text-gray-400">
+                        <td className="hidden sm:table-cell px-6 py-3 font-medium text-gray-500 dark:text-gray-400">
                           {index + 1}
                         </td>
 
-                        <td className="px-6 py-3 font-semibold text-gray-800 dark:text-gray-100">
+                        <td className="px-2 py-2 sm:px-6 sm:py-3 font-semibold text-gray-800 dark:text-gray-100 wrap-break-word">
                           {user.username}
                         </td>
 
-                        <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
+                        <td className="px-2 py-2 sm:px-6 sm:py-3 text-gray-500 dark:text-gray-400 break-all">
                           {user.email || '-'}
                         </td>
 
-                        <td className="px-6 py-3">
+                        <td className="px-2 py-2 sm:px-6 sm:py-3">
 
                           <span
-                            className={`
-                              inline-flex rounded-full px-3 py-1
-                              text-xs font-semibold
-                              ${
-                                user.role?.toUpperCase() === 'ADMIN'
-                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
-                                  : user.role?.toUpperCase() === 'PEMBINA'
-                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-                                  : 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-300'
-                              }
-                            `}
+                            className={`inline-flex rounded-full px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-semibold ${roleBadgeClass(user.role)}`}
                           >
                             {user.role?.toUpperCase()}
                           </span>
 
                         </td>
 
-                        <td className="px-6 py-3 text-gray-600 dark:text-gray-300">
+                        <td className="px-2 py-2 sm:px-6 sm:py-3 text-gray-600 dark:text-gray-300 wrap-break-word">
                           {getNamaEskul(user)}
                         </td>
 
-                        <td className="px-6 py-3">
+                        <td className="px-2 py-2 sm:px-6 sm:py-3">
 
-                          <div className="flex justify-center gap-2">
+                          <div className="flex justify-center gap-0.5 sm:gap-2">
 
                             <button
                               onClick={() => bukaEdit(user)}
                               title="Edit User"
                               className="
-                                rounded-lg p-2
+                                rounded-lg p-1.5 sm:p-2
                                 text-blue-600 transition
                                 hover:bg-blue-50
                                 dark:hover:bg-blue-900/30
                               "
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </button>
 
 
@@ -485,13 +488,13 @@ export default function DataUser() {
                               onClick={() => handleDelete(user)}
                               title="Hapus User"
                               className="
-                                rounded-lg p-2
+                                rounded-lg p-1.5 sm:p-2
                                 text-red-600 transition
                                 hover:bg-red-50
                                 dark:hover:bg-red-900/30
                               "
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </button>
 
                           </div>
@@ -528,7 +531,7 @@ export default function DataUser() {
         ">
 
           <div className="
-            w-full max-w-lg overflow-hidden
+            w-full max-w-lg max-h-[90vh] overflow-y-auto
             rounded-2xl bg-white shadow-xl
             dark:bg-gray-900
           ">

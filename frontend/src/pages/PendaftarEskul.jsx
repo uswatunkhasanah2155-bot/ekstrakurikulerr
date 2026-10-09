@@ -161,13 +161,13 @@ export default function PendaftarEskul() {
 
       <Sidebar isAdmin={isAdmin} />
 
-      <main className="flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 min-w-0 p-3 sm:p-6 overflow-y-auto">
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-6">
 
           <div>
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
               Data Pendaftar Ekstrakurikuler
             </h2>
 
@@ -180,7 +180,7 @@ export default function PendaftarEskul() {
 
           <button
             onClick={handleDownloadExcel}
-            className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
+            className="bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors"
           >
             <FileSpreadsheet className="w-4 h-4" />
             Download Excel
@@ -251,35 +251,35 @@ export default function PendaftarEskul() {
 
             ) : (
 
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
 
                 <thead>
-                  <tr className="border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50/50 dark:bg-gray-800/30">
+                  <tr className="border-b border-gray-100 dark:border-gray-800 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50/50 dark:bg-gray-800/30">
 
-                    <th className="py-3 px-4">
+                    <th className="py-2 px-2 sm:py-3 sm:px-4">
                       No
                     </th>
 
-                    <th className="py-3 px-4">
+                    <th className="py-2 px-2 sm:py-3 sm:px-4">
                       Nama Siswa
                     </th>
 
-                    <th className="py-3 px-4">
+                    <th className="py-2 px-2 sm:py-3 sm:px-4">
                       Kelas
                     </th>
 
-                    <th className="py-3 px-4">
+                    <th className="py-2 px-2 sm:py-3 sm:px-4">
                       Pilihan Eskul
                     </th>
 
-                    <th className="py-3 px-4">
+                    <th className="py-2 px-2 sm:py-3 sm:px-4">
                       Tanggal Daftar
                     </th>
 
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-sm text-gray-700 dark:text-gray-300">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
 
                   {filteredPendaftar.map(
                     (pendaftar, idx) => (
@@ -289,28 +289,28 @@ export default function PendaftarEskul() {
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                       >
 
-                        <td className="py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+                        <td className="py-2 px-2 sm:py-3 sm:px-4 font-medium text-gray-500 dark:text-gray-400">
                           {idx + 1}
                         </td>
 
-                        <td className="py-3 px-4 font-semibold text-gray-800 dark:text-gray-100">
+                        <td className="py-2 px-2 sm:py-3 sm:px-4 font-semibold text-gray-800 dark:text-gray-100 wrap-break-word">
                           {pendaftar.nama}
                         </td>
 
-                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                        <td className="py-2 px-2 sm:py-3 sm:px-4 text-gray-600 dark:text-gray-400">
                           {pendaftar.kelas}
                         </td>
 
-                        <td className="py-3 px-4">
+                        <td className="py-2 px-2 sm:py-3 sm:px-4">
 
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1 sm:gap-1.5">
 
                             {pendaftar.eskul.map(
                               (namaEskul, i) => (
 
                                 <span
                                   key={i}
-                                  className="bg-cyan-50 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-xs font-semibold px-2.5 py-1 rounded-full"
+                                  className="bg-cyan-50 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full"
                                 >
                                   {namaEskul}
                                 </span>
@@ -322,7 +322,7 @@ export default function PendaftarEskul() {
 
                         </td>
 
-                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                        <td className="py-2 px-2 sm:py-3 sm:px-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           {pendaftar.tanggal}
                         </td>
 

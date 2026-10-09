@@ -154,11 +154,12 @@ export default function ManajemenKelas() {
 
       <Sidebar isAdmin={true} />
 
-      <main className="flex-1 p-6 overflow-y-auto">
+      {/* min-w-0 supaya isi tidak mendorong halaman melebihi lebar layar */}
+      <main className="flex-1 min-w-0 p-4 sm:p-6 overflow-y-auto">
 
         {/* JUDUL */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
             Manajemen Kelas
           </h1>
 
@@ -181,7 +182,7 @@ export default function ManajemenKelas() {
         )}
 
         {/* FORM TAMBAH KELAS */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 mb-6 transition-colors duration-300">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-4 sm:p-5 mb-6 transition-colors duration-300">
 
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
             Tambah Kelas
@@ -189,6 +190,7 @@ export default function ManajemenKelas() {
 
           <form onSubmit={handleTambah} noValidate>
             <div className="flex gap-3">
+              {/* min-w-0: input boleh mengecil, tombol tidak ikut terdorong keluar container */}
               <input
                 type="text"
                 value={namaKelas}
@@ -197,16 +199,17 @@ export default function ManajemenKelas() {
                   if (errorTambah) setErrorTambah('');
                 }}
                 placeholder="Masukan Nama Kelas"
-                className={`flex-1 border rounded-lg px-4 py-2 outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-colors ${
+                className={`flex-1 min-w-0 border rounded-lg px-4 py-2 outline-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 transition-colors ${
                   errorTambah
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 dark:border-gray-700 focus:ring-blue-500 focus:border-blue-500'
                 }`}
               />
 
+              {/* shrink-0 + whitespace-nowrap: ukuran tombol tetap, teks tidak turun baris */}
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="shrink-0 whitespace-nowrap bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 + Tambah
               </button>
@@ -222,7 +225,7 @@ export default function ManajemenKelas() {
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-colors duration-300">
 
           {/* HEADER */}
-          <div className="p-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+          <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
               Daftar Kelas
             </h2>
@@ -250,15 +253,15 @@ export default function ManajemenKelas() {
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
 
-                    <th className="px-5 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    <th className="px-4 sm:px-5 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
                       No
                     </th>
 
-                    <th className="px-5 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    <th className="px-4 sm:px-5 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
                       Nama Kelas
                     </th>
 
-                    <th className="px-5 py-3 text-center text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    <th className="px-4 sm:px-5 py-3 text-center text-sm font-semibold text-gray-600 dark:text-gray-400">
                       Aksi
                     </th>
 
@@ -275,12 +278,12 @@ export default function ManajemenKelas() {
                     >
 
                       {/* NO */}
-                      <td className="px-5 py-4 text-gray-600 dark:text-gray-400 align-top">
+                      <td className="px-4 sm:px-5 py-4 text-gray-600 dark:text-gray-400 align-top">
                         {index + 1}
                       </td>
 
                       {/* NAMA KELAS */}
-                      <td className="px-5 py-4">
+                      <td className="px-4 sm:px-5 py-4">
 
                         {editId === kelas.id_kelas ? (
 
@@ -317,7 +320,7 @@ export default function ManajemenKelas() {
                       </td>
 
                       {/* AKSI */}
-                      <td className="px-5 py-4 align-top">
+                      <td className="px-4 sm:px-5 py-4 align-top">
 
                         <div className="flex justify-center gap-2">
 

@@ -167,7 +167,8 @@ export default function Dashboard() {
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
       <Sidebar isAdmin={isAdmin} />
 
-      <main className="flex-1 p-6 overflow-y-auto">
+      {/* min-w-0 supaya konten tidak melebar melebihi layar di mobile */}
+      <main className="flex-1 min-w-0 p-6 overflow-y-auto">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">
           Sistem Pendaftaran Ekstrakurikuler
         </h2>
@@ -180,7 +181,7 @@ export default function Dashboard() {
 
         {/* CHART & REKAPITULASI */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-          <div className="lg:col-span-2 bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+          <div className="min-w-0 lg:col-span-2 bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
             <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 mb-6">
               Jumlah Siswa per Eskul
             </h3>
@@ -190,7 +191,7 @@ export default function Dashboard() {
                 Belum ada data ekstrakurikuler.
               </p>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 {/* Label sumbu Y (tinggi sama dengan area grid) */}
                 <div className="flex flex-col justify-between h-56 text-[11px] text-gray-400 font-medium">
                   {yLabels.map((val) => (
@@ -200,7 +201,7 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                <div className="flex-1 relative">
+                <div className="flex-1 min-w-0 relative">
                   {/* Garis grid */}
                   <div className="absolute inset-x-0 top-0 h-56 flex flex-col justify-between pointer-events-none">
                     {yLabels.map((val) => (
@@ -209,16 +210,16 @@ export default function Dashboard() {
                   </div>
 
                   {/* Batang chart - klik untuk lihat laporan eskul */}
-                  <div className="relative flex items-end justify-between gap-2 h-56">
+                  <div className="relative flex items-end justify-between gap-1.5 sm:gap-2 h-56">
                     {chartData.map((item) => (
                       <div
                         key={item.id_eskul}
                         onClick={() => navigate(`/admin/laporan-eskul/${item.id_eskul}`)}
-                        className="flex-1 flex flex-col items-center justify-end h-full cursor-pointer group"
+                        className="flex-1 min-w-0 flex flex-col items-center justify-end h-full cursor-pointer group"
                         title={`Lihat laporan ${item.nama_eskul}`}
                       >
                         <div
-                          className="relative w-full max-w-9 rounded-t-[3px] bg-[#4f7fa8] transition-all group-hover:opacity-80"
+                          className="relative w-full max-w-7 sm:max-w-9 rounded-t-[3px] bg-[#4f7fa8] transition-all group-hover:opacity-80"
                           style={{
                             height: `${(item.count / chartMax) * 100}%`,
                             minHeight: item.count > 0 ? '4px' : '0px',
@@ -235,12 +236,12 @@ export default function Dashboard() {
                   </div>
 
                   {/* Label nama eskul */}
-                  <div className="flex items-start justify-between gap-2 mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
+                  <div className="flex items-start justify-between gap-1.5 sm:gap-2 mt-2 border-t border-gray-200 dark:border-gray-700 pt-2">
                     {chartData.map((item) => (
                       <span
                         key={item.id_eskul}
                         title={item.nama_eskul}
-                        className="flex-1 text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight truncate"
+                        className="flex-1 min-w-0 text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400 text-center leading-tight truncate"
                       >
                         {item.nama_eskul}
                       </span>
