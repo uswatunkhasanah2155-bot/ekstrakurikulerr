@@ -28,6 +28,7 @@ export default function KelolaEskul() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null); // kartu deskripsi yang sedang dibuka (mobile)
 
   useEffect(() => {
     const roleUser = localStorage.getItem('role') || '';
@@ -373,12 +374,40 @@ export default function KelolaEskul() {
                         {item.pembina || '-'}
                       </p>
 
-                      <p className="text-gray-600 dark:text-gray-300 wrap-break-word">
+                      <div className="text-gray-600 dark:text-gray-300 wrap-break-word">
                         <span className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 block">
                           Deskripsi
                         </span>
-                        {item.deskripsi || '-'}
-                      </p>
+
+                        <p
+                          style={
+                            expandedId === rowId
+                              ? undefined
+                              : {
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 3,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden'
+                                }
+                          }
+                        >
+                          {item.deskripsi || '-'}
+                        </p>
+
+                        {(item.deskripsi || '').length > 100 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedId(expandedId === rowId ? null : rowId)
+                            }
+                            className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                          >
+                            {expandedId === rowId
+                              ? 'Tutup'
+                              : 'Baca selengkapnya'}
+                          </button>
+                        )}
+                      </div>
 
                       <p className="text-gray-500 dark:text-gray-400">
                         <span className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 block">
