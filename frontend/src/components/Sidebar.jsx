@@ -107,6 +107,19 @@ export default function Sidebar() {
     }
   }, [isCollapsed]);
 
+  // Bagikan lebar sidebar ke komponen lain (mis. Footer lewat CSS variable)
+  useEffect(() => {
+    const lebar = isDesktop
+      ? (isCollapsed ? '5rem' : '16rem')
+      : '0px';
+
+    document.documentElement.style.setProperty('--sidebar-w', lebar);
+
+    return () => {
+      document.documentElement.style.removeProperty('--sidebar-w');
+    };
+  }, [isDesktop, isCollapsed]);
+
 
   const toggleSidebar = () => {
     setIsCollapsedPref(prev => !prev);
@@ -372,14 +385,14 @@ export default function Sidebar() {
       />
     )}
 
+    {/* SIDEBAR: fixed (statis) di desktop, drawer di HP */}
     <aside
       className={`
         fixed inset-y-0 left-0 z-50
         w-64
-        max-lg:overflow-y-auto
         transition-transform duration-300 lg:transition-all
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:relative lg:inset-auto lg:z-auto lg:min-h-screen
+        lg:translate-x-0 lg:h-screen lg:z-30
         ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
         bg-white dark:bg-gray-900
         border-r border-gray-200 dark:border-gray-700
@@ -438,12 +451,13 @@ export default function Sidebar() {
       </button>
 
 
-      <div>
+      {/* BAGIAN ATAS: bisa di-scroll sendiri kalau menu panjang (desktop) */}
+      <div className="flex min-h-0 flex-1 flex-col">
 
         {/* LOGO */}
         <div
           className={`
-            flex items-center gap-2 px-2 mb-6
+            shrink-0 flex items-center gap-2 px-2 mb-6
             ${isCollapsed ? 'justify-center' : ''}
           `}
         >
@@ -478,6 +492,7 @@ export default function Sidebar() {
         {/* USER INFO */}
         <div
           className={`
+            shrink-0
             flex items-center gap-3
             p-3
             bg-gray-50 dark:bg-gray-800
@@ -541,7 +556,7 @@ export default function Sidebar() {
 
 
         {/* NAVIGATION */}
-        <nav className="space-y-1">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
 
           {/* DASHBOARD */}
           <Link
@@ -800,6 +815,7 @@ export default function Sidebar() {
 
       {/* BAGIAN BAWAH (PROFIL, MODE GELAP & LOGOUT) */}
       <div className="
+        shrink-0
         pt-4
         border-t
         border-gray-100
@@ -890,6 +906,16 @@ export default function Sidebar() {
       </div>
 
     </aside>
+
+    {/* SPACER: menggantikan ruang sidebar yang sekarang fixed (desktop) */}
+    <div
+      aria-hidden="true"
+      className={`
+        hidden lg:block shrink-0
+        transition-[width] duration-300
+        ${isCollapsed ? 'w-20' : 'w-64'}
+      `}
+    />
 
     </>
   );

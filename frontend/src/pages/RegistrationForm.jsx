@@ -215,7 +215,7 @@ export default function RegistrationForm() {
 
           <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
             {/* Header kartu */}
-            <div className="flex items-center gap-4 bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-6 text-white sm:px-8">
+            <div className="flex items-center gap-4 bg-linear-to-r from-emerald-600 to-teal-600 px-6 py-6 text-white sm:px-8">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
                 <ClipboardList className="h-6 w-6" />
               </div>
