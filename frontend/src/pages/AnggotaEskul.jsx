@@ -116,9 +116,10 @@ export default function AnggotaEskul() {
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300">
       <Sidebar />
 
-      <main className="flex-1 p-6 sm:p-8 overflow-y-auto">
+      {/* min-w-0 supaya tabel tidak melebarkan halaman di HP */}
+      <main className="flex-1 min-w-0 px-2 py-4 sm:p-8 overflow-y-auto">
         {/* JUDUL */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 px-2 sm:px-0">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
               <Users className="w-5 h-5" />
@@ -156,23 +157,25 @@ export default function AnggotaEskul() {
               </div>
             </div>
 
-            {/* TABEL */}
+            {/* TABEL: kecil di HP supaya semua kolom muat, ukuran normal di laptop (md ke atas) */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse text-[10px] md:text-sm">
                 <thead>
-                  <tr className="border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/30">
-                    <th className="py-3 px-4 font-semibold">No</th>
-                    <th className="py-3 px-4 font-semibold">Nama</th>
-                    <th className="py-3 px-4 font-semibold">Kelas</th>
-                    <th className="py-3 px-4 font-semibold">Jenis Kelamin</th>
-                    <th className="py-3 px-4 font-semibold">Tanggal Daftar</th>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 text-[9px] md:text-xs text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/30">
+                    <th className="py-2 px-1.5 md:py-3 md:px-4 font-semibold">No</th>
+                    <th className="py-2 px-1.5 md:py-3 md:px-4 font-semibold">Nama</th>
+                    <th className="py-2 px-1.5 md:py-3 md:px-4 font-semibold">Kelas</th>
+                    <th className="py-2 px-1.5 md:py-3 md:px-4 font-semibold">Jenis Kelamin</th>
+                    <th className="py-2 px-1.5 md:py-3 md:px-4 font-semibold">Tanggal Daftar</th>
                     {isStaff && (
-                      <th className="py-3 px-4 font-semibold text-center">Aksi</th>
+                      <th className="py-2 px-1.5 md:py-3 md:px-4 font-semibold text-center">
+                        Aksi
+                      </th>
                     )}
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-sm text-gray-700 dark:text-gray-300">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
                   {loading ? (
                     <tr>
                       <td
@@ -199,13 +202,13 @@ export default function AnggotaEskul() {
                         key={item.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                       >
-                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                        <td className="py-2 px-1.5 md:py-3 md:px-4 text-gray-500 dark:text-gray-400">
                           {idx + 1}
                         </td>
 
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                        <td className="py-2 px-1.5 md:py-3 md:px-4">
+                          <div className="flex items-center gap-1.5 md:gap-3">
+                            <div className="w-6 h-6 md:w-9 md:h-9 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
                               {item.foto ? (
                                 <img
                                   src={fotoUrl(item.foto)}
@@ -213,7 +216,7 @@ export default function AnggotaEskul() {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <User className="w-4 h-4 text-gray-400" />
+                                <User className="w-3 h-3 md:w-4 md:h-4 text-gray-400" />
                               )}
                             </div>
                             <span className="font-semibold text-gray-800 dark:text-gray-100">
@@ -222,38 +225,40 @@ export default function AnggotaEskul() {
                           </div>
                         </td>
 
-                        <td className="py-3 px-4">{item.kelas}</td>
+                        <td className="py-2 px-1.5 md:py-3 md:px-4">{item.kelas}</td>
 
-                        <td className="py-3 px-4">
+                        <td className="py-2 px-1.5 md:py-3 md:px-4">
                           {labelGender(item.jenisKelamin)}
                         </td>
 
-                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                        <td className="py-2 px-1.5 md:py-3 md:px-4 text-gray-500 dark:text-gray-400">
                           {item.tanggal}
                         </td>
 
                         {isStaff && (
-                          <td className="py-3 px-4 text-center space-x-2 whitespace-nowrap">
-                            <button
-                              onClick={() =>
-                                navigate(
-                                  `/eskul/${namaEskul}/siswa/edit/${item.id}`
-                                )
-                              }
-                              className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-md font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 inline-flex items-center gap-1 transition-colors"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                              Edit
-                            </button>
+                          <td className="py-2 px-1.5 md:py-3 md:px-4 text-center">
+                            <div className="flex flex-col items-stretch gap-1 md:flex-row md:justify-center md:gap-2">
+                              <button
+                                onClick={() =>
+                                  navigate(
+                                    `/eskul/${namaEskul}/siswa/edit/${item.id}`
+                                  )
+                                }
+                                className="text-[9px] md:text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 md:px-3 md:py-1 rounded-md font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 inline-flex items-center justify-center gap-0.5 md:gap-1 transition-colors"
+                              >
+                                <Pencil className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
+                                Edit
+                              </button>
 
-                            <button
-                              onClick={() => handleHapus(item)}
-                              disabled={deletingId === item.id}
-                              className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center gap-1 transition-colors disabled:opacity-50"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              Hapus
-                            </button>
+                              <button
+                                onClick={() => handleHapus(item)}
+                                disabled={deletingId === item.id}
+                                className="text-[9px] md:text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 md:px-3 md:py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center justify-center gap-0.5 md:gap-1 transition-colors disabled:opacity-50"
+                              >
+                                <Trash2 className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
+                                Hapus
+                              </button>
+                            </div>
                           </td>
                         )}
                       </tr>

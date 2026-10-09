@@ -24,7 +24,7 @@ function EskulCardHeader({ cover, logo, nama }) {
   return (
     <div className="relative">
       {/* Foto sampul (foto utama galeri) */}
-      <div className="h-32 w-full overflow-hidden bg-gradient-to-br from-cyan-700 to-slate-800">
+      <div className="h-32 w-full overflow-hidden bg-linear-to-br from-cyan-700 to-slate-800">
         {coverSrc && !coverError && (
           <img
             src={coverSrc}
@@ -218,7 +218,7 @@ export default function Dashboard() {
                         title={`Lihat laporan ${item.nama_eskul}`}
                       >
                         <div
-                          className="relative w-full max-w-[36px] rounded-t-[3px] bg-[#4f7fa8] transition-all group-hover:opacity-80"
+                          className="relative w-full max-w-9 rounded-t-[3px] bg-[#4f7fa8] transition-all group-hover:opacity-80"
                           style={{
                             height: `${(item.count / chartMax) * 100}%`,
                             minHeight: item.count > 0 ? '4px' : '0px',

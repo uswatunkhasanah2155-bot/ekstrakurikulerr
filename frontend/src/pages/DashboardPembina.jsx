@@ -9,11 +9,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
   PieChart,
   Pie,
   Cell,
 } from 'recharts';
-import { Users, BookOpen, UserPlus, TrendingUp, ArrowRight } from 'lucide-react';
+import { Users, BookOpen, UserPlus, TrendingUp, ArrowRight, X } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import * as api from '../services/api';
 
@@ -31,8 +32,21 @@ const toArray = (res) => {
 const HARI = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
+const WARNA_GARIS = '#3b82f6';
+
 const formatTanggal = (d) =>
   d ? `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}` : '-';
+
+const formatTanggalPanjang = (d) =>
+  d.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+const formatJam = (d) =>
+  d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
@@ -87,6 +101,77 @@ const OPSI_RENTANG = [
   { label: '1 Bulan', value: 30 },
 ];
 
+// Tabel pendaftar (dipakai oleh "Pendaftaran Terbaru" dan daftar siswa hari yang diklik)
+// HP: ukuran lebih kecil supaya semua kolom muat. Laptop (md ke atas): ukuran normal.
+function TabelPendaftar({ data, tampilkanJam = false, kosong }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-[11px] md:text-sm">
+        <thead>
+          <tr className="bg-gray-50 text-[9px] uppercase text-gray-500 dark:bg-gray-800/50 dark:text-gray-400 md:text-xs">
+            <th className="px-2 py-2 md:px-5 md:py-3">No</th>
+            <th className="px-2 py-2 md:px-5 md:py-3">Nama Siswa</th>
+            <th className="px-2 py-2 md:px-5 md:py-3">Kelas</th>
+            <th className="px-2 py-2 md:px-5 md:py-3">Jenis Kelamin</th>
+            <th className="px-2 py-2 md:px-5 md:py-3">Tanggal Daftar</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          {data.length === 0 ? (
+            <tr>
+              <td
+                colSpan={5}
+                className="px-5 py-8 text-center text-gray-400 dark:text-gray-500"
+              >
+                {kosong}
+              </td>
+            </tr>
+          ) : (
+            data.map((p, i) => (
+              <tr
+                key={p.id ?? i}
+                className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40"
+              >
+                <td className="px-2 py-2 text-gray-500 dark:text-gray-400 md:px-5 md:py-3">
+                  {i + 1}
+                </td>
+
+                <td className="px-2 py-2 md:px-5 md:py-3">
+                  <div className="flex items-center gap-1.5 md:gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-[10px] font-bold text-blue-600 dark:text-blue-400 md:h-8 md:w-8 md:text-xs">
+                      {p.nama.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-medium">{p.nama}</span>
+                    {p.dihapus && (
+                      <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[8px] font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300 md:px-2 md:text-[10px]">
+                        Dihapus
+                      </span>
+                    )}
+                  </div>
+                </td>
+
+                <td className="px-2 py-2 text-gray-600 dark:text-gray-300 md:px-5 md:py-3">
+                  {p.kelas}
+                </td>
+
+                <td className="px-2 py-2 text-gray-600 dark:text-gray-300 md:px-5 md:py-3">
+                  {p.gender === 'P' ? 'Perempuan' : 'Laki-laki'}
+                </td>
+
+                <td className="px-2 py-2 text-gray-600 dark:text-gray-300 md:px-5 md:py-3">
+                  {formatTanggal(p.tanggal)}
+                  {tampilkanJam && `, ${formatJam(p.tanggal)}`}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ===============================
 // KOMPONEN
 // ===============================
@@ -96,14 +181,9 @@ export default function DashboardPembina() {
   const [eskul, setEskul] = useState(null);
   const [pendaftar, setPendaftar] = useState([]); // SEMUA data (termasuk yang dihapus)
   const [rentang, setRentang] = useState(7);
+  const [hariDipilih, setHariDipilih] = useState(null); // titik grafik yang diklik
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [notif, setNotif] = useState(null);
-
-  const tampilkanNotif = (type, text) => {
-    setNotif({ type, text });
-    setTimeout(() => setNotif(null), 3000);
-  };
 
   // ===============================
   // AMBIL DATA
@@ -145,31 +225,6 @@ export default function DashboardPembina() {
       cancelled = true;
     };
   }, []);
-
-  // ===============================
-  // TERIMA / TOLAK
-  // ===============================
-  const ubahStatus = async (item, statusBaru) => {
-    const fn = api.updateStatusPendaftar; // sesuaikan dengan nama fungsi di api.js
-    if (typeof fn !== 'function') {
-      tampilkanNotif('error', 'Fungsi ubah status belum tersedia di api.js');
-      return;
-    }
-
-    const result = await fn(item.id, statusBaru === 'diterima' ? 'Diterima' : 'Ditolak');
-    if (result && result.success === false) {
-      tampilkanNotif('error', result.error || 'Gagal mengubah status');
-      return;
-    }
-
-    setPendaftar((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, status: statusBaru } : p))
-    );
-    tampilkanNotif(
-      'success',
-      statusBaru === 'diterima' ? 'Pendaftaran diterima' : 'Pendaftaran ditolak'
-    );
-  };
 
   // ===============================
   // DATA TURUNAN
@@ -231,15 +286,20 @@ export default function DashboardPembina() {
     // Hari Ini: dipecah per jam
     if (rentang === 1) {
       const keyHariIni = keyTanggal(hariIni);
-      return Array.from({ length: 24 }, (_, h) => ({
-        key: keyHariIni,
-        label: `${String(h).padStart(2, '0')}:00`,
-        jumlah: pendaftar.filter(
-          (p) =>
-            startOfDay(p.tanggal).getTime() === hariIni.getTime() &&
-            p.tanggal.getHours() === h
-        ).length,
-      }));
+      return Array.from({ length: 24 }, (_, h) => {
+        const jam = String(h).padStart(2, '0');
+        return {
+          key: keyHariIni,
+          jam: h,
+          label: `${jam}:00`,
+          tanggalLengkap: `${formatTanggalPanjang(hariIni)}, pukul ${jam}:00`,
+          jumlah: pendaftar.filter(
+            (p) =>
+              startOfDay(p.tanggal).getTime() === hariIni.getTime() &&
+              p.tanggal.getHours() === h
+          ).length,
+        };
+      });
     }
 
     // 1 Minggu / 1 Bulan: per hari
@@ -256,16 +316,87 @@ export default function DashboardPembina() {
           rentang <= 7
             ? `${HARI[d.getDay()]} ${d.getDate()}`
             : `${d.getDate()}/${d.getMonth() + 1}`,
+        tanggalLengkap: formatTanggalPanjang(d),
         jumlah,
       });
     }
     return hasil;
   }, [pendaftar, rentang]);
 
+  // Siswa yang mendaftar pada hari (atau jam) yang diklik di grafik
+  const siswaHariDipilih = useMemo(() => {
+    if (!hariDipilih) return [];
+    return pendaftar
+      .filter((p) => {
+        if (keyTanggal(p.tanggal) !== hariDipilih.key) return false;
+        // Mode "Hari Ini": cocokkan juga jamnya
+        if (hariDipilih.jam !== undefined) return p.tanggal.getHours() === hariDipilih.jam;
+        return true;
+      })
+      .sort((a, b) => a.tanggal - b.tanggal);
+  }, [pendaftar, hariDipilih]);
+
+  const hariDipilihIsHariIni = hariDipilih?.key === keyTanggal(new Date());
+
   const terbaru = useMemo(
     () => [...pendaftarAktif].sort((a, b) => b.tanggal - a.tanggal).slice(0, 5),
     [pendaftarAktif]
   );
+
+  // ===============================
+  // AKSI KLIK GRAFIK
+  // ===============================
+  const pilihTitik = (item) => {
+    if (!item) return;
+    setHariDipilih({
+      key: item.key,
+      jam: item.jam,
+      label: item.label,
+      tanggalLengkap: item.tanggalLengkap,
+    });
+  };
+
+  // Klik di area chart (bukan tepat di titik): pilih hari terdekat
+  const handleChartClick = (state) => {
+    if (!state) return;
+    const idx = state.activeTooltipIndex ?? state.activeIndex;
+    const item =
+      idx !== undefined && idx !== null && !Number.isNaN(Number(idx))
+        ? grafikData[Number(idx)]
+        : grafikData.find((g) => g.label === state.activeLabel);
+    pilihTitik(item);
+  };
+
+  // Titik biru di grafik (bisa diklik -> daftar siswa)
+  const renderDot = (props) => {
+    const { cx, cy, payload } = props;
+    if (cx === undefined || cy === undefined) return null;
+
+    const idx = grafikData.findIndex((d) => d.label === payload?.label);
+    const terpilih = hariDipilih?.label === payload?.label;
+
+    return (
+      <g
+        key={`dot-${idx}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          pilihTitik(grafikData[idx]);
+        }}
+        style={{ cursor: 'pointer' }}
+      >
+        {/* area klik */}
+        <circle cx={cx} cy={cy} r={12} fill="transparent" />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={terpilih ? 6 : 3}
+          fill={WARNA_GARIS}
+          stroke={terpilih ? '#ffffff' : 'none'}
+          strokeWidth={terpilih ? 2 : 0}
+        />
+      </g>
+    );
+  };
 
   // ===============================
   // RENDER
@@ -284,7 +415,7 @@ export default function DashboardPembina() {
     <div className="flex min-h-screen bg-gray-50 text-gray-800 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-100">
       <Sidebar isAdmin={false} />
 
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-3 md:p-6">
         {/* SAMBUTAN */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
@@ -298,18 +429,6 @@ export default function DashboardPembina() {
         {error && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             {error}
-          </div>
-        )}
-
-        {notif && (
-          <div
-            className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
-              notif.type === 'success'
-                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300'
-                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300'
-            }`}
-          >
-            {notif.text}
           </div>
         )}
 
@@ -474,7 +593,7 @@ export default function DashboardPembina() {
 
         {/* PERKEMBANGAN PENDAFTARAN (riwayat, tidak berkurang saat siswa dihapus) */}
         <div className={`${cardClass} mb-6`}>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <TrendingUp className="h-4 w-4 text-blue-500" />
               Perkembangan Pendaftaran
@@ -486,7 +605,10 @@ export default function DashboardPembina() {
                 <button
                   key={o.value}
                   type="button"
-                  onClick={() => setRentang(o.value)}
+                  onClick={() => {
+                    setRentang(o.value);
+                    setHariDipilih(null);
+                  }}
                   className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
                     rentang === o.value
                       ? 'bg-cyan-500 text-white shadow'
@@ -499,31 +621,32 @@ export default function DashboardPembina() {
             </div>
           </div>
 
+          {/* Petunjuk */}
+          <div className="mb-3 flex flex-wrap items-center gap-4 text-[11px] text-gray-500 dark:text-gray-400">
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: WARNA_GARIS }}
+              />
+              Siswa mendaftar
+            </span>
+            <span className="ml-auto italic">
+              Klik titik biru = daftar siswa yang mendaftar
+            </span>
+          </div>
+
           <div className="h-64 w-full [&_.recharts-wrapper]:outline-none [&_svg]:outline-none [&_*:focus]:outline-none">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={grafikData}
                 margin={{ top: 10, right: 16, left: -16, bottom: 0 }}
-                style={{ cursor: slugEskul ? 'pointer' : 'default' }}
-                onClick={(state) => {
-                  if (!slugEskul) return;
-                  // Cari hari yang diklik (kompatibel dengan berbagai versi recharts)
-                  const idx = state?.activeTooltipIndex ?? state?.activeIndex;
-                  const item =
-                    idx !== undefined && idx !== null
-                      ? grafikData[Number(idx)]
-                      : grafikData.find((g) => g.label === state?.activeLabel);
-                  navigate(
-                    item?.key
-                      ? `/eskul/${slugEskul}?tanggal=${item.key}`
-                      : `/eskul/${slugEskul}`
-                  );
-                }}
+                style={{ cursor: 'pointer' }}
+                onClick={handleChartClick}
               >
                 <defs>
                   <linearGradient id="gradPendaftaran" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="0%" stopColor={WARNA_GARIS} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={WARNA_GARIS} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="#9ca3af" strokeOpacity={0.15} vertical={false} />
@@ -541,6 +664,7 @@ export default function DashboardPembina() {
                   tickLine={false}
                 />
                 <Tooltip
+                  cursor={{ stroke: '#64748b', strokeDasharray: '3 3' }}
                   contentStyle={{
                     background: '#111827',
                     border: '1px solid #374151',
@@ -551,114 +675,90 @@ export default function DashboardPembina() {
                   formatter={(v) => [`${v} pendaftar`, '']}
                   separator=""
                 />
+
+                {/* Penanda hari yang sedang dipilih */}
+                {hariDipilih && (
+                  <ReferenceLine
+                    x={hariDipilih.label}
+                    stroke="#22d3ee"
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.7}
+                  />
+                )}
+
                 <Area
                   type="monotone"
                   dataKey="jumlah"
-                  stroke="#3b82f6"
+                  stroke={WARNA_GARIS}
                   strokeWidth={2}
                   fill="url(#gradPendaftaran)"
-                  dot={{ r: 3, fill: '#3b82f6', strokeWidth: 0 }}
-                  activeDot={{ r: 5 }}
+                  dot={renderDot}
+                  activeDot={false}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* PENDAFTARAN TERBARU (hanya siswa aktif) */}
-        <div className={`${cardClass} p-0`}>
-          <div className="flex items-center justify-between px-5 py-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <UserPlus className="h-4 w-4 text-blue-500" />
-              Pendaftaran Terbaru
-            </div>
-            {slugEskul && (
-              <button
-                onClick={() => navigate(`/eskul/${slugEskul}`)}
-                className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-              >
-                Lihat Semua <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+        {/* Tidak ada hari yang diklik -> Pendaftaran Terbaru.
+            Ada hari yang diklik -> diganti daftar siswa yang mendaftar di hari itu. */}
+        {hariDipilih ? (
+          <div className={`${cardClass} p-0`}>
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <UserPlus className="h-4 w-4 text-blue-500" />
+                  Siswa yang Mendaftar — {hariDipilih.tanggalLengkap}
+                </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800/50 dark:text-gray-400">
-                  <th className="px-5 py-3">No</th>
-                  <th className="px-5 py-3">Nama Siswa</th>
-                  <th className="px-5 py-3">Kelas</th>
-                  <th className="px-5 py-3">Jenis Kelamin</th>
-                  <th className="px-5 py-3">Tanggal Daftar</th>
-                  <th className="px-5 py-3">Aksi</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {terbaru.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="px-5 py-8 text-center text-gray-400 dark:text-gray-500"
-                    >
-                      Belum ada pendaftaran.
-                    </td>
-                  </tr>
-                ) : (
-                  terbaru.map((p, i) => (
-                    <tr
-                      key={p.id ?? i}
-                      className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40"
-                    >
-                      <td className="px-5 py-3 text-gray-500 dark:text-gray-400">{i + 1}</td>
-
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/15 text-xs font-bold text-blue-600 dark:text-blue-400">
-                            {p.nama.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-medium">{p.nama}</span>
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3 text-gray-600 dark:text-gray-300">{p.kelas}</td>
-
-                      <td className="px-5 py-3 text-gray-600 dark:text-gray-300">
-                        {p.gender === 'P' ? 'Perempuan' : 'Laki-laki'}
-                      </td>
-
-                      <td className="px-5 py-3 text-gray-600 dark:text-gray-300">
-                        {formatTanggal(p.tanggal)}
-                      </td>
-
-                      <td className="px-5 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          {p.status === 'menunggu' && (
-                            <>
-                              <button
-                                onClick={() => ubahStatus(p, 'diterima')}
-                                className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
-                              >
-                                Terima
-                              </button>
-                              <button
-                                onClick={() => ubahStatus(p, 'ditolak')}
-                                className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-rose-500/20 dark:text-rose-400"
-                              >
-                                Tolak
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                {hariDipilihIsHariIni && (
+                  <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-[11px] font-semibold text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300">
+                    Hari ini
+                  </span>
                 )}
-              </tbody>
-            </table>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  {siswaHariDipilih.length} siswa
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setHariDipilih(null)}
+                  title="Tutup"
+                  className="rounded-full p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <TabelPendaftar
+              data={siswaHariDipilih}
+              tampilkanJam
+              kosong="Tidak ada siswa yang mendaftar pada waktu ini."
+            />
           </div>
-        </div>
+        ) : (
+          <div className={`${cardClass} p-0`}>
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <UserPlus className="h-4 w-4 text-blue-500" />
+                Pendaftaran Terbaru
+              </div>
+              {slugEskul && (
+                <button
+                  onClick={() => navigate(`/eskul/${slugEskul}`)}
+                  className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  Lihat Semua <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            <TabelPendaftar data={terbaru} kosong="Belum ada pendaftaran." />
+          </div>
+        )}
       </main>
     </div>
   );

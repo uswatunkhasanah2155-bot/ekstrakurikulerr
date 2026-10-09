@@ -408,7 +408,7 @@ export default function ExtracurricularDetail() {
         {canManage && <Sidebar />}
 
         {/* Lebar penuh layar */}
-        <main className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-10 py-6 overflow-y-auto">
+        <main className="flex-1 min-w-0 w-full px-2 sm:px-6 lg:px-10 py-6 overflow-y-auto">
 
           {/* ==============================
               HEADER (KEMBALI, JUDUL, & DOWNLOAD)
@@ -751,127 +751,107 @@ export default function ExtracurricularDetail() {
                   )}
                 </div>
               ) : (
-                <table className="w-full text-left border-collapse">
+                // Tabel: kecil di HP supaya semua kolom muat, ukuran normal di laptop (md ke atas)
+                <table className="w-full text-left border-collapse text-[10px] md:text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50/50 dark:bg-gray-800/50">
-                      <th className="py-3 px-4">No</th>
-                      <th className="py-3 px-4">Foto</th>
-                      <th className="py-3 px-4">Nama Siswa</th>
-                      <th className="py-3 px-4">Kelas</th>
-                      <th className="py-3 px-4">Jenis Kelamin</th>
-                      <th className="py-3 px-4">Tanggal Daftar</th>
+                    <tr className="border-b border-gray-100 dark:border-gray-800 text-[8px] md:text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50/50 dark:bg-gray-800/50">
+                      <th className="py-2 px-1.5 md:py-3 md:px-4">No</th>
+                      <th className="py-2 px-1.5 md:py-3 md:px-4">Foto</th>
+                      <th className="py-2 px-1.5 md:py-3 md:px-4">Nama Siswa</th>
+                      <th className="py-2 px-1.5 md:py-3 md:px-4">Kelas</th>
+                      <th className="py-2 px-1.5 md:py-3 md:px-4">Jenis Kelamin</th>
+                      <th className="py-2 px-1.5 md:py-3 md:px-4">Tanggal Daftar</th>
                       {canManage && (
-                        <th className="py-3 px-4 text-center">
+                        <th className="py-2 px-1.5 md:py-3 md:px-4 text-center">
                           Aksi
                         </th>
                       )}
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-sm text-gray-700 dark:text-gray-300">
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-gray-700 dark:text-gray-300">
                     {filteredSiswa.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={
-                            canManage ? 7 : 6
-                          }
+                          colSpan={canManage ? 7 : 6}
                           className="py-4 text-center text-gray-400 dark:text-gray-500"
                         >
                           {emptyMessage}
                         </td>
                       </tr>
                     ) : (
-                      filteredSiswa.map(
-                        (siswa, idx) => (
-                          <tr
-                            key={siswa.id}
-                            className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
-                          >
-                            <td className="py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
-                              {idx + 1}
-                            </td>
+                      filteredSiswa.map((siswa, idx) => (
+                        <tr
+                          key={siswa.id}
+                          className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
+                        >
+                          <td className="py-2 px-1.5 md:py-3 md:px-4 font-medium text-gray-500 dark:text-gray-400">
+                            {idx + 1}
+                          </td>
 
-                            <td className="py-3 px-4">
-                              {siswa.foto ? (
-                                <img
-                                  src={fotoUrl(siswa.foto)}
-                                  alt={siswa.nama}
-                                  className="w-20 h-20 object-cover rounded-full border-2 border-gray-200 dark:border-gray-700 shadow-sm"
-                                  onError={e => {
-                                    e.target.style.display =
-                                      'none';
+                          <td className="py-2 px-1.5 md:py-3 md:px-4">
+                            {siswa.foto ? (
+                              <img
+                                src={fotoUrl(siswa.foto)}
+                                alt={siswa.nama}
+                                className="w-8 h-8 md:w-20 md:h-20 object-cover rounded-full border md:border-2 border-gray-200 dark:border-gray-700 shadow-sm"
+                                onError={e => {
+                                  e.target.style.display = 'none';
 
-                                    if (
-                                      e.target
-                                        .nextSibling
-                                    ) {
-                                      e.target.nextSibling.style.display =
-                                        'flex';
-                                    }
-                                  }}
-                                />
-                              ) : null}
-
-                              <div
-                                className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500"
-                                style={{
-                                  display: siswa.foto
-                                    ? 'none'
-                                    : 'flex'
-                                }}
-                              >
-                                <User className="w-6 h-6" />
-                              </div>
-                            </td>
-
-                            <td className="py-3 px-4 font-semibold text-gray-800 dark:text-gray-100">
-                              {siswa.nama}
-                            </td>
-
-                            <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
-                              {siswa.kelas}
-                            </td>
-
-                            <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
-                              {siswa.jenisKelamin ===
-                              'P'
-                                ? 'Perempuan'
-                                : 'Laki-laki'}
-                            </td>
-
-                            <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
-                              {siswa.tanggal ||
-                                'Baru saja'}
-                            </td>
-
-                            {canManage && (
-                              <td className="py-3 px-4 text-center space-x-2">
-                                <button
-                                  onClick={() =>
-                                    handleEditSiswa(
-                                      siswa
-                                    )
+                                  if (e.target.nextSibling) {
+                                    e.target.nextSibling.style.display = 'flex';
                                   }
-                                  className="text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-md font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 inline-flex items-center gap-1"
+                                }}
+                              />
+                            ) : null}
+
+                            <div
+                              className="w-8 h-8 md:w-20 md:h-20 rounded-full bg-gray-100 dark:bg-gray-800 border md:border-2 border-gray-200 dark:border-gray-700 items-center justify-center text-gray-400 dark:text-gray-500"
+                              style={{ display: siswa.foto ? 'none' : 'flex' }}
+                            >
+                              <User className="w-4 h-4 md:w-6 md:h-6" />
+                            </div>
+                          </td>
+
+                          <td className="py-2 px-1.5 md:py-3 md:px-4 font-semibold text-gray-800 dark:text-gray-100">
+                            {siswa.nama}
+                          </td>
+
+                          <td className="py-2 px-1.5 md:py-3 md:px-4 text-gray-600 dark:text-gray-300">
+                            {siswa.kelas}
+                          </td>
+
+                          <td className="py-2 px-1.5 md:py-3 md:px-4 text-gray-600 dark:text-gray-300">
+                            {siswa.jenisKelamin === 'P' ? 'Perempuan' : 'Laki-laki'}
+                          </td>
+
+                          <td className="py-2 px-1.5 md:py-3 md:px-4 text-gray-500 dark:text-gray-400">
+                            {siswa.tanggal || 'Baru saja'}
+                          </td>
+
+                          {canManage && (
+                            <td className="py-2 px-1.5 md:py-3 md:px-4">
+                              <div className="flex flex-col items-stretch gap-1 md:flex-row md:justify-center md:gap-2">
+                                <button
+                                  onClick={() => handleEditSiswa(siswa)}
+                                  className="text-[9px] md:text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-md font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 inline-flex items-center justify-center gap-0.5 md:gap-1"
                                 >
-                                  <Pencil className="w-3.5 h-3.5" />
+                                  <Pencil className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
                                   Edit
                                 </button>
 
                                 <button
-                                  onClick={() =>
-                                    handleHapusSiswa(siswa)
-                                  }
-                                  className="text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center gap-1"
+                                  onClick={() => handleHapusSiswa(siswa)}
+                                  className="text-[9px] md:text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-md font-medium hover:bg-red-100 dark:hover:bg-red-900/50 inline-flex items-center justify-center gap-0.5 md:gap-1"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
                                   Hapus
                                 </button>
-                              </td>
-                            )}
-                          </tr>
-                        )
-                      )
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))
                     )}
                   </tbody>
                 </table>

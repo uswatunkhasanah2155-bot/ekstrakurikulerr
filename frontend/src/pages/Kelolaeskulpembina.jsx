@@ -1,6 +1,5 @@
 // src/pages/KelolaEskulPembina.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { fotoUrl } from '../utils/fotoUrl';
 import { API_URL } from '../config';
@@ -83,7 +82,6 @@ function Panel({ title, icon: Icon, action, children, className = '' }) {
 }
 
 export default function KelolaEskulPembina() {
-  const navigate = useNavigate();
   const idEskul = localStorage.getItem('id_eskul');
 
   const [loading, setLoading] = useState(true);
@@ -98,6 +96,9 @@ export default function KelolaEskulPembina() {
   // modal pilih foto utama
   const [pickerOpen, setPickerOpen] = useState(false);
   const [settingId, setSettingId] = useState(null);
+
+  // deskripsi: false = dipotong 3 baris, true = tampil lengkap
+  const [deskripsiTerbuka, setDeskripsiTerbuka] = useState(false);
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [notif, setNotif] = useState(null); // { type: 'success' | 'error', text }
@@ -138,9 +139,6 @@ export default function KelolaEskulPembina() {
   const fotoUtama = galeri.find(f => f.is_featured) || null;
   const namaPembina = eskul?.pembina || '-';
   const rowId = eskul?.id_eskul || eskul?.id;
-
-  // slug untuk link ke halaman galeri (sebelumnya variabel ini tidak ada)
-  const slug = namaEskul.trim().replace(/\s+/g, '-');
 
   const fotoCoverUrl = fotoUrl(fotoUtama?.foto);
   const fotoLogoUrl = fotoUrl(eskul?.foto);
@@ -258,9 +256,22 @@ export default function KelolaEskulPembina() {
         </div>
         <div>
           <dt className="text-xs text-gray-500 dark:text-gray-400 mb-1">Deskripsi</dt>
-          <dd className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+          <dd
+            className={`text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line ${
+              deskripsiTerbuka ? '' : 'line-clamp-3'
+            }`}
+          >
             {eskul?.deskripsi || 'Belum ada deskripsi.'}
           </dd>
+          {(eskul?.deskripsi || '').length > 150 && (
+            <button
+              type="button"
+              onClick={() => setDeskripsiTerbuka(v => !v)}
+              className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              {deskripsiTerbuka ? 'Sembunyikan' : 'Baca Selengkapnya'}
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
           <User className="w-4 h-4 text-gray-400" />
@@ -537,7 +548,7 @@ export default function KelolaEskulPembina() {
             <div className="p-5 overflow-y-auto">
               {galeri.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-10">
-                  Belum ada foto di galeri. Upload foto dulu, lalu pilih sebagai foto utama.
+                  Belum ada foto di galeri.
                 </p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -568,14 +579,6 @@ export default function KelolaEskulPembina() {
               )}
             </div>
 
-            <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-              <button
-                onClick={() => navigate(`/eskul/${slug}/galeri/upload`)}
-                className="px-4 py-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-xl transition"
-              >
-                + Upload foto baru
-              </button>
-            </div>
           </div>
         </div>
       )}
