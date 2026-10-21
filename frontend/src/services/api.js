@@ -155,6 +155,37 @@ export async function getRiwayatPendaftarEskul() {
   }
 }
 
+// Mengambil pendaftaran aktif milik siswa yang sedang login.
+// Dipakai RegistrationForm untuk menghitung batas maksimal eskul.
+export async function getPendaftaranSaya() {
+  try {
+    const token = localStorage.getItem('token');
+
+    const response = await fetch(
+      `${API_URL}/api/pendaftaran/saya`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+
+    if (handleUnauthorized(response)) return [];
+
+    if (!response.ok) {
+      throw new Error('Gagal mengambil pendaftaran saya dari server backend');
+    }
+
+    const result = await response.json();
+
+    return result.data || [];
+
+  } catch (error) {
+    console.error('Error fetching pendaftaran saya:', error);
+    return [];
+  }
+}
+
 
 export async function getSiswaByEskul(namaEskul) {
   try {

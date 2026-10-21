@@ -1,7 +1,7 @@
 // src/pages/RegistrationForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ClipboardList, Lock, ImagePlus, Send, ArrowLeft } from 'lucide-react';
+import { ClipboardList, Lock, ImagePlus, Send, ArrowLeft, AlertTriangle } from 'lucide-react';
 // Samakan import ini dengan yang dipakai di DashboardSiswa.jsx
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
@@ -10,8 +10,12 @@ import {
   tambahPendaftar,
   getDaftarEskul,
   getDaftarKelas,
-  getProfilSiswaSaya
+  getProfilSiswaSaya,
+  getPendaftaranSaya
 } from '../services/api';
+
+// Harus sama dengan MAKS_ESKUL_PER_SISWA di backend
+const MAKS_ESKUL = 2;
 
 const labelClass =
   'mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400';
@@ -46,7 +50,17 @@ export default function RegistrationForm() {
   const [profilSudahAda, setProfilSudahAda] = useState(false);
   const [loadingProfil, setLoadingProfil] = useState(true);
 
+  // Eskul aktif yang sudah diikuti siswa (untuk batas maksimal)
+  const [eskulDiikuti, setEskulDiikuti] = useState([]);
+  const [loadingEskulDiikuti, setLoadingEskulDiikuti] = useState(true);
+
   const terkunci = profilSudahAda || loadingProfil;
+
+  const roleLogin = (localStorage.getItem('role') || '').toUpperCase();
+  const bisaKelola = roleLogin === 'ADMIN' || roleLogin === 'PEMBINA';
+
+  // Batas hanya dicek di sisi siswa. Backend tetap jadi penjaga utama.
+  const batasTercapai = !bisaKelola && eskulDiikuti.length >= MAKS_ESKUL;
 
   // Preview foto yang baru dipilih
   const previewFoto = useMemo(
@@ -96,8 +110,22 @@ export default function RegistrationForm() {
       }
     }
 
+    async function fetchEskulDiikuti() {
+      setLoadingEskulDiikuti(true);
+      try {
+        const data = await getPendaftaranSaya();
+        setEskulDiikuti(data || []);
+      } catch (error) {
+        console.error('Gagal mengambil eskul yang diikuti:', error);
+        setEskulDiikuti([]);
+      } finally {
+        setLoadingEskulDiikuti(false);
+      }
+    }
+
     fetchKelas();
     fetchProfilSaya();
+    fetchEskulDiikuti();
   }, []);
 
   const handleChange = (e) => {
@@ -134,6 +162,11 @@ export default function RegistrationForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (batasTercapai) {
+      alert(`Kamu sudah mengikuti ${MAKS_ESKUL} ekstrakurikuler (batas maksimal).`);
+      return;
+    }
+
     // Input file tidak lagi memakai "required" (nilainya dikosongkan setelah crop)
     if (!profilSudahAda && !formData.foto) {
       alert('Silakan pilih foto siswa terlebih dahulu.');
@@ -164,6 +197,16 @@ export default function RegistrationForm() {
         return;
       }
 
+      // Cek cepat di sisi klien: sudah terdaftar di eskul ini?
+      const sudahDiEskulIni = eskulDiikuti.some(
+        (p) => p.id_eskul === eskulDitemukan.id_eskul
+      );
+      if (!bisaKelola && sudahDiEskulIni) {
+        alert('Kamu sudah terdaftar di ekstrakurikuler ini.');
+        setLoading(false);
+        return;
+      }
+
       const rawIdUser =
         localStorage.getItem('id_user') || localStorage.getItem('userId');
       const userIdLogin = rawIdUser ? Number(rawIdUser) : null;
@@ -185,6 +228,7 @@ export default function RegistrationForm() {
         alert(`Pendaftaran untuk ${formatNamaEskul} berhasil dikirim!`);
         navigate(`/eskul/${slugFormatted}`);
       } else {
+        // Pesan dari backend, termasuk "maksimal 2 ekstrakurikuler"
         alert('Gagal mendaftar: ' + result.error);
       }
     } catch (err) {
@@ -193,9 +237,6 @@ export default function RegistrationForm() {
       setLoading(false);
     }
   };
-
-  const roleLogin = (localStorage.getItem('role') || '').toUpperCase();
-  const bisaKelola = roleLogin === 'ADMIN' || roleLogin === 'PEMBINA';
 
   return (
     <div className={`flex min-h-screen ${bisaKelola ? '' : 'flex-col'} bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100 transition-colors duration-300`}>
@@ -230,6 +271,18 @@ export default function RegistrationForm() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8">
+              {/* Peringatan batas maksimal eskul */}
+              {batasTercapai && (
+                <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    Kamu sudah mengikuti {MAKS_ESKUL} ekstrakurikuler, yaitu batas
+                    maksimal per siswa. Keluar dari salah satu eskul terlebih
+                    dahulu kalau ingin mendaftar di {formatNamaEskul}.
+                  </p>
+                </div>
+              )}
+
               {profilSudahAda && (
                 <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-relaxed text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
                   <Lock className="mt-0.5 h-4 w-4 shrink-0" />
@@ -360,8 +413,8 @@ export default function RegistrationForm() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || loadingProfil}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                  disabled={loading || loadingProfil || loadingEskulDiikuti || batasTercapai}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send className="h-4 w-4" />
                   {loading ? 'Mengirim...' : 'Kirim Pendaftaran'}

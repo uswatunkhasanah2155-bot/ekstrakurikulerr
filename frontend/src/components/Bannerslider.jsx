@@ -69,7 +69,7 @@ export default function BannerSlider({
       onMouseLeave={() => (paused.current = false)}
     >
       {count === 0 ? (
-        <div className="h-full w-full bg-gradient-to-br from-emerald-900 to-slate-900" />
+        <div className="h-full w-full bg-linear-to-br from-emerald-900 to-slate-900" />
       ) : (
         <div
           className={`flex h-full select-none ${dragging ? "" : "transition-transform duration-500 ease-out"}`}
@@ -89,7 +89,7 @@ export default function BannerSlider({
               src={src}
               alt={`Foto ${i + 1}`}
               draggable={false}
-              className="h-full w-full flex-shrink-0 object-cover"
+              className="h-full w-full shrink-0 object-cover"
             />
           ))}
         </div>

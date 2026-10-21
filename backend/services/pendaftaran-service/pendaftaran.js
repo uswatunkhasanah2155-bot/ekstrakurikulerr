@@ -9,6 +9,13 @@ import { uploadFoto, hapusFoto } from '../../lib/cloudinary.js';
 const router = express.Router();
 
 // ======================================================
+// KONFIGURASI BATAS
+// Satu siswa maksimal boleh mengikuti 2 eskul aktif.
+// ======================================================
+
+const MAKS_ESKUL_PER_SISWA = 2;
+
+// ======================================================
 // KONFIGURASI MULTER
 // ======================================================
 
@@ -116,7 +123,8 @@ router.get('/saya', verifyToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Berhasil mengambil pendaftaran saya',
-      data: pendaftaran
+      data: pendaftaran,
+      batas_maksimal: MAKS_ESKUL_PER_SISWA
     });
 
   } catch (error) {
@@ -268,24 +276,36 @@ router.post(
       }
 
       // ==================================================
-      // TAHAP 2: CEK PENDAFTARAN DUPLIKAT
-      // (hanya yang masih aktif, yang sudah dihapus boleh daftar ulang)
+      // TAHAP 2: CEK DUPLIKAT & BATAS MAKSIMAL ESKUL
+      // (hanya pendaftaran aktif yang dihitung; yang sudah
+      // dihapus tidak masuk hitungan dan boleh daftar ulang)
       // ==================================================
 
       if (targetIdSiswa) {
 
-        const existingRegistration = await prisma.pendaftaran.findFirst({
+        const pendaftaranAktif = await prisma.pendaftaran.findMany({
           where: {
             id_siswa: Number(targetIdSiswa),
-            id_eskul: Number(id_eskul),
             dihapus_pada: null
-          }
+          },
+          select: { id_eskul: true }
         });
 
-        if (existingRegistration) {
+        const sudahTerdaftar = pendaftaranAktif.some(
+          (p) => p.id_eskul === Number(id_eskul)
+        );
+
+        if (sudahTerdaftar) {
           return res.status(400).json({
             success: false,
             message: 'Siswa sudah terdaftar di ekstrakurikuler ini!'
+          });
+        }
+
+        if (pendaftaranAktif.length >= MAKS_ESKUL_PER_SISWA) {
+          return res.status(400).json({
+            success: false,
+            message: `Siswa hanya boleh mengikuti maksimal ${MAKS_ESKUL_PER_SISWA} ekstrakurikuler.`
           });
         }
       }
@@ -401,7 +421,26 @@ router.put(
         });
       }
 
-      if (id_eskul) {
+      // Pindah eskul: pastikan eskul tujuan belum diikuti siswa ini.
+      // Jumlah total tidak bertambah, jadi batas maksimal tidak perlu dicek.
+      if (id_eskul && Number(id_eskul) !== pendaftaranCek.id_eskul) {
+
+        const duplikat = await prisma.pendaftaran.findFirst({
+          where: {
+            id_siswa: pendaftaranCek.id_siswa,
+            id_eskul: Number(id_eskul),
+            dihapus_pada: null,
+            NOT: { id_pendaftaran: Number(id) }
+          }
+        });
+
+        if (duplikat) {
+          return res.status(400).json({
+            success: false,
+            message: 'Siswa sudah terdaftar di ekstrakurikuler tujuan!'
+          });
+        }
+
         await prisma.pendaftaran.update({
           where: { id_pendaftaran: Number(id) },
           data: { id_eskul: Number(id_eskul) }
